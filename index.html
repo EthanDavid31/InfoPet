@@ -1638,6 +1638,14 @@ body:not(.web-mode) .journal-book .journal-close {
 .orient-toggle:hover{ filter:brightness(1.15); }
 .orient-toggle:active{ transform:translateY(2px); box-shadow:0 1px 0 rgba(0,0,0,0.35); }
 .orient-toggle:focus-visible{ outline:2px solid var(--screen-glow); outline-offset:2px; }
+/* On phone, stack the three icon buttons vertically down the top-right
+   corner instead of side-by-side — overrides their inline "right" offsets
+   (needs !important since inline style attributes otherwise win). */
+@media (max-width: 480px) and (pointer: coarse) {
+  #themeToggle{ top:12px !important; right:12px !important; }
+  #soundToggle{ top:66px !important; right:12px !important; }
+  #orientToggle{ top:120px !important; right:12px !important; }
+}
 
 .page.landscape{
   max-width:1180px;
