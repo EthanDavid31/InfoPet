@@ -1059,8 +1059,8 @@ body {
 @media (max-width: 480px) and (pointer: coarse) {
   body { height: 100vh; height: 100dvh; min-height: 100vh; min-height: 100dvh; padding: 8px 10px; overflow: hidden; }
   .page:not(.landscape) { height: 100%; display: flex; flex-direction: column; min-height: 0; }
-  .page:not(.landscape) > .header { flex: 0 0 auto; margin-bottom: 4px; }
-  .page:not(.landscape) > .header .header-title { font-size: clamp(28px, 10vw, 38px); margin-bottom: 2px; }
+  .page:not(.landscape) > .header { flex: 0 0 auto; margin-bottom: 4px; padding-top: 46px; }
+  .page:not(.landscape) > .header .header-title { font-size: clamp(30px, 13vw, 46px); margin-bottom: 2px; }
   .page:not(.landscape) > .header .header-sub { font-size: 13px; line-height: 1.4; margin-top: 6px; }
   /* the device is capped narrower (not full page width) purely so its height
      shrinks with it — canvas/screen scale off the device's own width, so
@@ -1682,6 +1682,26 @@ body:not(.web-mode) .journal-book .journal-close {
 </style>
 </head>
 <body>
+<div id="iabBanner" style="display:none; position:fixed; top:0; left:0; right:0; z-index:2000; background:#ffd166; color:#241f38; font-family:'IBM Plex Mono', monospace; font-size:12.5px; padding:10px 14px; text-align:center; box-shadow:0 2px 8px rgba(0,0,0,0.25);">
+  This app looks best in your regular browser.
+  <strong>Tap ⋯ or ⋮ above, then "Open in Browser".</strong>
+  <button onclick="document.getElementById('iabBanner').style.display='none'" style="margin-left:8px; background:#241f38; color:#fff; border:none; border-radius:6px; padding:3px 9px; font-family:inherit; font-size:11px; cursor:pointer;">Dismiss</button>
+</div>
+<script>
+// IN-APP BROWSER DETECTION — Messenger/Instagram/TikTok/etc. open links in their
+// own embedded webview, which is known to mis-render custom fonts, position:fixed
+// elements, and responsive sizing (this is a bug in those webviews, not this
+// page). Since we can't fix a third-party browser's rendering engine, the
+// standard approach is to flag it and point people to their real browser.
+(function(){
+  var ua = navigator.userAgent || "";
+  var isInApp = /FBAN|FBAV|Instagram|Messenger|Line\/|MicroMessenger|TikTok|Snapchat/i.test(ua);
+  if(isInApp){
+    var b = document.getElementById("iabBanner");
+    if(b) b.style.display = "block";
+  }
+})();
+</script>
 <div class="bg-fx" id="bgFx" aria-hidden="true"></div>
 <button id="themeToggle" class="orient-toggle" style="right:120px" aria-label="Toggle light / dark mode" title="Light / dark mode">🌙</button>
 <button id="soundToggle" class="orient-toggle" style="right:66px" aria-label="Toggle sound" title="Sound on / off">🔊</button>
