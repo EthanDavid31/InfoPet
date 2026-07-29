@@ -1063,10 +1063,10 @@ body {
   .page:not(.landscape) > .header .header-title { font-size: 19px; margin-bottom: 0; }
   .page:not(.landscape) > .header .header-sub { display: none; } /* decorative copy — cut first, it's not needed to use the app */
   /* the device is capped narrower (not full page width) purely so its height
-     shrinks with it — canvas/screen scale off the device's own width, so a
-     smaller device is a reliable, predictable way to buy back vertical space
+     shrinks with it — canvas/screen scale off the device's own width, so
+     capping width is a reliable, predictable way to manage vertical space
      on short phones without touching the canvas sizing model at all */
-  .page:not(.landscape) > .device { flex: 0 1 auto; min-height: 0; margin: 0 auto 6px; max-width: min(78vw, 250px); }
+  .page:not(.landscape) > .device { flex: 0 1 auto; min-height: 0; margin: 0 auto 6px; max-width: min(88vw, 340px); }
   .page:not(.landscape) > #questAnchor { flex: 0 0 auto; }
   .page:not(.landscape) > .activity { flex: 1 1 auto; min-height: 0; overflow-y: auto; margin-bottom: 4px; }
   .page:not(.landscape) > .activity .activity-header { padding: 10px 12px 8px; }
@@ -1083,6 +1083,17 @@ body {
    no empty bordered box is left behind. Web mode keeps it visible inline,
    exactly as before. */
 body.idle-default .page:not(.landscape) .activity { display: none; }
+/* With the dashboard hidden there's no scrolling content left to use the
+   space it vacated — instead of leaving that blank, let the device grow
+   into it (bigger pet, better use of the screen) and center vertically in
+   whatever room is left between the header and bottom nav. */
+@media (max-width: 480px) and (pointer: coarse) {
+  body.idle-default .page:not(.landscape) > .device {
+    max-width: min(94vw, 460px);
+    margin-top: auto;
+    margin-bottom: auto;
+  }
+}
 /* Header pills + floating stat cards — tied to the phone/web toggle itself,
    not screen size, same reasoning as everything else scoped this way: web
    mode already shows this data in the Profile/Status tabs. */
