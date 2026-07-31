@@ -201,7 +201,6 @@ body {
   background: var(--card); border: 1px solid var(--card-border); border-radius: 999px;
   padding: 6px 12px; display: inline-flex; align-items: center; gap: 5px;
 }
-.header-pill.streak { color: #ff9f43; }
 @media (prefers-reduced-motion: reduce) {
   .header-sparkle, .header-title { animation: none !important; }
 }
@@ -674,6 +673,17 @@ body {
 .snack-reaction .sr-emoji{ font-size:44px; display:block; margin-bottom:8px; }
 .snack-reaction .sr-line{ font-size:14px; font-weight:700; color:var(--text-soft); font-style:italic; margin-bottom:8px; }
 .snack-tip{ background:rgba(6,214,160,0.07); border:1px solid rgba(6,214,160,0.25); border-radius:10px; padding:10px 12px; font-size:12.5px; color:var(--text-soft); line-height:1.5; margin-bottom:12px; text-align:left; }
+/* FEED DOMAINS — media doesn't only happen on one feed; this is the picker
+   between the different parts of InfoPet's world it can pick information
+   up from. Same visual language as the snack tray on purpose. */
+.feed-domain-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:10px; margin-bottom:10px; }
+.feed-domain-card{ background:var(--tint); border:2px solid var(--card-border); border-radius:16px; padding:14px 10px; cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:5px; transition:transform .15s, border-color .15s; text-align:center; color:var(--text); font-family:var(--font-body); }
+.feed-domain-card:hover{ transform:translateY(-3px); border-color:var(--text-soft); }
+.feed-domain-card:active{ transform:translateY(0) scale(0.98); }
+.fd-icon{ font-size:26px; line-height:1; }
+.fd-name{ font-size:11.5px; font-weight:800; color:var(--text); }
+.fd-desc{ font-size:10px; color:var(--text-muted); line-height:1.3; }
+.feed-switch-source{ display:block; margin:0 0 10px; font-family:var(--font-mono); font-size:10.5px; color:var(--text-muted); background:none; border:none; cursor:pointer; text-decoration:underline; padding:0; }
 .snack-tip.warn{ background:rgba(255,77,109,0.08); border-color:rgba(255,77,109,0.3); color:#ff8fa3; }
 .snack-tip.treat-note{ background:rgba(96,165,250,0.08); border-color:rgba(96,165,250,0.3); color:#8fc4ff; }
 .snack-tip.golden{ background:rgba(255,209,102,0.1); border-color:rgba(255,209,102,0.35); color:#ffd166; }
@@ -957,7 +967,10 @@ body {
 .log-item { background: var(--tint); border: 1px solid var(--card-border); border-radius: 8px; padding: 8px 12px; font-family: var(--font-mono); font-size: 11px; color: var(--text-soft); display: flex; gap: 8px; align-items: flex-start; line-height: 1.4; }
 .log-item.empty { color: var(--text-muted); font-style: italic; border-style: dashed; }
 
-.reset-btn { display: block; margin: 16px auto 0; background: var(--tint); border: 2px solid var(--card-border); border-radius: 999px; font-family: var(--font-body); font-weight: 600; font-size: 11.5px; color: var(--text-muted); cursor: pointer; padding: 9px 18px; transition: color 0.15s, border-color 0.15s, transform 0.15s; }
+/* Reset now lives in the menu's More section instead of sitting visible on
+   the page — still the exact same element/handler, just reached differently
+   (see MENU_ITEMS + selectMenuItem, which calls #resetBtn.click()). */
+.reset-btn { display: none; }
 .reset-btn:hover { color: var(--text-soft); border-color: var(--text-soft); transform: translateY(-1px); }
 
 .hidden { display: none !important; }
@@ -1056,67 +1069,102 @@ body {
    Scoped to small + touch-primary viewports only (pointer:coarse), so a
    narrow desktop browser window is untouched — "web" always keeps the
    normal scrolling layout, regardless of window width. */
+/* ── PHONE MODE, REBUILT AROUND ONE RULE: THE PET IS ALWAYS ON SCREEN ──────
+   Nothing that opens (Care actions, the category pickers, Profile) is ever
+   allowed to cover the pet — everything opens as a bottom sheet capped well
+   under full height instead, the same principle a Tamagotchi/Pou screen
+   never breaks. The pet's scene now simply fills whatever space isn't taken
+   by the slim top bar and bottom nav, full time, no per-mode resizing. */
 @media (max-width: 480px) and (pointer: coarse) {
   body { height: 100vh; height: 100dvh; min-height: 100vh; min-height: 100dvh; padding: 8px 10px; overflow: hidden; }
   .page:not(.landscape) { height: 100%; display: flex; flex-direction: column; min-height: 0; }
-  .page:not(.landscape) > .header { flex: 0 0 auto; margin-bottom: 4px; padding-top: 46px; }
-  .page:not(.landscape) > .header .header-title { font-size: clamp(30px, 13vw, 46px); margin-bottom: 2px; }
-  .page:not(.landscape) > .header .header-sub { font-size: 13px; line-height: 1.4; margin-top: 6px; }
-  /* the device is capped narrower (not full page width) purely so its height
-     shrinks with it — canvas/screen scale off the device's own width, so
-     capping width is a reliable, predictable way to manage vertical space
-     on short phones without touching the canvas sizing model at all */
-  .page:not(.landscape) > .device { flex: 0 1 auto; min-height: 0; margin: 0 auto 6px; max-width: min(88vw, 340px); }
-  .page:not(.landscape) > #questAnchor { flex: 0 0 auto; }
-  .page:not(.landscape) > .activity { flex: 1 1 auto; min-height: 0; overflow-y: auto; margin-bottom: 4px; }
-  .page:not(.landscape) > .activity .activity-header { padding: 10px 12px 8px; }
-  .page:not(.landscape) > .activity .dash-quick-grid { gap: 6px; }
-  .page:not(.landscape) > .activity .dash-quick-item { padding: 7px 8px; font-size: 11px; }
-  .page:not(.landscape) > .reset-btn { flex: 0 0 auto; margin: 2px auto 0; padding: 6px 14px; font-size: 10.5px; }
-}
-
-/* The idle "choose a care mode" explainer just eats space in phone mode —
-   hidden there entirely; the Help button opens the same content as a popup
-   instead (see #helpModal). Tied to the app's own phone/web toggle
-   (.landscape) and the idle-default body class (set in showMode()), not
-   viewport size. Hides the whole .activity card, not just its content, so
-   no empty bordered box is left behind. Web mode keeps it visible inline,
-   exactly as before. */
-body.idle-default .page:not(.landscape) .activity { display: none; }
-/* With the dashboard hidden there's no scrolling content left to use the
-   space it vacated — instead of leaving that blank, let the device grow
-   into it (bigger pet, better use of the screen) and center vertically in
-   whatever room is left between the header and bottom nav. */
-@media (max-width: 480px) and (pointer: coarse) {
-  body.idle-default .page:not(.landscape) > .device {
-    max-width: min(94vw, 460px);
-    margin-top: auto;
-    margin-bottom: auto;
+  /* Hero wordmark shrinks a little (title only — the tagline stays, just
+     smaller) to free some space without losing InfoPet's identity text.
+     padding-top only needs to clear the narrow icon column in the corner
+     now (not duck under a full-width row of 5 icons like before), so it
+     can come way down — this is most of what actually moves the header
+     and the auto-centered device shell below it higher up the page. */
+  .page:not(.landscape) > .header { flex: 0 0 auto; margin-bottom: 4px; padding-top: 14px; }
+  .page:not(.landscape) > .header .header-title { font-size: 19px; margin-bottom: 0; letter-spacing: 0.02em; }
+  .page:not(.landscape) > .header .header-sub { font-size: 14px; line-height: 1.45; margin-top: 6px; }
+  .page:not(.landscape) > .header .header-sparkle { display: none; }
+  /* The device itself is left completely alone here — same shell,
+     stickers, readout row and physical buttons as web mode, unmodified.
+     The only phone-specific thing it needs is sizing: capped to a
+     comfortable width, horizontally centered, and pinned close under the
+     header/stage pill instead of vertically centered in the full leftover
+     page height — centering it was leaving an oddly large empty gap
+     between the header and the shell. Only the bottom margin is auto now,
+     so any leftover space pools below the device instead of splitting
+     evenly above and below it. */
+  .page:not(.landscape) > .device {
+    flex: 0 1 auto; min-height: 0; margin: 6px auto auto; max-width: min(92vw, 380px); width: 100%;
+    transition: max-width .3s ease, margin .3s ease;
   }
+  /* Any open sheet — an action (Feed, Clean, etc: body:not(.idle-default))
+     or the ☰ menu / 💚 stats sheet (body.sheet-open, toggled in JS since
+     those don't touch S.mode/idle-default at all) — claims a good chunk of
+     the bottom of the actual viewport, fixed, regardless of where the
+     centered device happens to land. Without the bottom nav reserving
+     space, the device can center low enough for that to cover it.
+     Shrinking + pinning it right up under the header whenever any sheet
+     is open guarantees clearance instead of hoping they never overlap. */
+  body:not(.idle-default) .page:not(.landscape) > .device,
+  body.sheet-open .page:not(.landscape) > .device {
+    max-width: min(64vw, 240px); margin: 0 auto auto;
+  }
+  .page:not(.landscape) > #questAnchor { display: none; }
 }
-/* Header pills + floating stat cards — tied to the phone/web toggle itself,
-   not screen size, same reasoning as everything else scoped this way: web
-   mode already shows this data in the Profile/Status tabs. */
+/* Header pills — tied to the phone/web toggle itself, not screen size, same
+   reasoning as everything else scoped this way. */
 .page:not(.landscape) > .header .header-pills { display: flex; }
-.page:not(.landscape) > .device .floating-stats { display: block; }
+/* ◀ Back is removed on phone — tapping anywhere outside an open menu/stats
+   sheet now closes it (see the document click listener), so a dedicated
+   back button is redundant there. ☰ and 💚 stay. */
+.page:not(.landscape) > .device #tamaRight { display: none; }
 
-/* ── BOTTOM NAV — phone mode only, always visible like a real app shell ── */
+/* ── BOTTOM NAV — removed from phone mode. The ☰ button on the device
+   itself now covers everything it used to (Care/Clean/Explore/Connect/
+   Profile/More, all in one grouped menu via renderDeviceMenu with no
+   group filter, same as web mode already did), so this would just be a
+   second, redundant way to open the same thing. Left as display:none
+   (matching its old web-mode default) rather than deleted outright, in
+   case it's wanted back. */
 .bottom-nav { display: none; }
-.page:not(.landscape) ~ .bottom-nav {
-  display: flex; position: fixed; left: 0; right: 0; bottom: 0; z-index: 50;
-  justify-content: space-around; align-items: center;
-  background: var(--card); border-top: 1px solid var(--card-border);
-  padding: 8px 6px calc(8px + env(safe-area-inset-bottom, 0px));
+
+/* ── PRIMARY ACTION SHEETS — Care/Clean/Explore/Connect/Profile all open as
+   bottom sheets over the LOWER part of the screen only, no dark backdrop,
+   so the pet (filling the space above) is always still visible while a
+   sheet is open. Unlike the secondary modals below (Quest/Help/Journal/etc,
+   which keep their existing full-screen treatment), these are the everyday,
+   frequent interactions, so the pet staying visible here is the whole
+   point. Always mounted (display never toggles) — pure transform in/out,
+   so there's nothing to snap or mis-time, just a slide. */
+.page:not(.landscape) .device-menu,
+.page:not(.landscape) .device-stats {
+  display: flex !important;
+  position: fixed; inset: auto 0 calc(10px + env(safe-area-inset-bottom, 0px)) 0; z-index: 91;
+  max-height: 50vh; border-radius: 22px;
+  background: var(--card); box-shadow: 0 -6px 24px rgba(0,0,0,0.3);
+  transform: translateY(120%); transition: transform .32s cubic-bezier(.2,.9,.3,1);
+  pointer-events: none;
 }
-.bottom-nav-item {
-  display: flex; flex-direction: column; align-items: center; gap: 2px;
-  background: none; border: none; cursor: pointer;
-  font-family: var(--font-mono); font-size: 9px; color: var(--text-muted);
-  padding: 4px 12px; transition: color .15s;
+.page:not(.landscape) .device-menu.show,
+.page:not(.landscape) .device-stats.show { transform: translateY(0); pointer-events: auto; }
+.page:not(.landscape) > .activity {
+  position: fixed; left: 0; right: 0; bottom: calc(10px + env(safe-area-inset-bottom, 0px)); z-index: 91;
+  max-height: 52vh; overflow-y: auto; margin: 0; padding: 16px;
+  border-radius: 22px;
+  box-shadow: 0 -6px 24px rgba(0,0,0,0.3);
+  transform: translateY(120%); transition: transform .32s cubic-bezier(.2,.9,.3,1);
 }
-.bottom-nav-item span { font-size: 18px; }
-.bottom-nav-item.active { color: var(--screen-glow); }
-body:not(.web-mode) { padding-bottom: 74px; }
+body:not(.idle-default) .page:not(.landscape) > .activity { transform: translateY(0); }
+.sheet-close { display: none; }
+.page:not(.landscape) .sheet-close {
+  display: block; position: absolute; top: 10px; right: 14px; z-index: 3;
+  width: 30px; height: 30px; border-radius: 50%; border: none;
+  background: var(--tint-2); color: var(--text); font-size: 14px; cursor: pointer;
+}
 
 /* ── BOTTOM SHEETS IN PHONE MODE — the pet stays visible ──────────────────
    Journal / Help / Garden / Morning Report / Achievements / Quest were all
@@ -1131,6 +1179,12 @@ body:not(.web-mode) .journal-modal,
 body:not(.web-mode) .ach-modal {
   align-items: flex-end; padding: 0;
 }
+/* The dark blurred backdrop above was never actually removed for phone
+   mode — only the card's own position changed — so the pet stayed hidden
+   behind it despite the comment above claiming otherwise. Journal
+   specifically needs to actually be transparent for the pet to be visible
+   while it's open, per the comment's own intent. */
+body:not(.web-mode) #journalModal { background: transparent; backdrop-filter: none; }
 body:not(.web-mode) .help-popup,
 body:not(.web-mode) .ach-book,
 body:not(.web-mode) .journal-book {
@@ -1402,6 +1456,8 @@ body:not(.web-mode) .journal-book .journal-close {
 .cer-title { font-family: var(--font-px); font-size: 15px; color: var(--pixel-light); margin: 4px 0 10px; line-height: 1.4; }
 .cer-body { font-size: 13px; color: var(--text-soft); line-height: 1.55; margin: 0 0 20px; }
 .cer-name-prompt { display: flex; flex-direction: column; gap: 10px; margin: 4px 0 6px; }
+.cer-name-error { color: var(--state-corrupt); font-size: 12px; margin: -4px 0 0; }
+.name-input.input-error { border-color: var(--state-corrupt); }
 .cer-btn {
   font-family: var(--font-mono); font-size: 12px; background: linear-gradient(90deg, #a97bff, #7c5cc4);
   color: #fff; border: none; border-radius: 999px; padding: 11px 26px; cursor: pointer; transition: transform 0.1s, filter 0.15s;
@@ -1638,14 +1694,27 @@ body:not(.web-mode) .journal-book .journal-close {
 .orient-toggle:hover{ filter:brightness(1.15); }
 .orient-toggle:active{ transform:translateY(2px); box-shadow:0 1px 0 rgba(0,0,0,0.35); }
 .orient-toggle:focus-visible{ outline:2px solid var(--screen-glow); outline-offset:2px; }
-/* On phone, stack the three icon buttons vertically down the top-right
-   corner instead of side-by-side — overrides their inline "right" offsets
-   (needs !important since inline style attributes otherwise win). */
-@media (max-width: 480px) and (pointer: coarse) {
-  #themeToggle{ top:12px !important; right:12px !important; }
-  #soundToggle{ top:66px !important; right:12px !important; }
-  #orientToggle{ top:120px !important; right:12px !important; }
+/* On phone, only Quest/Help remain as fixed icons, stacked in a column in
+   the top-right corner — Sound and Theme both moved into the ☰ menu's
+   "More" group (see MENU_ITEMS/#soundToggle's and #themeToggle's own
+   onclick handlers, reused via selectMenuItem the same way Reset is), and
+   the web/layout toggle is dropped entirely on phone.
+   These buttons are all *before* <div class="page"> in the DOM, so a
+   sibling combinator (.page ~ #btn) can only ever select elements AFTER
+   .page — it silently never matched here, which is why this rule never
+   actually hid anything. body:not(.web-mode) is an ancestor-based selector
+   instead (body wraps everything), so it isn't sensitive to DOM order at
+   all — same fix in spirit as the pointer:coarse menu-button bug: a
+   selector that just doesn't match, quietly does nothing. */
+body:not(.web-mode) #soundToggle,
+body:not(.web-mode) #themeToggle,
+body:not(.web-mode) #orientToggle { display: none; }
+body:not(.web-mode) #topQuestBtn,
+body:not(.web-mode) #topHelpBtn {
+  width:34px !important; height:34px !important; font-size:15px !important; right:10px !important;
 }
+body:not(.web-mode) #topQuestBtn { top:10px !important; }
+body:not(.web-mode) #topHelpBtn { top:52px !important; }
 
 .page.landscape{
   max-width:1180px;
@@ -1711,6 +1780,8 @@ body:not(.web-mode) .journal-book .journal-close {
 })();
 </script>
 <div class="bg-fx" id="bgFx" aria-hidden="true"></div>
+<button id="topQuestBtn" class="orient-toggle phone-top-btn" style="right:228px" aria-label="Daily quest" title="Daily quest">⭐</button>
+<button id="topHelpBtn" class="orient-toggle phone-top-btn" style="right:174px" aria-label="Help" title="Help">❓</button>
 <button id="themeToggle" class="orient-toggle" style="right:120px" aria-label="Toggle light / dark mode" title="Light / dark mode">🌙</button>
 <button id="soundToggle" class="orient-toggle" style="right:66px" aria-label="Toggle sound" title="Sound on / off">🔊</button>
 <button id="orientToggle" class="orient-toggle" aria-label="Toggle portrait / landscape layout" title="Toggle layout (prototype)">🖥️</button>
@@ -1725,7 +1796,6 @@ body:not(.web-mode) .journal-book .journal-close {
     <p class="header-sub">A companion that grows as <strong style="color:var(--screen-glow)">you</strong> do.<br>Raise a thoughtful mind — curious, careful, kind.</p>
     <div class="header-pills" id="headerPills" aria-hidden="true">
       <span class="header-pill"><span id="headerStageEmblem">🥚</span> <b id="headerStageName">Info Egg</b></span>
-      <span class="header-pill streak">🔥 <b id="headerStreakVal">0</b> day streak</span>
     </div>
   </header>
 
@@ -1744,10 +1814,12 @@ body:not(.web-mode) .journal-book .journal-close {
         <div class="scanlines" aria-hidden="true"></div>
         <div class="screen-glow-overlay" aria-hidden="true"></div>
         <div class="device-menu" id="deviceMenu" aria-hidden="true">
-          <p class="device-menu-title">Menu — tap to open</p>
+          <button class="sheet-close" id="deviceMenuClose" aria-label="Close menu">✕</button>
+          <p class="device-menu-title" id="deviceMenuTitle">Menu — tap to open</p>
           <div class="device-menu-grid" id="deviceMenuGrid"></div>
         </div>
         <div class="device-stats" id="deviceStats" aria-hidden="true">
+          <button class="sheet-close" id="deviceStatsClose" aria-label="Close profile">✕</button>
           <p class="device-menu-title">InfoPet</p>
           <div class="stats-tabs" id="statsTabs">
             <button class="stats-tab active" data-tab="status">Status</button>
@@ -1857,7 +1929,7 @@ body:not(.web-mode) .journal-book .journal-close {
          Right is Back. -->
     <div class="tama-buttons" aria-label="Device buttons">
       <button class="tama-btn" id="tamaLeft" aria-label="Open menu">☰</button>
-      <button class="tama-btn" id="tamaMid" aria-label="Check on your InfoPet">💚</button>
+      <button class="tama-btn" id="tamaMid" aria-label="Status, Profile & Journey">📊</button>
       <button class="tama-btn" id="tamaRight" aria-label="Back">◀</button>
     </div>
 
@@ -1878,6 +1950,11 @@ body:not(.web-mode) .journal-book .journal-close {
       <button id="helpMenuBtn" title="Help">❓</button>
       <button id="sleepMenuBtn" title="Sleep">🌙</button>
       <button id="gardenMenuBtn" title="Garden">🌱</button>
+      <button id="btn-trace" title="Trace">🧭</button>
+      <button id="btn-pause" title="Pause">⏸️</button>
+      <button id="btn-perspectives" title="Perspectives">🌐</button>
+      <button id="btn-dilemma" title="Digital Dilemmas">⚖️</button>
+      <button id="btn-hero" title="Community Hero">🛡️</button>
     </nav>
   </div>
 
@@ -1908,6 +1985,7 @@ body:not(.web-mode) .journal-book .journal-close {
 
   <!-- ACTIVITY PANEL -->
   <section class="activity" id="activityPanel" aria-live="polite">
+    <button class="sheet-close" id="activityClose" aria-label="Close">✕</button>
 
     <!-- FEED -->
     <div id="mode-feed" class="hidden">
@@ -1993,6 +2071,66 @@ body:not(.web-mode) .journal-book .journal-close {
       <div class="activity-body" id="customBody"></div>
     </div>
 
+    <!-- TRACE -->
+    <div id="mode-trace" class="hidden">
+      <div class="activity-header">
+        <span class="activity-icon">🧭</span>
+        <div class="activity-titles">
+          <p class="activity-name">Trace <span class="villain-tag">⚔️ vs The Untraceable Rumor</span></p>
+          <p class="activity-concept"><strong style="color:var(--heal-col)">Where did this actually come from?</strong> A claim is only as trustworthy as the source behind it — trace it before you believe it.</p>
+        </div>
+      </div>
+      <div class="activity-body" id="traceBody"></div>
+    </div>
+
+    <!-- PAUSE -->
+    <div id="mode-pause" class="hidden">
+      <div class="activity-header">
+        <span class="activity-icon">⏸️</span>
+        <div class="activity-titles">
+          <p class="activity-name">Pause <span class="villain-tag">⚔️ vs The Share-Now Impulse</span></p>
+          <p class="activity-concept"><strong style="color:#4dabf7">Should you act on this right now?</strong> The urge to share instantly is the whole trick — resist it long enough to check.</p>
+        </div>
+      </div>
+      <div class="activity-body" id="pauseBody"></div>
+    </div>
+
+    <!-- PERSPECTIVES -->
+    <div id="mode-perspectives" class="hidden">
+      <div class="activity-header">
+        <span class="activity-icon">🌐</span>
+        <div class="activity-titles">
+          <p class="activity-name">Perspectives <span class="villain-tag">⚔️ vs The One-Sided Story</span></p>
+          <p class="activity-concept"><strong style="color:#4dd8a0">Whose story is this?</strong> The same event looks different depending on who's telling it — the full picture needs more than one account.</p>
+        </div>
+      </div>
+      <div class="activity-body" id="perspectivesBody"></div>
+    </div>
+
+    <!-- DIGITAL DILEMMAS -->
+    <div id="mode-dilemma" class="hidden">
+      <div class="activity-header">
+        <span class="activity-icon">⚖️</span>
+        <div class="activity-titles">
+          <p class="activity-name">Digital Dilemmas</p>
+          <p class="activity-concept"><strong style="color:var(--train-col)">What's the responsible choice?</strong> Not every situation has one clean right answer — what matters is thinking it through.</p>
+        </div>
+      </div>
+      <div class="activity-body" id="dilemmaBody"></div>
+    </div>
+
+    <!-- COMMUNITY HERO -->
+    <div id="mode-hero" class="hidden">
+      <div class="activity-header">
+        <span class="activity-icon">🛡️</span>
+        <div class="activity-titles">
+          <p class="activity-name">Community Hero <span class="villain-tag">⚔️ vs The Spreading Confusion</span></p>
+          <p class="activity-concept"><strong style="color:var(--clean-col)">Someone needs your help.</strong> Guiding a friend or family member through confusing info is community leadership in action.</p>
+        </div>
+      </div>
+      <div class="activity-body" id="heroBody"></div>
+    </div>
+
     <!-- DEFAULT -->
     <!-- hidden source for the Help popup — the old "how to play" explainer,
          no longer shown inline in either phone or web mode -->
@@ -2064,10 +2202,11 @@ body:not(.web-mode) .journal-book .journal-close {
 
 <!-- BOTTOM NAV — phone mode only, always visible, same as a real app shell -->
 <nav class="bottom-nav" id="bottomNav" aria-hidden="true">
-  <button class="bottom-nav-item active" id="bottomNavHome"><span>🏠</span>Home</button>
-  <button class="bottom-nav-item" id="bottomNavQuest"><span>⭐</span>Quest</button>
-  <button class="bottom-nav-item" id="bottomNavAch"><span>🏆</span>Badges</button>
-  <button class="bottom-nav-item" id="bottomNavJournal"><span>📖</span>Journal</button>
+  <button class="bottom-nav-item" id="bottomNavCare"><span>🍎</span>Care</button>
+  <button class="bottom-nav-item" id="bottomNavClean"><span>🧹</span>Clean</button>
+  <button class="bottom-nav-item" id="bottomNavExplore"><span>🌍</span>Explore</button>
+  <button class="bottom-nav-item" id="bottomNavConnect"><span>📱</span>Connect</button>
+  <button class="bottom-nav-item" id="bottomNavProfile"><span>👤</span>Profile</button>
 </nav>
 
 <!-- THE INTERNET (phone) OVERLAY -->
@@ -2089,6 +2228,7 @@ body:not(.web-mode) .journal-book .journal-close {
     <p class="cer-body" id="cerBody"></p>
     <div class="cer-name-prompt" id="cerNamePrompt" style="display:none">
       <input type="text" id="cerNameInput" class="name-input" maxlength="14" placeholder="Name your pet…">
+      <p class="cer-name-error" id="cerNameError" style="display:none">Please enter a name for your InfoPet.</p>
       <button class="cer-btn" id="cerNameBtn">Let's go! ▸</button>
     </div>
     <button class="cer-btn" id="cerBtn">Continue ▸</button>
@@ -2193,7 +2333,7 @@ var S = {
   journal: [],
   journalNotes: {},
   journalDates: {},
-  feed: { doneIds: [], active: null, checks: 0, tray: null, stage: null },
+  feed: { doneIds: [], active: null, checks: 0, tray: null, stage: null, domain: null },
   clean: { cleaned: 0, total: 0, done: false, nestDone: false },
   play: { q: 0, score: 0, timer: null, timerLeft: 0, done: false },
   heal: { i:0, score:0, done:false },
@@ -2340,6 +2480,233 @@ var BABY_JUNK_SNACKS = [
     tip:"Even hatchlings need breaks — balance screen time with rest." }
 ];
 
+// The feed grows up with the pet, same as everything else — a Thinker is
+// old enough to run into content built to actively fool it (AI fakes,
+// fabricated quotes, misleading charts), not just simple clickbait.
+var THINKER_HEALTHY_SNACKS = [
+  { id:"th1", icon:"🔍", label:"Reverse-Image-Searched Debunk", tag:"reliable",
+    reaction:{emoji:"🧐", line:"Someone actually traced this back — good."},
+    tip:"Reverse image search is one of the fastest ways to catch an AI fake or a recycled photo." },
+  { id:"th2", icon:"📊", label:"Properly Labeled Data Chart", tag:"learning",
+    reaction:{emoji:"🤓", line:"Axes labeled, source cited — now I can actually read this."},
+    tip:"A trustworthy chart always tells you what it's measuring and where the numbers came from." },
+  { id:"th3", icon:"🗣️", label:"Full, Unedited Quote With Context", tag:"reliable",
+    reaction:{emoji:"😌", line:"Reading the whole thing changes how it sounds."},
+    tip:"A quote pulled out of its original context can say almost the opposite of what was meant." },
+  { id:"th4", icon:"🧪", label:"AI Detection Explainer", tag:"learning",
+    reaction:{emoji:"🤖", line:"Now I know what to actually look for."},
+    tip:"Learning the common tells of AI-generated images makes every future fake easier to catch." }
+];
+var THINKER_JUNK_SNACKS = [
+  { id:"tj1", icon:"🖼️", label:"AI-Generated 'Leaked Photo'", tag:"junk",
+    reaction:{emoji:"😵", line:"Something about the hands and eyes looked wrong..."},
+    tip:"AI images often warp small details — hands, text, reflections. Worth a second look before believing." },
+  { id:"tj2", icon:"💬", label:"Fabricated Quote Screenshot", tag:"junk",
+    reaction:{emoji:"😠", line:"Did they actually say that, or did someone just type it in a font?"},
+    tip:"Text on a screenshot proves nothing on its own — a real quote is traceable to an actual recording or transcript." },
+  { id:"tj3", icon:"📉", label:"Misleading Chart (Truncated Axis)", tag:"junk",
+    reaction:{emoji:"😕", line:"That graph makes a tiny change look huge..."},
+    tip:"A chart that starts its axis somewhere other than zero can make small differences look dramatic — read the numbers, not just the shape." },
+  { id:"tj4", icon:"✂️", label:"Out-of-Context Clip", tag:"junk",
+    reaction:{emoji:"🤨", line:"That looks different once you know what happened right before it."},
+    tip:"A few seconds pulled from a longer video can be trimmed to mean almost anything. Look for the full clip before reacting." }
+];
+
+// By Guardian, the pet has a small following of its own — the feed's
+// challenges shift from "what do I believe" to "what do I do with my own
+// reach," matching the game's own community-leadership framing.
+var GUARDIAN_HEALTHY_SNACKS = [
+  { id:"gh1", icon:"🧑‍🏫", label:"Helped a Confused Follower", tag:"community",
+    reaction:{emoji:"🥰", line:"They said that actually helped — worth it."},
+    tip:"Answering one confused follower kindly and clearly is real community leadership, not a small thing." },
+  { id:"gh2", icon:"✍️", label:"Corrected Your Own Old Post", tag:"reliable",
+    reaction:{emoji:"😌", line:"Better to fix it myself than let it keep spreading."},
+    tip:"Publicly correcting your own mistakes builds more trust than pretending you never made one." },
+  { id:"gh3", icon:"🏷️", label:"Credited the Original Creator", tag:"community",
+    reaction:{emoji:"🙂", line:"They deserve the credit for this, not me."},
+    tip:"Crediting sources when you share their work is part of keeping the whole ecosystem honest." },
+  { id:"gh4", icon:"🕊️", label:"De-escalated a Comment Fight", tag:"community",
+    reaction:{emoji:"😊", line:"That could've gotten a lot worse — glad it didn't."},
+    tip:"A calm reply in a heated thread does more for the community than winning the argument would." }
+];
+var GUARDIAN_TREAT_SNACKS = [
+  { id:"gt1", icon:"💌", label:"A Genuine Thank-You Message", tag:"fun",
+    reaction:{emoji:"🥹", line:"That really made my day."},
+    tip:"Small, genuine moments of connection are worth just as much as the big correct calls." },
+  { id:"gt2", icon:"🤝", label:"A Fun Collab Request", tag:"creative",
+    reaction:{emoji:"😄", line:"That sounds like a fun idea to work on together!"},
+    tip:"Having a following isn't only responsibility — it opens up real, fun collaboration too." }
+];
+var GUARDIAN_JUNK_SNACKS = [
+  { id:"gj1", icon:"📢", label:"Pressure to Post Something Viral", tag:"junk",
+    reaction:{emoji:"😬", line:"They want me to post it just because it'll get attention..."},
+    tip:"Chasing virality over accuracy is exactly how a trusted voice stops being trustworthy." },
+  { id:"gj2", icon:"🗯️", label:"A Fan Spreading Your Words Wrong", tag:"junk",
+    reaction:{emoji:"😟", line:"That's not quite what I meant..."},
+    tip:"When your own words get twisted as they spread, a quick public clarification is worth more than staying silent." },
+  { id:"gj3", icon:"😡", label:"Hostile, Bad-Faith Comment Thread", tag:"junk",
+    reaction:{emoji:"😣", line:"This isn't really a conversation anymore..."},
+    tip:"Not every thread deserves your energy — muting a bad-faith pile-on is a valid community-management call." },
+  { id:"gj4", icon:"🔁", label:"Asked to Boost an Unverified Post", tag:"junk",
+    reaction:{emoji:"😕", line:"They want me to share it before anyone's checked it..."},
+    tip:"The bigger the following, the bigger the cost of amplifying something that turns out to be false." }
+];
+
+// ── FEED DOMAINS — media doesn't only happen on one social feed. From
+// Explorer onward, Feed opens with a choice of where InfoPet is checking:
+// TV, School, its AI Assistant, Friends, and the local Community each have
+// their own small pool (Social Feed keeps the full age-tiered system built
+// above). Same snack shape/mechanic throughout — just a different room to
+// stand in when you open it.
+var FEED_DOMAINS=[
+  { key:"social",    icon:"📱", name:"Social Feed", desc:"Influencers, memes, AI-made posts" },
+  { key:"tv",        icon:"📺", name:"TV",          desc:"News broadcasts and advertisements" },
+  { key:"school",    icon:"🏫", name:"School",      desc:"Classmates, teachers, AI homework help" },
+  { key:"ai",        icon:"🤖", name:"AI Assistant",desc:"Questions, answers, and the odd hallucination" },
+  { key:"friends",   icon:"👥", name:"Friends",     desc:"Rumors, gossip, peer pressure" },
+  { key:"community", icon:"🌳", name:"Community",   desc:"Local news, posters, neighborhood stories" }
+];
+var TV_HEALTHY_SNACKS=[
+  { id:"tvh1", icon:"📰", label:"Named Anchor's Verified Report", tag:"reliable",
+    reaction:{emoji:"🙂", line:"Good — a real person, on record, saying it."},
+    tip:"A named reporter attaching their name to a story is putting their own credibility on the line for it." },
+  { id:"tvh2", icon:"🔬", label:"Fact-Checked Expert Segment", tag:"learning",
+    reaction:{emoji:"🤓", line:"They actually explained the evidence, not just the conclusion."},
+    tip:"Segments that show their work — data, named experts — are worth more than ones that just assert." },
+  { id:"tvh3", icon:"🎬", label:"Cited Documentary Segment", tag:"learning",
+    reaction:{emoji:"🧐", line:"This one actually shows its sources at the end."},
+    tip:"A documentary willing to cite its sources is inviting you to check its work — a good sign." }
+];
+var TV_TREAT_SNACKS=[
+  { id:"tvt1", icon:"🌦️", label:"Weather Forecast", tag:"fun",
+    reaction:{emoji:"🙂", line:"Good to know what to wear tomorrow!"},
+    tip:"Not everything on TV needs deep scrutiny — routine, low-stakes info is fine to just use." },
+  { id:"tvt2", icon:"🐶", label:"Feel-Good Human Interest Story", tag:"fun",
+    reaction:{emoji:"🥹", line:"That was really sweet."},
+    tip:"A little warmth in the mix is healthy — a balanced diet isn't only hard news." }
+];
+var TV_JUNK_SNACKS=[
+  { id:"tvj1", icon:"🔴", label:"'BREAKING' Banner, 3 Days Running", tag:"junk",
+    reaction:{emoji:"😑", line:"That's been 'breaking' for a while now..."},
+    tip:"A permanent sense of urgency is a ratings tactic, not a sign the story is actually still breaking." },
+  { id:"tvj2", icon:"💊", label:"Miracle Product Infomercial", tag:"junk",
+    reaction:{emoji:"🙄", line:"'Doctors hate this one trick'... sure."},
+    tip:"Extraordinary claims with no independent evidence — just a paid actor — are advertising, not information." },
+  { id:"tvj3", icon:"😱", label:"Fear-Mongering Segment, No Named Source", tag:"junk",
+    reaction:{emoji:"😨", line:"That music made it feel way scarier than the facts did."},
+    tip:"Dramatic music and vague danger with no named source is designed to make you feel something, not know something." }
+];
+var SCHOOL_HEALTHY_SNACKS=[
+  { id:"sch1", icon:"✅", label:"Teacher-Verified Fact Sheet", tag:"reliable",
+    reaction:{emoji:"🙂", line:"Good, this one's actually been checked."},
+    tip:"A teacher putting their name behind a fact sheet is a real, accountable source for a classroom project." },
+  { id:"sch2", icon:"📚", label:"Library Research Guide", tag:"learning",
+    reaction:{emoji:"🤓", line:"This shows me how to find good sources myself."},
+    tip:"Learning how to research is worth more long-term than any single fact — it's a skill, not just an answer." },
+  { id:"sch3", icon:"🎓", label:"Cited Student Presentation", tag:"learning",
+    reaction:{emoji:"🧐", line:"They actually listed where each slide's facts came from."},
+    tip:"A classmate citing sources in their own presentation is modeling exactly the habit worth picking up." }
+];
+var SCHOOL_TREAT_SNACKS=[
+  { id:"sct1", icon:"🚌", label:"Field Trip Flyer", tag:"fun",
+    reaction:{emoji:"😄", line:"That sounds like a fun day out!"},
+    tip:"Not everything from school needs to be a lesson — some of it's just genuinely fun." },
+  { id:"sct2", icon:"🎤", label:"Talent Show Announcement", tag:"fun",
+    reaction:{emoji:"🎉", line:"Ooh, I want to see that!"},
+    tip:"School life includes plenty of low-stakes, enjoyable info too." }
+];
+var SCHOOL_JUNK_SNACKS=[
+  { id:"scj1", icon:"🙋", label:"Classmate Confidently Repeating Something Wrong", tag:"junk",
+    reaction:{emoji:"😕", line:"They said it so confidently, but I don't think that's right..."},
+    tip:"Confidence isn't the same as accuracy — even a classmate who sounds sure can just be repeating something wrong." },
+  { id:"scj2", icon:"🤖", label:"AI-Written Report Passed Off as Original", tag:"junk",
+    reaction:{emoji:"😬", line:"That doesn't really sound like something they'd write..."},
+    tip:"Submitting AI output as your own thinking skips the actual point of the assignment — learning to think it through yourself." },
+  { id:"scj3", icon:"📋", label:"Copied Homework Answer, No Understanding", tag:"junk",
+    reaction:{emoji:"😅", line:"I got the answer, but I don't actually get why it's right..."},
+    tip:"An answer copied without understanding doesn't actually teach anything — it just delays finding out you're stuck." }
+];
+var AI_HEALTHY_SNACKS=[
+  { id:"aih1", icon:"🔗", label:"AI Answer With Cited Sources", tag:"reliable",
+    reaction:{emoji:"🙂", line:"Good, I can go check where that came from."},
+    tip:"An AI answer that shows its sources lets you actually verify it — treat that as the baseline to expect." },
+  { id:"aih2", icon:"🤷", label:"AI Honestly Says 'I'm Not Sure'", tag:"learning",
+    reaction:{emoji:"😌", line:"I'd rather it say that than just guess confidently."},
+    tip:"An AI admitting uncertainty is far more trustworthy than one that always sounds sure, even when it's wrong." },
+  { id:"aih3", icon:"🧠", label:"AI Explains Its Reasoning Step by Step", tag:"learning",
+    reaction:{emoji:"🤓", line:"Now I can see if the logic actually holds up."},
+    tip:"Seeing the reasoning, not just the conclusion, is what lets you actually catch a mistake in it." }
+];
+var AI_TREAT_SNACKS=[
+  { id:"ait1", icon:"📝", label:"Fun AI-Generated Poem", tag:"creative",
+    reaction:{emoji:"😄", line:"That's actually pretty clever!"},
+    tip:"AI is genuinely good at playful, low-stakes creative stuff — no need to be suspicious of a poem." }
+];
+var AI_JUNK_SNACKS=[
+  { id:"aij1", icon:"🌀", label:"Confidently Fabricated 'Fact'", tag:"junk",
+    reaction:{emoji:"😵", line:"That was stated so confidently... but I don't think it's actually true."},
+    tip:"AI hallucinations often sound just as confident as correct answers — confidence alone tells you nothing about accuracy." },
+  { id:"aij2", icon:"📄", label:"Invented Citation That Doesn't Exist", tag:"junk",
+    reaction:{emoji:"😨", line:"I looked it up and... that study doesn't seem to be real."},
+    tip:"AI can invent very convincing-looking citations — always check that a source actually exists before trusting it." },
+  { id:"aij3", icon:"🙌", label:"AI Just Agreeing With Whatever You Said", tag:"junk",
+    reaction:{emoji:"😕", line:"It just agreed with me instead of actually checking..."},
+    tip:"An assistant that never pushes back isn't being helpful — it's just telling you what you want to hear." }
+];
+var FRIENDS_HEALTHY_SNACKS=[
+  { id:"frh1", icon:"🔍", label:"Friend Shared Something They Verified First", tag:"reliable",
+    reaction:{emoji:"🙂", line:"Nice, they actually checked before sending it."},
+    tip:"A friend who verifies before sharing is modeling exactly the habit worth having yourself." },
+  { id:"frh2", icon:"🤝", label:"Friend Honestly Says 'I Don't Actually Know'", tag:"community",
+    reaction:{emoji:"😌", line:"I appreciate them not just guessing."},
+    tip:"Admitting uncertainty between friends is healthier than confidently passing along a guess as fact." }
+];
+var FRIENDS_TREAT_SNACKS=[
+  { id:"frt1", icon:"😂", label:"Genuinely Funny Meme, No Claims Attached", tag:"fun",
+    reaction:{emoji:"😄", line:"Okay that one's actually funny."},
+    tip:"Pure humor with nothing to fact-check is a perfectly fine part of a balanced feed." },
+  { id:"frt2", icon:"💬", label:"Fun Personal Update", tag:"fun",
+    reaction:{emoji:"🥰", line:"I like hearing how they're doing."},
+    tip:"Staying connected to real people is worth just as much as any 'serious' information." }
+];
+var FRIENDS_JUNK_SNACKS=[
+  { id:"frj1", icon:"🗣️", label:"Rumor, Nobody Knows Where It Started", tag:"junk",
+    reaction:{emoji:"😟", line:"Wait, who actually said this first?"},
+    tip:"A rumor with no traceable origin has already lost anything that made it checkable — that's worth noticing." },
+  { id:"frj2", icon:"👀", label:"'Everyone Already Believes This' Pressure", tag:"junk",
+    reaction:{emoji:"😬", line:"Just because a lot of people believe it doesn't make it true..."},
+    tip:"Popularity isn't evidence — a claim believed by many people can still be completely wrong." },
+  { id:"frj3", icon:"🤐", label:"Gossip About Someone Who Isn't There", tag:"junk",
+    reaction:{emoji:"😕", line:"I'm only hearing one side of this..."},
+    tip:"Anyone being talked about but not present to respond only gets you half the story, at best." }
+];
+var COMMUNITY_HEALTHY_SNACKS=[
+  { id:"cmh1", icon:"📋", label:"Official, Dated Community Bulletin", tag:"reliable",
+    reaction:{emoji:"🙂", line:"Good, this one's dated and from the actual office."},
+    tip:"Official, dated bulletins from the responsible office are about as traceable as local information gets." },
+  { id:"cmh2", icon:"🧑", label:"Neighbor's Firsthand, Named Account", tag:"community",
+    reaction:{emoji:"❤️", line:"They were actually there — that matters."},
+    tip:"A named, firsthand account carries real weight — just remember it's still one person's view of events." },
+  { id:"cmh3", icon:"📅", label:"Verified Local Event Flyer With Contact Info", tag:"community",
+    reaction:{emoji:"😊", line:"Good, there's a real number to call if I have questions."},
+    tip:"A flyer with real contact info is accountable in a way an anonymous one never is." }
+];
+var COMMUNITY_TREAT_SNACKS=[
+  { id:"cmt1", icon:"🎡", label:"Neighborhood Festival Announcement", tag:"fun",
+    reaction:{emoji:"🎉", line:"That sounds fun, I hope we go!"},
+    tip:"Community life includes plenty of good news too, not just things to fact-check." }
+];
+var COMMUNITY_JUNK_SNACKS=[
+  { id:"cmj1", icon:"📎", label:"Anonymous Flyer, Scary Unverified Claim", tag:"junk",
+    reaction:{emoji:"😨", line:"No name, no office, just a scary claim stapled to a pole..."},
+    tip:"An anonymous flyer with no accountable source is worth verifying before it changes how you feel about your own neighborhood." },
+  { id:"cmj2", icon:"⚠️", label:"Forwarded 'Neighborhood Warning', No Source", tag:"junk",
+    reaction:{emoji:"😟", line:"This has been forwarded so many times, who actually saw this happen?"},
+    tip:"A warning that's been forwarded past recognition has usually lost its original source along the way." },
+  { id:"cmj3", icon:"🗯️", label:"Unproven Rumor About a Local Business", tag:"junk",
+    reaction:{emoji:"😕", line:"That's a serious claim to make with no evidence attached..."},
+    tip:"Rumors about real people and real businesses cause real harm — they deserve more scrutiny, not less, before spreading." }
+];
 
 var CLEAN_ITEMS = [
   { text:"CLICK HERE: SHOCKING!! You won't believe what happened next!!!", ok:["report"], why:"Pure clickbait with no real content — reporting tells the algorithm this format shouldn't exist, not just that you personally don't want it." },
@@ -2753,22 +3120,34 @@ drawPet();
 // problem a living-companion app can't afford.
 var MENU_ITEMS=[
   { icon:"🍽️", label:"Feed",    btn:"btn-feed",      group:"care" },
-  { icon:"🧹", label:"Clean",   btn:"btn-clean",     group:"care" },
   { icon:"💊", label:"Rethink", btn:"btn-heal",      group:"care" },
-  { icon:"🎮", label:"Detect",  btn:"btn-play",      group:"care" },
+  { icon:"🎮", label:"Play",    btn:"btn-play",      group:"care" },
   { icon:"🌙", label:"Sleep",   btn:"sleepMenuBtn",  group:"care" },
+  { icon:"🧭", label:"Trace",   btn:"btn-trace",     group:"care" },
+  { icon:"⏸️", label:"Pause",   btn:"btn-pause",     group:"care" },
+  { icon:"⚖️", label:"Dilemma", btn:"btn-dilemma",   group:"care" },
+  { icon:"🧹", label:"Clean",   btn:"btn-clean",     group:"clean" },
   { icon:"🚶", label:"Explore", btn:"btn-explore",   group:"explore" },
   { icon:"🌱", label:"Garden",  btn:"gardenMenuBtn", group:"explore" },
   { icon:"📚", label:"Learn",   btn:"btn-train",     group:"explore" },
+  { icon:"🌐", label:"Perspectives", btn:"btn-perspectives", group:"explore" },
   { icon:"📱", label:"Phone",   btn:"btn-phone",     group:"connect" },
+  { icon:"🛡️", label:"Hero",    btn:"btn-hero",      group:"connect" },
   { icon:"🎨", label:"Style",   btn:"btn-custom",    group:"profile" },
   { icon:"🏅", label:"Badges",  btn:"achBtn",        group:"profile" },
   { icon:"📔", label:"Journal", btn:"journalBtn",    group:"profile" },
   { icon:"⭐", label:"Quest",   btn:"questMenuBtn",  group:"more" },
-  { icon:"❓", label:"Help",    btn:"helpMenuBtn",   group:"more" }
+  { icon:"❓", label:"Help",    btn:"helpMenuBtn",   group:"more" },
+  { icon:"🔊", label:"Sound",   btn:"soundToggle",   group:"more" },
+  { icon:"🌙", label:"Theme",   btn:"themeToggle",   group:"more" },
+  { icon:"↺",  label:"Reset",   btn:"resetBtn",      group:"more" }
 ];
+// Groups shown together, each under its own label, in the ☰ menu (see
+// renderDeviceMenu) — Care/Clean/Explore/Connect/Profile/More all reachable
+// from that one menu, no separate nav needed.
 var MENU_GROUPS=[
   { key:"care",    icon:"🍎", name:"Care" },
+  { key:"clean",   icon:"🧹", name:"Clean" },
   { key:"explore", icon:"🌍", name:"Explore" },
   { key:"connect", icon:"📱", name:"Connect" },
   { key:"profile", icon:"👤", name:"Profile" },
@@ -2782,20 +3161,38 @@ var deviceStats={ open:false };
 // sense once your pet is old enough to actually question what it sees.
 // Clean stays unlocked for a hatchling — it just means something different
 // there (tidying its nest, not moderating a feed). See initClean().
-var LOCKED_UNTIL_EXPLORER = ["btn-phone","btn-play","btn-heal","btn-train"];
+var LOCKED_UNTIL_EXPLORER = ["btn-phone","btn-play","btn-heal","btn-train","btn-trace","btn-pause","btn-perspectives","btn-dilemma"];
+// Community Hero is Guardian-exclusive per design — helping others navigate
+// misinformation is the last, most advanced MIL habit, not an early one.
+var LOCKED_UNTIL_GUARDIAN = ["btn-hero"];
 function phoneUnlocked(){ return stageIndex()>=2; }
-function stageUnlocked(btn){ return LOCKED_UNTIL_EXPLORER.indexOf(btn)<0 || stageIndex()>=2; }
-function renderDeviceMenu(){
+function stageUnlocked(btn){
+  if(LOCKED_UNTIL_GUARDIAN.indexOf(btn)>=0) return stageIndex()>=4;
+  return LOCKED_UNTIL_EXPLORER.indexOf(btn)<0 || stageIndex()>=2;
+}
+// onlyGroup: when set (bottom-nav category tap), renders just that one
+// group's items with no group label, since the sheet's title already says
+// which category it is. Omitted (web/landscape's full menu) renders every
+// group, each under its own label, same as before.
+function renderDeviceMenu(onlyGroup){
   var grid=document.getElementById("deviceMenuGrid"); if(!grid) return;
+  // Guards against exactly the bug a bare `onclick=someFn` reference causes:
+  // the browser calls it with the click Event as the first argument, which
+  // would otherwise be a truthy "group" that matches nothing and silently
+  // renders an empty sheet. Only a real, known group key is honored.
+  if(onlyGroup && typeof onlyGroup!=="string") onlyGroup=undefined;
   // in web/landscape mode the Daily Quest stays inline, and the "choose a
   // care mode" explainer is never hidden there either — both menu shortcuts
   // would be redundant
   var landscape=document.querySelector(".page").classList.contains("landscape");
   var items = landscape ? MENU_ITEMS.filter(function(it){ return it.btn!=="questMenuBtn" && it.btn!=="helpMenuBtn"; }) : MENU_ITEMS;
-  grid.innerHTML = MENU_GROUPS.map(function(g){
+  var groups = onlyGroup ? MENU_GROUPS.filter(function(g){ return g.key===onlyGroup; }) : MENU_GROUPS;
+  var titleEl=document.getElementById("deviceMenuTitle");
+  if(titleEl) titleEl.textContent = (onlyGroup && groups[0]) ? (groups[0].icon+" "+groups[0].name) : "Menu — tap to open";
+  grid.innerHTML = groups.map(function(g){
     var groupItems=items.filter(function(it){ return it.group===g.key; });
     if(!groupItems.length) return "";
-    return "<p class='dmi-group-label'>"+g.icon+" "+g.name+"</p><div class='dmi-group-grid'>"
+    return (onlyGroup ? "" : "<p class='dmi-group-label'>"+g.icon+" "+g.name+"</p>")+"<div class='dmi-group-grid'>"
       + groupItems.map(function(it){
           var i=MENU_ITEMS.indexOf(it);
           var locked = !stageUnlocked(it.btn);
@@ -2804,17 +3201,28 @@ function renderDeviceMenu(){
       + "</div>";
   }).join("");
 }
-function showDeviceMenu(){
+// Same shrink-and-pin the device does for an open activity sheet
+// (body:not(.idle-default)) also needs to happen for the ☰ menu and 💚
+// stats sheets — those don't touch S.mode/idle-default at all, so without
+// this the LED screen stays full-size and centered and the menu sheet
+// (bottom ~50vh) can cover it exactly the same way the activity sheet did.
+function updateSheetOpenClass(){
+  document.body.classList.toggle("sheet-open", deviceMenu.open || deviceStats.open);
+}
+function showDeviceMenu(onlyGroup){
   if(bedtime.active || (typeof phone!=='undefined' && phone.open)) return;
-  if(S.life && S.life.stage==="egg") return; // nothing to do yet — still hatching
-  renderDeviceMenu(); // refresh lock state (e.g. phone unlocking at Explorer)
+  if(S.life && S.life.stage==="egg"){ setThought("🥚 Still hatching — check back soon!"); return; } // nothing to do yet — still hatching, but say so instead of silently doing nothing
+  if(S.mode && S.mode!=="default") showMode("default"); // close whichever activity sheet is open first
+  renderDeviceMenu(onlyGroup); // refresh lock state (e.g. phone unlocking at Explorer)
   hideDeviceStats();
   deviceMenu.open=true;
+  updateSheetOpenClass();
   var el=document.getElementById("deviceMenu");
   if(el){ el.classList.add("show"); el.setAttribute("aria-hidden","false"); }
 }
 function hideDeviceMenu(){
   deviceMenu.open=false;
+  updateSheetOpenClass();
   var el=document.getElementById("deviceMenu");
   if(el){ el.classList.remove("show"); el.setAttribute("aria-hidden","true"); }
 }
@@ -2838,8 +3246,10 @@ if(deviceMenuGrid) deviceMenuGrid.addEventListener("click", function(e){
 
 function showDeviceStats(){
   if(bedtime.active || (typeof phone!=='undefined' && phone.open)) return;
+  if(S.mode && S.mode!=="default") showMode("default"); // close whichever activity sheet is open first
   hideDeviceMenu();
   deviceStats.open=true;
+  updateSheetOpenClass();
   // the growth/immunity panels living inside this screen already stay in sync
   // via the app's normal update flow — just refresh them in case anything
   // changed while the screen was hidden
@@ -2849,6 +3259,7 @@ function showDeviceStats(){
 }
 function hideDeviceStats(){
   deviceStats.open=false;
+  updateSheetOpenClass();
   var el=document.getElementById("deviceStats");
   if(el){ el.classList.remove("show"); el.setAttribute("aria-hidden","true"); }
 }
@@ -2865,9 +3276,24 @@ function deviceBack(){
 }
 
 var tamaLeft=document.getElementById("tamaLeft"), tamaMid=document.getElementById("tamaMid"), tamaRight=document.getElementById("tamaRight");
-if(tamaLeft) tamaLeft.onclick=showDeviceMenu;
+if(tamaLeft) tamaLeft.onclick=function(){ showDeviceMenu(); }; // wrapped so the click event itself never leaks in as onlyGroup
 if(tamaMid) tamaMid.onclick=showDeviceStats;
 if(tamaRight) tamaRight.onclick=deviceBack;
+// Tap anywhere outside an open menu/stats sheet to close it — no more
+// having to scroll back up inside a tall sheet to find the ✕. Excludes
+// clicks on the sheet's own content and on the two buttons that open
+// them (otherwise the very click that opens a sheet would immediately
+// bubble up to this listener and close it again in the same tap).
+document.addEventListener("click", function(e){
+  if(deviceMenu.open){
+    var menuEl=document.getElementById("deviceMenu");
+    if(menuEl && !menuEl.contains(e.target) && e.target!==tamaLeft) hideDeviceMenu();
+  }
+  if(deviceStats.open){
+    var statsEl=document.getElementById("deviceStats");
+    if(statsEl && !statsEl.contains(e.target) && e.target!==tamaMid) hideDeviceStats();
+  }
+});
 
 // ─── EGG RENDERING ────────────────────────────────────────
 // crackLevel (0-4) draws progressively more cracks; shakeMul intensifies the
@@ -3460,7 +3886,8 @@ function celebrate(stg){
     if(namePrompt){
       namePrompt.style.display="flex";
       var inp=document.getElementById("cerNameInput");
-      if(inp){ inp.value=""; setTimeout(function(){ inp.focus(); },50); }
+      if(inp){ inp.value=""; inp.classList.remove("input-error"); setTimeout(function(){ inp.focus(); },50); }
+      var errEl=document.getElementById("cerNameError"); if(errEl) errEl.style.display="none";
     }
     if(cerBtn) cerBtn.style.display="none";
   } else {
@@ -3477,7 +3904,14 @@ function closeCeremony(){ var ov=document.getElementById("ceremony"); if(ov) ov.
 function confirmHatchName(){
   var inp=document.getElementById("cerNameInput");
   var v=((inp&&inp.value)||"").trim().slice(0,14);
-  S.custom.name = v || "InfoPet";
+  if(!v){
+    // A name is required at hatching, not an optional default — show why
+    // instead of silently continuing as "InfoPet".
+    if(inp){ inp.classList.add("input-error"); inp.focus(); }
+    var errEl=document.getElementById("cerNameError"); if(errEl) errEl.style.display="block";
+    return;
+  }
+  S.custom.name = v;
   saveV4();
   renderGrowth();
   setThought("👋 Hi, I'm "+petName()+"!");
@@ -3546,7 +3980,7 @@ var DASH_QUICK=[
   {icon:"🍽️", label:"Feed",    btn:"btn-feed",    col:"var(--feed-col)"},
   {icon:"🧹", label:"Clean",   btn:"btn-clean",   col:"var(--clean-col)"},
   {icon:"🚶", label:"Explore", btn:"btn-explore", col:"#4dd8f0"},
-  {icon:"🎮", label:"Detect",  btn:"btn-play",    col:"var(--play-col)"},
+  {icon:"🎮", label:"Play",    btn:"btn-play",    col:"var(--play-col)"},
   {icon:"💊", label:"Rethink", btn:"btn-heal",    col:"var(--heal-col)"},
   {icon:"📚", label:"Learn",   btn:"btn-train",   col:"var(--train-col)"}
 ];
@@ -3640,7 +4074,6 @@ function updateReadout(){
   document.getElementById("moodVal").textContent=S.mood;
   document.getElementById("stateVal").textContent=STATE_LABEL[st];
   document.getElementById("streakVal").textContent=S.streak;
-  var streakPill=document.getElementById("headerStreakVal"); if(streakPill) streakPill.textContent=S.streak;
   var floatMood=document.getElementById("floatMoodFill"); if(floatMood) floatMood.style.width=S.mood+"%";
   var tb=document.getElementById("thoughtBar");
   var dep=(S.companion&&typeof S.companion.dependency==="number")?S.companion.dependency:0;
@@ -3759,7 +4192,18 @@ function renderJournal(){
 }
 
 // ─── MOOD DELTA ───────────────────────────────────────────
-function delta(d){ S.mood=Math.max(0,Math.min(100,S.mood+d)); updateReadout(); if(d>0) registerBooster(S.mode||null); }
+// Heavy AI-companion reliance now has a real cost, not just different
+// thought-bubble text: past dependency 80, the pet is visibly getting its
+// reassurance from the AI instead of the player, so the player's own good
+// actions move the needle less — the mechanical version of "stops asking
+// you, asks the AI instead."
+function delta(d){
+  if(d>0){
+    var dep=(S.companion&&typeof S.companion.dependency==="number")?S.companion.dependency:0;
+    if(dep>=80) d=Math.round(d*0.6);
+  }
+  S.mood=Math.max(0,Math.min(100,S.mood+d)); updateReadout(); if(d>0) registerBooster(S.mode||null);
+}
 
 // ─── TRUST + BELIEF SYSTEM ──────────────────────────────────
 // Trust is the central mechanic: not "how healthy is the feed" but "how well
@@ -4007,7 +4451,7 @@ function loadV4(){
           S.v4.day += 1; S.v4.boostersToday = 0;
           S.v4.history.push(Math.round(S.v4.immunity));
           phone.done=[]; newQuest();
-          S.feed.tray=null; S.feed.stage=null;
+          S.feed.tray=null; S.feed.stage=null; S.feed.domain=null;
         }
       }
       if(d.life){ S.life = d.life; if(!S.life.badges) S.life.badges=[]; if(!S.life.correct) S.life.correct=0; if(!S.life.stats) S.life.stats={curiosity:0,criticalThinking:0,empathy:0,wisdom:0}; if(!S.life.diet) S.life.diet={reliable:0,learning:0,creative:0,community:0,fun:0,junk:0}; if(!S.life.personality) S.life.personality={scholar:0,artist:0,helper:0};
@@ -4094,12 +4538,26 @@ function renderQuest(){
   else { banner.style.display="none"; }
 }
 
+// A dominant personality (see PERSONALITY_THOUGHTS/topPers) isn't just
+// flavor text anymore — it now genuinely makes its matching mode a little
+// easier/more rewarding, the same "Bonus:" each personality already
+// advertises on its Profile card (renderPersonalityCard). Scholar rewards
+// Learn/Rethink, Artist rewards Detective, Helper rewards Clean.
+var PERSONALITY_MODE_MATCH = { scholar:["train","heal"], artist:["play"], helper:["clean"] };
+function dominantPersonalityBonus(){
+  var pers=(S.life&&S.life.personality)||{};
+  var top=Object.keys(pers).reduce(function(a,b){ return (pers[b]||0)>(pers[a]||0)?b:a; },"scholar");
+  if((pers[top]||0)<4) return 0; // needs to actually be a defined trait, not a near-even split
+  var matches=PERSONALITY_MODE_MATCH[top];
+  return (matches && matches.indexOf(S.mode)>=0) ? 1 : 0;
+}
 function registerBooster(modeKey){
   var practice = modeKey ? isPracticeMode(modeKey) : false;
   S.v4.boostersToday++;
-  S.v4.immunity = Math.min(100, S.v4.immunity + BOOST_PER_REP);
+  var bonus = dominantPersonalityBonus();
+  S.v4.immunity = Math.min(100, S.v4.immunity + BOOST_PER_REP + bonus);
   // CP per correct answer (small, consistent) — zero in practice mode
-  if(!practice) awardCP(3);
+  if(!practice) awardCP(3+bonus);
   // track for CT tier
   addCorrect();
   // habit badge based on mode (heal/train have their own specific badges, earned in their resolve functions)
@@ -4116,7 +4574,7 @@ function nextDay(){
   S.v4.immunity = Math.max(0, S.v4.immunity - OVERNIGHT_DECAY);
   S.v4.day++; S.v4.boostersToday=0;
   phone.done=[]; newQuest();
-  S.feed.tray=null; S.feed.stage=null;
+  S.feed.tray=null; S.feed.stage=null; S.feed.domain=null;
   journalUI.day=S.v4.day;
   renderImmunity(); renderQuest(); saveV4();
   addLog("🌙","Day "+ (S.v4.day-1) +" ended — fresh posts and a new Daily Quest are ready. Some resistance faded overnight; today's dose tops it back up.");
@@ -4438,15 +4896,20 @@ function drawSpark(){
 
 
 // ─── MODE SWITCHING ───────────────────────────────────────
-var MODES=["feed","clean","play","heal","train","explore","custom","default"];
+var MODES=["feed","clean","play","heal","train","explore","custom","trace","pause","perspectives","dilemma","hero","default"];
 function showMode(m){
   document.body.classList.toggle("idle-default", m==="default"); // idle in phone mode collapses the whole activity card, not just its content
+  // Only one phone-mode sheet (activity / device menu / device stats) is
+  // ever open at a time — opening a mode closes whichever picker sheet led
+  // to it, so sheets never end up stacked underneath one another.
+  if(m!=="default"){ hideDeviceMenu(); hideDeviceStats(); }
   MODES.forEach(function(id){
     var el=document.getElementById("mode-"+id);
     if(el) el.classList.toggle("hidden",id!==m);
   });
-  ["feed","clean","play","heal","train","explore","custom"].forEach(function(id){
+  ["feed","clean","play","heal","train","explore","custom","trace","pause","perspectives","dilemma","hero"].forEach(function(id){
     var b=document.getElementById("btn-"+id);
+    if(!b) return;
     b.classList.toggle("active",id===m);
     b.setAttribute("aria-pressed",id===m?"true":"false");
   });
@@ -4477,6 +4940,11 @@ document.getElementById("btn-heal").onclick=function(){ showMode("heal"); initHe
 document.getElementById("btn-train").onclick=function(){ showMode("train"); initLearn(); };
 document.getElementById("btn-explore").onclick=function(){ showMode("explore"); initExplore(); };
 document.getElementById("btn-custom").onclick=function(){ showMode("custom"); initCustom(); };
+document.getElementById("btn-trace").onclick=function(){ showMode("trace"); initScenario("trace"); };
+document.getElementById("btn-pause").onclick=function(){ showMode("pause"); initScenario("pause"); };
+document.getElementById("btn-perspectives").onclick=function(){ showMode("perspectives"); initScenario("perspectives"); };
+document.getElementById("btn-dilemma").onclick=function(){ showMode("dilemma"); initScenario("dilemma"); };
+document.getElementById("btn-hero").onclick=function(){ showMode("hero"); initScenario("hero"); };
 
 // ──────────────────────────────────────────────────────────
 // MODE: FEED — Tamagotchi-style snack tray (no quiz, just feed & react)
@@ -4484,10 +4952,46 @@ document.getElementById("btn-custom").onclick=function(){ showMode("custom"); in
 function feedTheme(){ return FEED_THEMES[((S.v4.day-1)+FEED_THEMES.length*100)%FEED_THEMES.length]; }
 function pickRandom(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
 function isHatchling(){ return stageIndex()===1; }
+// The feed's content grows up with the pet — same idea as everything else
+// in the game (Clean, evolution, etc.), just applied to what shows up on
+// the menu. Explorer keeps the original general mix (simple clickbait,
+// memes, everyday news); Thinker introduces content built to actively
+// fool you (AI fakes, fabricated quotes, misleading charts); Guardian
+// reframes it around having a following of your own to be responsible
+// with. Egg never reaches Feed at all, so it isn't a case here.
+function feedTier(){
+  var i=stageIndex();
+  if(i<=1) return "hatchling";
+  if(i===2) return "explorer";
+  if(i===3) return "thinker";
+  return "guardian";
+}
+var FEED_DOMAIN_POOLS={
+  tv:{ healthy:TV_HEALTHY_SNACKS, treat:TV_TREAT_SNACKS, junk:TV_JUNK_SNACKS },
+  school:{ healthy:SCHOOL_HEALTHY_SNACKS, treat:SCHOOL_TREAT_SNACKS, junk:SCHOOL_JUNK_SNACKS },
+  ai:{ healthy:AI_HEALTHY_SNACKS, treat:AI_TREAT_SNACKS, junk:AI_JUNK_SNACKS },
+  friends:{ healthy:FRIENDS_HEALTHY_SNACKS, treat:FRIENDS_TREAT_SNACKS, junk:FRIENDS_JUNK_SNACKS },
+  community:{ healthy:COMMUNITY_HEALTHY_SNACKS, treat:COMMUNITY_TREAT_SNACKS, junk:COMMUNITY_JUNK_SNACKS }
+};
 function buildSnackTray(){
+  // A picked non-social domain (TV/School/AI/Friends/Community) overrides
+  // the age-tiered Social Feed pools entirely — those five are flat, one
+  // pool each, not tiered by stage.
+  var domain=S.feed.domain;
+  if(domain && FEED_DOMAIN_POOLS[domain]){
+    var dp=FEED_DOMAIN_POOLS[domain];
+    var dTray=[pickRandom(dp.healthy), pickRandom(dp.treat), pickRandom(dp.junk)];
+    for(var k=dTray.length-1;k>0;k--){ var m=Math.floor(Math.random()*(k+1)); var tmp2=dTray[k]; dTray[k]=dTray[m]; dTray[m]=tmp2; }
+    return dTray;
+  }
+  var tier=feedTier();
   var healthy, treat, junk;
-  if(isHatchling()){
+  if(tier==="hatchling"){
     healthy=pickRandom(BABY_HEALTHY_SNACKS); treat=pickRandom(BABY_TREAT_SNACKS); junk=pickRandom(BABY_JUNK_SNACKS);
+  } else if(tier==="thinker"){
+    healthy=pickRandom(THINKER_HEALTHY_SNACKS); treat=pickRandom(TREAT_SNACKS); junk=pickRandom(THINKER_JUNK_SNACKS);
+  } else if(tier==="guardian"){
+    healthy=pickRandom(GUARDIAN_HEALTHY_SNACKS); treat=pickRandom(GUARDIAN_TREAT_SNACKS); junk=pickRandom(GUARDIAN_JUNK_SNACKS);
   } else {
     var isRare = Math.random() < 0.12;
     healthy = isRare ? pickRandom(RARE_SNACKS) : pickRandom(HEALTHY_SNACKS);
@@ -4499,21 +5003,65 @@ function buildSnackTray(){
   return tray;
 }
 
+// Domain choice only applies once the pet is old enough to be exploring
+// beyond one feed (matches the same Explorer threshold everything else
+// verification-related uses) — Egg/Hatchling go straight to gentle baby
+// content, no picker to navigate yet.
 function initFeed(){
   if(S.feed.tray && S.feed.stage==="tray"){ renderSnackTray(); return; }
+  if(stageIndex()>=2 && !S.feed.domain){
+    S.feed.stage="domain";
+    renderDomainPicker();
+    return;
+  }
   S.feed.tray = buildSnackTray();
   S.feed.stage = "tray";
   renderSnackTray();
 }
 
+function renderDomainPicker(){
+  var body=document.getElementById("feedBody");
+  body.innerHTML="";
+  var p=document.createElement("p"); p.className="snack-prompt";
+  p.innerHTML="<strong>“Where should we check today?”</strong><br>🌍 Media doesn't only live in one place — pick where InfoPet looks.";
+  body.appendChild(p);
+  var grid=document.createElement("div"); grid.className="feed-domain-grid";
+  FEED_DOMAINS.forEach(function(d){
+    var b=document.createElement("button"); b.className="feed-domain-card";
+    b.innerHTML="<span class='fd-icon'>"+d.icon+"</span><span class='fd-name'>"+d.name+"</span><span class='fd-desc'>"+d.desc+"</span>";
+    b.onclick=function(){ S.feed.domain=d.key; S.feed.tray=buildSnackTray(); S.feed.stage="tray"; renderSnackTray(); };
+    grid.appendChild(b);
+  });
+  body.appendChild(grid);
+}
+
+var FEED_DOMAIN_PROMPTS={
+  tv:"<strong>“Let's see what's on TV.”</strong><br>📺 News and ads, same screen — worth telling apart.",
+  school:"<strong>“What's going on at school today?”</strong><br>🏫 Classmates, teachers, and the occasional shortcut.",
+  ai:"<strong>“Let's ask the AI Assistant.”</strong><br>🤖 Useful — as long as you still check its work.",
+  friends:"<strong>“What are my friends saying?”</strong><br>👥 Some of it's true, some of it's just... going around.",
+  community:"<strong>“What's happening around the neighborhood?”</strong><br>🌳 Local news moves differently than the internet does."
+};
 function renderSnackTray(){
   var body=document.getElementById("feedBody");
   var th=feedTheme();
   body.innerHTML="";
+  if(stageIndex()>=2){
+    var back=document.createElement("button"); back.className="feed-switch-source"; back.textContent="← switch source";
+    back.onclick=function(){ S.feed.domain=null; S.feed.stage="domain"; S.feed.tray=null; renderDomainPicker(); };
+    body.appendChild(back);
+  }
   body.appendChild(dietMeterEl());
   var p=document.createElement("p"); p.className="snack-prompt";
-  if(isHatchling()){
+  var tier=feedTier(), domain=S.feed.domain;
+  if(domain && FEED_DOMAIN_PROMPTS[domain]){
+    p.innerHTML=FEED_DOMAIN_PROMPTS[domain];
+  } else if(tier==="hatchling"){
     p.innerHTML="<strong>“I'm a hungry little hatchling — feed me something gentle!”</strong><br>🍼 Soft foods and calm little videos, just right for a baby bird.";
+  } else if(tier==="thinker"){
+    p.innerHTML="<strong>“I'm old enough now that not everything I see is real...”</strong><br>🕵️ The menu's trickier these days — fakes are getting harder to spot.";
+  } else if(tier==="guardian"){
+    p.innerHTML="<strong>“People actually listen when I post now.”</strong><br>🛡️ What shows up isn't just for me anymore — it's what I'd be putting out there too.";
   } else {
     p.innerHTML="<strong>“I'm hungry! What should we learn today?”</strong><br>"+th.icon+" Today's menu has a "+th.name.toLowerCase()+" twist.";
   }
@@ -5193,6 +5741,185 @@ function renderLearnDone(){
 }
 
 // ──────────────────────────────────────────────────────────
+// SHARED SCENARIO ENGINE — powers Trace / Pause / Perspectives /
+// Digital Dilemmas / Community Hero. Each teaches a different MIL habit
+// (source-tracing, resisting impulsive sharing, weighing viewpoints,
+// ethical judgment, community correction) instead of five re-skins of
+// "spot the fake" — but they all share the exact card+choice+verdict shape
+// Clean already proved out (.mod-card/.mod-actions/.mod-btn/.verdict/
+// .explain — no new CSS), so one engine renders all five instead of five
+// near-duplicate copies of the same rendering code.
+// "graded" games have a right answer (item.ok, checked against a shared,
+// fixed option set — see g.options). Digital Dilemmas isn't graded: every
+// option is its own bespoke choice with its own outcome text, since real
+// ethical calls rarely have one correct answer.
+// ──────────────────────────────────────────────────────────
+var TRACE_OPTS=[
+  {key:"credible", icon:"✅", label:"Credible enough to trust"},
+  {key:"verify",   icon:"🔎", label:"Can't tell yet — verify first"},
+  {key:"not",      icon:"❌", label:"Not credible — don't trust it"}
+];
+var TRACE_DATA=[
+  { text:"“Coffee cures cancer — doctors don't want you to know!” — posted by an anonymous blog with no author listed.", ok:["not"], why:"No named author, no citation, and a claim this big — there's nothing here to actually trace back to. Treat it as not credible until a real source backs it up." },
+  { text:"“New vaccine approved for children under 5” — published on your national health ministry's official website.", ok:["credible"], why:"An official government health agency is exactly the kind of source that can back up a claim like this — that's about as traceable as information gets." },
+  { text:"“Local river flooding overnight” — shared by a verified regional news account, with photos and a named reporter.", ok:["credible"], why:"A named reporter, a verifiable outlet, and photos to match — this traces to a real, accountable source." },
+  { text:"“Scientists discover cure for aging” — a screenshot of a tweet, account since deleted, no link to any study.", ok:["not"], why:"A deleted account and no link means this claim can't be traced to anything at all — screenshots aren't sources." },
+  { text:"“New study links screen time to sleep problems” — a headline you saw shared by three different friends today.", ok:["verify"], why:"Multiple people sharing something doesn't make it traceable — it just means it's popular. Find the actual study before deciding how much to trust it." },
+  { text:"“This actor secretly passed away” — a message forwarded from a group chat, original sender unknown.", ok:["not"], why:"Forwarded messages lose their trail fast. With no original source and no name attached, there's nothing to trace — and no reason to believe it yet." },
+  { text:"“Local school announces new uniform policy” — posted on the school's own official page, dated and signed by the principal.", ok:["credible"], why:"Straight from the source that would actually make this decision, dated and signed — that's a clean, traceable origin." },
+  { text:"“Company X caught faking user reviews” — a viral thread citing ‘insider sources’ with no names or evidence shown.", ok:["verify"], why:"‘Insider sources’ with nothing shown isn't a trace — it's a placeholder for one. Worth checking if any real outlet has independently confirmed it before believing it." }
+];
+var PAUSE_OPTS=[
+  {key:"share",    icon:"📤", label:"Share it right now"},
+  {key:"search",   icon:"🔍", label:"Search if it's already been reported"},
+  {key:"comments", icon:"💬", label:"Read the comments/replies first"},
+  {key:"wait",     icon:"⏳", label:"Wait before doing anything"}
+];
+var PAUSE_DATA=[
+  { text:"“BREAKING: local mall evacuated right now!!” — no outlet name, just a shaky video and a scary caption.", ok:["search"], why:"Big breaking news is exactly when everyone else is checking too — a quick search would show if any real outlet is reporting it before you spread an unconfirmed video further." },
+  { text:"Your pet just saw: “Share this before it gets deleted!!” about a shocking new law.", ok:["wait","search"], why:"Manufactured urgency is a manipulation tactic, not a real deadline. A minute of waiting or a quick search costs nothing — sharing something false spreads instantly and can't be un-shared." },
+  { text:"A post claims a celebrity said something outrageous — only a screenshot of text, no video or quote source.", ok:["comments"], why:"Screenshots of text are trivial to fake. Checking replies first often surfaces someone who already found the original (or debunked it) before you repeat it." },
+  { text:"“You won't believe what just happened to [public figure]” — dramatic tone, zero specifics.", ok:["search"], why:"Vague drama with no specifics is built to make you click and share on emotion alone. A search takes seconds and tells you if there's anything real behind it." },
+  { text:"A weather alert claims a storm is hitting your exact town within the hour — posted by an account you don't recognize.", ok:["search"], why:"For anything with real safety stakes, go straight to an official weather source — don't let an unfamiliar account be the one deciding whether you act." },
+  { text:"“This company is scamming everyone, I have proof!!” — an angry post with photos attached, no context given.", ok:["comments","wait"], why:"Photos without context can mean almost anything. Reading further discussion or just waiting for more of the story prevents you from amplifying an incomplete accusation." },
+  { text:"A friend forwards a message: “Forward this to everyone you know right now!!”", ok:["wait"], why:"“Forward to everyone immediately” is the oldest chain-message pressure tactic there is — the honest response is to just not act on that instruction at all." },
+  { text:"Your pet is excited: “Look, definitive proof that [thing you already believed] is true!!”", ok:["search","comments"], why:"Content that perfectly confirms what you already think is exactly when to slow down most — that excitement is often the sign your guard is lowest, not that the claim is strongest." }
+];
+var PERSPECTIVES_OPTS=[
+  {key:"confirm",   icon:"🎯", label:"Trust whichever matches what I already thought"},
+  {key:"all",       icon:"⚖️", label:"Consider what all sides might be getting right"},
+  {key:"loud",      icon:"📢", label:"Trust whichever has the most shares or reaction"},
+  {key:"suppress",  icon:"🤐", label:"Assume the quietest account is secretly the true one"}
+];
+var PERSPECTIVES_DATA=[
+  { text:"A new mall opened downtown, replacing an old community garden.<br><br>👤 <em>Shopper:</em> “Finally, somewhere new to hang out!”<br>👤 <em>Longtime resident:</em> “We lost a space that mattered to a lot of us.”<br>👤 <em>Mall developer:</em> “This brings jobs and investment to the area.”", ok:["all"], why:"All three are being honest about their own experience — the mall really did bring something and take something away. The full picture needs all three, not just the loudest one." },
+  { text:"A viral video shows a heated argument at a protest.<br><br>👤 <em>Protester:</em> “We were peaceful the whole time.”<br>👤 <em>Bystander:</em> “It got tense, but nobody I saw started it.”<br>👤 <em>Shop owner nearby:</em> “My window got broken — I don't know by who.”", ok:["all"], why:"A single 15-second clip can't hold all of this. Each account adds something real the video alone doesn't show." },
+  { text:"A student was suspended after a classroom incident.<br><br>👤 <em>Student:</em> “I was defending myself.”<br>👤 <em>Teacher:</em> “It looked unprovoked from where I stood.”<br>👤 <em>Classmate:</em> “There was history between them before this.”", ok:["all"], why:"Discipline decisions almost always have more context than a headline. Weighing all three accounts gets you closer to what actually happened than trusting just one." },
+  { text:"A company laid off staff the same week it announced record profits.<br><br>👤 <em>Laid-off employee:</em> “They didn't need to do this.”<br>👤 <em>Company statement:</em> “We're restructuring for long-term stability.”<br>👤 <em>Industry analyst:</em> “This is common after a merger, not necessarily bad faith.”", ok:["all"], why:"The employee's pain, the company's framing, and the analyst's context can all be true at once — that's what makes it worth holding all three, not picking a villain." },
+  { text:"A historical monument is being removed from a town square.<br><br>👤 <em>Supporter of removal:</em> “It glorifies something harmful.”<br>👤 <em>Opponent:</em> “It's part of our history, good or bad.”<br>👤 <em>Historian:</em> “Both reactions are common when a symbol's meaning has shifted over time.”", ok:["all"], why:"This is exactly the kind of issue where flattening it to one side loses what's actually being debated. The historian's framing helps hold the other two together." },
+  { text:"A popular streamer apologizes on camera after backlash over a joke.<br><br>👤 <em>Fan:</em> “People are overreacting, it was a joke.”<br>👤 <em>Critic:</em> “Words like that have real impact.”<br>👤 <em>The streamer:</em> “I didn't think it through — I'm sorry.”", ok:["all"], why:"Intent, impact, and accountability are three separate, real things — you don't have to pick only one of these three people to believe." },
+  { text:"A neighborhood is split over a new bike lane replacing street parking.<br><br>👤 <em>Cyclist:</em> “This makes the street so much safer.”<br>👤 <em>Shop owner:</em> “I'm losing customers who used to park out front.”<br>👤 <em>City planner:</em> “Accident rates usually drop within a year of lanes like this.”", ok:["all"], why:"Safety, business, and long-term data are all legitimate lenses on the same change — the disagreement isn't about facts, it's about which tradeoff matters most to each person." },
+  { text:"An online creator is accused of copying another creator's idea.<br><br>👤 <em>Original creator:</em> “This is clearly based on my work.”<br>👤 <em>Accused creator:</em> “I've never even seen their content.”<br>👤 <em>Third creator, uninvolved:</em> “Honestly, this idea's been done by a lot of people before either of them.”", ok:["all"], why:"A third, uninvolved perspective often reveals context neither side facing off can see on their own — that's part of why more than one account matters." }
+];
+var HERO_OPTS=[
+  {key:"explain", icon:"🧑‍🏫", label:"Gently explain and share a reliable source"},
+  {key:"callout", icon:"😤", label:"Call them out publicly for being wrong"},
+  {key:"silent",  icon:"🙊", label:"Say nothing"},
+  {key:"reshare", icon:"🔁", label:"Share it further since it's already out there"}
+];
+var HERO_DATA=[
+  { text:"Your grandmother shares a health rumor in the family group chat, tagging you and asking if it's true.", ok:["explain"], why:"A calm, kind correction with a real source respects her while still protecting the family from spreading it further — public call-outs mostly just make people defensive." },
+  { text:"A younger cousin reposts an AI-generated image, genuinely convinced it's a real photo.", ok:["explain"], why:"Naming specific tells (and where to check) teaches them to catch the next one themselves — way more useful than just saying “that's fake.”" },
+  { text:"A neighbor in a community forum keeps sharing scam “free prize” links, not realizing what they are.", ok:["explain"], why:"They're not being careless on purpose — a private, specific heads-up helps without embarrassing them in front of the whole group." },
+  { text:"A classmate is spreading a rumor about another student that you know isn't true.", ok:["explain"], why:"Speaking up for the person being talked about, calmly and with what you actually know, is the version of this that helps rather than just adding more heat." },
+  { text:"An old post you know is outdated keeps getting recirculated in a local community group as if it's current news.", ok:["explain"], why:"A quick, friendly note that it's outdated (with a current source) stops the cycle without shaming whoever reshared it this time." },
+  { text:"Someone in a hobby forum is confidently giving other members factually wrong advice.", ok:["explain"], why:"Correcting the information for the room — not attacking the person — helps everyone reading, not just the one person who was wrong." },
+  { text:"A friend is about to send money after a message claiming they've won a prize they never entered for.", ok:["explain"], why:"This one has real stakes — explaining the scam pattern directly and urgently protects them from actual harm, still without shaming them for almost falling for it." },
+  { text:"A community post is getting review-bombed by people who clearly haven't read what actually happened.", ok:["explain"], why:"Adding the missing context publicly helps other readers who are about to make the same mistake — that's community correction working as intended." }
+];
+var DILEMMA_DATA=[
+  { text:"A friend used AI to write their entire homework essay and asked you not to tell the teacher.", options:[
+      {label:"Tell them you won't report it, but explain why it's worth doing themselves", outcome:"Respecting the friendship while being honest about your own view is a real middle ground — you didn't become their moderator, but you didn't pretend it was fine either."},
+      {label:"Report it to the teacher directly", outcome:"This protects the classroom's honesty, but it's worth knowing it may cost the friendship — there wasn't a version of this with zero cost."},
+      {label:"Say nothing and move on", outcome:"Sometimes this really is the right call — not everything is yours to fix. Just notice if this becomes your answer to everything, not only this once."}
+    ] },
+  { text:"Someone's private photos got leaked into a group chat you're in.", options:[
+      {label:"Delete them immediately and don't forward to anyone, even to “warn” others", outcome:"This is the choice that actually limits harm — every forward, even a well-meaning one, spreads it further."},
+      {label:"Screenshot it in case it becomes relevant later", outcome:"This feels responsible but isn't — keeping a copy of a non-consensual leak still causes harm, even if you never share it."},
+      {label:"Tell the person privately that it's circulating, so they know", outcome:"Giving them the choice to respond — report it, ask people to delete it — respects that it's their situation to handle, not yours to manage for them."}
+    ] },
+  { text:"An AI tool finished the last third of your essay when you got stuck, and you're not sure if that counts as cheating.", options:[
+      {label:"Rewrite that section yourself before submitting", outcome:"This keeps the final work genuinely yours — using AI to get unstuck is different from submitting its output as your own thinking."},
+      {label:"Submit it as-is, since you wrote most of it", outcome:"“Most of it” is doing a lot of work in that sentence — worth being honest with yourself about which parts are actually your thinking."},
+      {label:"Ask your teacher what their AI policy actually allows", outcome:"When you're not sure, asking directly is almost always better than guessing and hoping it doesn't come up."}
+    ] },
+  { text:"You realize you shared a fake news story yesterday, and it already has several likes from people you know.", options:[
+      {label:"Post a correction and delete the original", outcome:"This is uncomfortable but it's the responsible move — the people who saw the fake version deserve to see it corrected too."},
+      {label:"Quietly delete it and hope no one noticed", outcome:"This limits further spread, but the people who already saw and believed it never learn it wasn't true — the correction is the part that actually matters."},
+      {label:"Leave it up since it's already out there anyway", outcome:"This is the one option that keeps actively misinforming people — “it's already out there” isn't a reason to leave it, it's a reason to fix it faster."}
+    ] },
+  { text:"A family member keeps sharing conspiracy content, and it's starting to strain your relationship with them.", options:[
+      {label:"Keep the relationship open and pick your moments to gently push back", outcome:"Slower, but people rarely change their mind because they were cornered — staying in the relationship keeps the door open."},
+      {label:"Stop engaging with that topic with them entirely", outcome:"A reasonable boundary for your own wellbeing — just notice this protects you, it doesn't actually address the content itself."},
+      {label:"Send them fact-checks every time they post something", outcome:"Well-intentioned, but a constant stream of corrections often just makes people dig in harder — worth watching whether it's actually landing."}
+    ] },
+  { text:"A stranger asks you to leave a fake 5-star review for their new small business “just this once.”", options:[
+      {label:"Decline, even though it feels like a small favor", outcome:"Fake reviews mislead every future customer who relies on them — “small” and “just this once” are how this kind of thing normalizes."},
+      {label:"Leave the review since it's a small business trying to get by", outcome:"The sympathy is understandable, but the review still misleads real customers making real decisions — the size of the business doesn't change that."},
+      {label:"Offer to leave an honest review instead, if you've actually tried it", outcome:"This is the version that still helps them without misleading anyone — genuine, specific reviews are worth more than inflated ones anyway."}
+    ] }
+];
+var SCENARIO_GAMES={
+  trace:        { icon:"🧭", name:"Trace",        villain:"🌫️ The Untraceable Rumor",   graded:true,  options:TRACE_OPTS,        data:TRACE_DATA,        statKey:"criticalThinking" },
+  pause:        { icon:"⏸️", name:"Pause",        villain:"⏱️ The Share-Now Impulse",    graded:true,  options:PAUSE_OPTS,        data:PAUSE_DATA,        statKey:"wisdom" },
+  perspectives: { icon:"🌐", name:"Perspectives", villain:"📖 The One-Sided Story",      graded:true,  options:PERSPECTIVES_OPTS, data:PERSPECTIVES_DATA, statKey:"empathy" },
+  dilemma:      { icon:"⚖️", name:"Digital Dilemmas", graded:false, data:DILEMMA_DATA, statKey:"wisdom" },
+  hero:         { icon:"🛡️", name:"Community Hero", villain:"🌀 The Spreading Confusion", graded:true,  options:HERO_OPTS,         data:HERO_DATA,         statKey:"empathy" }
+};
+function shuffledSlice(pool, count){
+  var arr=pool.slice();
+  for(var i=arr.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)); var t=arr[i]; arr[i]=arr[j]; arr[j]=t; }
+  return arr.slice(0, Math.min(count, arr.length));
+}
+function initScenario(key){
+  var g=SCENARIO_GAMES[key]; if(!g) return;
+  var prac=enterMode(key);
+  S[key]={ queue: shuffledSlice(g.data, 6), idx:0, correctCount:0, done:false, prac:prac };
+  var body=document.getElementById(key+"Body"); if(!body) return;
+  body.innerHTML=(prac?practiceBanner(key):"")+"<div id='"+key+"CardZone'></div>";
+  renderScenarioCard(key);
+}
+function renderScenarioCard(key){
+  var g=SCENARIO_GAMES[key], st=S[key];
+  var zone=document.getElementById(key+"CardZone"); if(!zone) return;
+  var item=st.queue[st.idx];
+  if(!item){ completeScenario(key); return; }
+  var optsHtml = g.graded
+    ? g.options.map(function(o){ return "<button class='mod-btn' data-act='"+o.key+"'>"+o.icon+" "+o.label+"</button>"; }).join("")
+    : item.options.map(function(o,i){ return "<button class='mod-btn' data-act='"+i+"'>"+o.label+"</button>"; }).join("");
+  zone.innerHTML="<div class='mod-card'>"+item.text+"</div><div class='mod-actions'>"+optsHtml+"</div><div class='scenario-feedback'></div>";
+  zone.querySelectorAll(".mod-btn").forEach(function(btn){
+    btn.onclick=function(){ resolveScenario(key, btn.dataset.act); };
+  });
+}
+function resolveScenario(key, action){
+  var g=SCENARIO_GAMES[key], st=S[key];
+  var item=st.queue[st.idx];
+  var zone=document.getElementById(key+"CardZone");
+  var fb=zone.querySelector(".scenario-feedback");
+  if(g.graded){
+    var correct=item.ok.indexOf(action)>=0;
+    if(correct){
+      st.correctCount++;
+      if(!st.prac){ delta(4); nudgeTrust(2); bumpStat(g.statKey,1); }
+    } else if(!st.prac){ delta(-2); nudgeTrust(-1); }
+    if(fb) fb.innerHTML="<div class='verdict "+(correct?"good":"bad")+"'>"+(correct?"✅ Good call":"🤔 Not quite")+"</div><p class='explain'>"+item.why+"</p>";
+  } else {
+    var opt=item.options[parseInt(action,10)];
+    st.correctCount++;
+    if(!st.prac){ delta(3); bumpStat(g.statKey,1); }
+    if(fb) fb.innerHTML="<div class='verdict good'>💭 "+opt.label+"</div><p class='explain'>"+opt.outcome+"</p>";
+  }
+  if(!st.prac) questBump('mode');
+  zone.querySelectorAll(".mod-btn").forEach(function(b){ b.disabled=true; });
+  st.idx++;
+  var nb=document.createElement("button"); nb.className="btn btn-primary"; nb.style="width:100%;margin-top:8px;";
+  nb.textContent = st.idx<st.queue.length ? "Next →" : "Finish →";
+  nb.onclick=function(){ renderScenarioCard(key); };
+  zone.appendChild(nb);
+}
+function completeScenario(key){
+  var g=SCENARIO_GAMES[key], st=S[key];
+  st.done=true;
+  var body=document.getElementById(key+"Body");
+  var extra = g.graded
+    ? "<p class='villain-beat'>"+g.villain+" fades — "+st.correctCount+"/"+st.queue.length+" good calls.</p>"
+    : "<p class='villain-beat'>Every one of those was a real judgment call — there's no perfect score here, only practice.</p>";
+  body.innerHTML="<div class='verdict good'>✅ "+g.name+" round complete!</div>"+extra;
+  saveV4();
+}
+
+// ──────────────────────────────────────────────────────────
 // MODE: AI COMPANION — recognizing love-bombing, isolation & dependency
 // ──────────────────────────────────────────────────────────
 var COMPANION_ROUNDS=[
@@ -5539,8 +6266,9 @@ function initCustom(){
 
 // ─── RESET ────────────────────────────────────────────────
 document.getElementById("resetBtn").onclick=function(){
+  if(!window.confirm("Are you sure? This resets your InfoPet and all progress — this can't be undone.")) return;
   S.mood=55; S.streak=0; S.mode=null; S.journal=[]; S.journalNotes={}; S.journalDates={}; journalUI.day=null;
-  S.feed={doneIds:[],active:null,checks:0,tray:null,stage:null};
+  S.feed={doneIds:[],active:null,checks:0,tray:null,stage:null,domain:null};
   S.clean={cleaned:0,total:0,done:false,nestDone:false};
   S.play={q:0,score:0,timer:null,timerLeft:0,done:false};
   S.heal={i:0,score:0,done:false};
@@ -6033,6 +6761,10 @@ if(cerBtn) cerBtn.onclick=closeCeremony;
 var cerNameBtn=document.getElementById("cerNameBtn"), cerNameInput=document.getElementById("cerNameInput");
 if(cerNameBtn) cerNameBtn.onclick=confirmHatchName;
 if(cerNameInput) cerNameInput.addEventListener("keydown", function(e){ if(e.key==="Enter") confirmHatchName(); });
+if(cerNameInput) cerNameInput.addEventListener("input", function(){
+  cerNameInput.classList.remove("input-error");
+  var errEl=document.getElementById("cerNameError"); if(errEl) errEl.style.display="none";
+});
 var achBtn=document.getElementById("achBtn"), achModal=document.getElementById("achModal"), achClose=document.getElementById("achClose");
 if(achBtn) achBtn.onclick=function(){ achModal.classList.add("show"); achModal.setAttribute("aria-hidden","false"); };
 if(achClose) achClose.onclick=function(){ achModal.classList.remove("show"); achModal.setAttribute("aria-hidden","true"); };
@@ -6058,14 +6790,24 @@ if(helpModal) helpModal.addEventListener("click", function(e){ if(e.target===hel
 if(questClose) questClose.onclick=hideQuestModal;
 if(questModal) questModal.addEventListener("click", function(e){ if(e.target===questModal) hideQuestModal(); });
 
-// BOTTOM NAV (phone mode) — reuses the exact same triggers as the physical
-// buttons and device menu, just a second, always-visible entry point.
-var bnHome=document.getElementById("bottomNavHome"), bnQuest=document.getElementById("bottomNavQuest"),
-    bnAch=document.getElementById("bottomNavAch"), bnJournal=document.getElementById("bottomNavJournal");
-if(bnHome) bnHome.onclick=function(){ deviceBack(); showMode("default"); };
-if(bnQuest) bnQuest.onclick=showQuestModal;
-if(bnAch) bnAch.onclick=function(){ var b=document.getElementById("achBtn"); if(b) b.click(); };
-if(bnJournal) bnJournal.onclick=function(){ var b=document.getElementById("journalBtn"); if(b) b.click(); };
+// BOTTOM NAV — hidden in phone mode now (the ☰ menu covers the same
+// ground), but the nav markup and these bindings are left in place rather
+// than deleted, in case it's wanted back.
+var bnCare=document.getElementById("bottomNavCare"), bnClean=document.getElementById("bottomNavClean"),
+    bnExplore=document.getElementById("bottomNavExplore"), bnConnect=document.getElementById("bottomNavConnect"),
+    bnProfile=document.getElementById("bottomNavProfile");
+if(bnCare) bnCare.onclick=function(){ showDeviceMenu("care"); };
+if(bnClean) bnClean.onclick=function(){ var b=document.getElementById("btn-clean"); if(b) b.click(); };
+if(bnExplore) bnExplore.onclick=function(){ showDeviceMenu("explore"); };
+if(bnConnect) bnConnect.onclick=function(){ showDeviceMenu("connect"); };
+if(bnProfile) bnProfile.onclick=function(){ showDeviceStats(); switchStatsTab("profile"); };
+var deviceMenuCloseBtn=document.getElementById("deviceMenuClose"), deviceStatsCloseBtn=document.getElementById("deviceStatsClose"),
+    activityCloseBtn=document.getElementById("activityClose"), topQuestBtn=document.getElementById("topQuestBtn"), topHelpBtn=document.getElementById("topHelpBtn");
+if(deviceMenuCloseBtn) deviceMenuCloseBtn.onclick=hideDeviceMenu;
+if(deviceStatsCloseBtn) deviceStatsCloseBtn.onclick=hideDeviceStats;
+if(activityCloseBtn) activityCloseBtn.onclick=function(){ showMode("default"); };
+if(topQuestBtn) topQuestBtn.onclick=showQuestModal;
+if(topHelpBtn) topHelpBtn.onclick=showHelp;
 function placeQuestSection(){
   var quest=document.querySelector(".quest"), anchor=document.getElementById("questAnchor"), modalBody=document.getElementById("questModalBody");
   if(!quest||!anchor||!modalBody) return;
