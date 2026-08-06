@@ -1202,24 +1202,10 @@ body.tutorial-active:not(.sheet-open) .readout { position: relative; z-index: 30
     flex: 0 1 auto; min-height: 0; margin: 6px auto auto; max-width: min(92vw, 380px); width: 100%;
     transition: max-width .3s ease, margin .3s ease;
   }
-  /* Any open sheet — an action (Feed, Clean, etc: body:not(.idle-default))
-     or the ☰ menu / 💚 stats sheet (body.sheet-open, toggled in JS since
-     those don't touch S.mode/idle-default at all) — claims a good chunk of
-     the bottom of the actual viewport, fixed, regardless of where the
-     centered device happens to land. Without the bottom nav reserving
-     space, the device can center low enough for that to cover it.
-     Shrinking + pinning it right up under the header whenever any sheet
-     is open guarantees clearance instead of hoping they never overlap. */
-  body:not(.idle-default) .page:not(.landscape) > .device,
-  body.sheet-open .page:not(.landscape) > .device {
-    max-width: min(64vw, 240px); margin: 0 auto auto;
-  }
-  /* ...except for the ☰ menu specifically — keep the shell at its normal
-     size instead of shrinking when just the menu (not Feed/Clean/etc, not
-     the Status sheet) is open. */
-  body.menu-open .page:not(.landscape) > .device {
-    max-width: min(92vw, 380px); margin: 6px auto auto;
-  }
+  /* The device shell no longer shrinks for any open sheet — activity
+     sheets (Feed/Clean/etc), the Status/Profile/Journey panel, and the ☰
+     menu all now overlay on top at their normal fixed-bottom size instead
+     of the shell resizing/repositioning to make room for them. */
   .page:not(.landscape) > #questAnchor { display: none; }
 }
 /* Header pills — tied to the phone/web toggle itself, not screen size, same
