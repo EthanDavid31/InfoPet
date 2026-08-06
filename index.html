@@ -193,9 +193,8 @@ body {
   margin: 0;
   line-height: 1.5;
 }
-/* Header pills — real stage/streak data, phone mode only (web mode already
-   shows this in the Profile/Status tabs, no need to duplicate it). */
-.header-pills { display: none; gap: 8px; justify-content: center; margin-top: 10px; }
+/* Header pills — stage + streak, shown in both phone and desktop layouts. */
+.header-pills { display: flex; gap: 8px; justify-content: center; margin-top: 10px; }
 .header-pill {
   font-family: var(--font-mono); font-size: 10.5px; font-weight: 700; color: var(--text);
   background: var(--card); border: 1px solid var(--card-border); border-radius: 999px;
@@ -204,6 +203,111 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .header-sparkle, .header-title { animation: none !important; }
 }
+
+/* FIRST-TIME INTRO TUTORIAL — darkened full-screen backdrop with a
+   Pokémon-style dialogue box pinned to the bottom. */
+.intro-overlay {
+  position: fixed; inset: 0; z-index: 3050; /* above .tutorial-spotlight (3000) so the textbox is never painted over by its dark shadow */
+  background: rgba(0,0,0,0.5);
+  display: none; align-items: flex-end; justify-content: center;
+  padding: 20px; box-sizing: border-box; cursor: pointer;
+}
+.intro-overlay.show { display: flex; }
+/* Spotlight-mode steps: the overlay's own dark fill turns off, since the
+   spotlight circle's box-shadow (below) becomes the thing painting the
+   50%-dark backdrop everywhere except the highlighted feature. */
+.intro-overlay.spotlight-mode { background: transparent; }
+.tutorial-spotlight {
+  position: fixed; z-index: 3000; pointer-events: none;
+  display: none;
+  border-radius: 6px; /* blocky corners, not a smooth circle */
+  box-shadow: 0 0 0 9999px rgba(0,0,0,0.5); /* this paints the dark backdrop; the box itself stays fully transparent */
+  border: 4px solid var(--screen-glow);
+  outline: 2px solid #0d2b1e;
+  outline-offset: -6px;
+  /* stepped, not eased — a jumpy retro snap between features instead of a smooth glide */
+  transition: left 0.4s steps(6, jump-end), top 0.4s steps(6, jump-end),
+              width 0.4s steps(6, jump-end), height 0.4s steps(6, jump-end);
+}
+.tutorial-spotlight.show { display: block; }
+@media (prefers-reduced-motion: reduce) {
+  .tutorial-spotlight { transition: none !important; }
+}
+/* Mood/State/Streak readout stays fully lit above the dark tour overlay —
+   but only on the main device screen. When a sheet (Status/Profile/Journey
+   or the menu) is open, it should stay behind that sheet as normal, or it
+   visually leaks through and overlaps the sheet's own content. */
+body.tutorial-active:not(.sheet-open) .readout { position: relative; z-index: 3010; }
+/* Applied directly to the real element being explained, in addition to the
+   moving spotlight overlay — guarantees a visible highlight even in edge
+   cases where the overlay's position lags behind (e.g. a sheet still
+   settling into its final layout). */
+.tutorial-target-glow {
+  outline: 4px solid var(--screen-glow) !important;
+  outline-offset: 3px !important;
+  box-shadow: 0 0 18px 4px rgba(18,192,108,0.65) !important;
+  border-radius: 10px !important;
+}
+   — used when the spotlighted panel (e.g. the Status/Profile/Journey sheet)
+   takes up most of the screen and would otherwise sit behind/under it. */
+.intro-overlay.box-top { align-items: flex-start; padding-top: 54px; }
+.intro-textbox {
+  width: 100%; max-width: 480px;
+  background: var(--card); border: 2px solid var(--card-border); border-radius: 16px;
+  padding: 18px 20px 14px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  opacity: 1;
+}
+.intro-text {
+  margin: 0; font-family: var(--font-mono); font-size: 14.5px; line-height: 1.6;
+  color: var(--text); min-height: 3.4em;
+}
+.intro-text .intro-cursor { animation: introBlink 0.8s steps(1) infinite; }
+.intro-text .intro-brand {
+  font-family: var(--font-px); font-size: 1.05em; letter-spacing: 0.03em;
+  background: linear-gradient(90deg, #ffd166 0%, #ff8bb3 35%, #a78bfa 65%, #4dd8f0 100%);
+  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; color: transparent;
+}
+.intro-text .intro-green { color: var(--screen-glow); font-weight: 700; }
+@keyframes introBlink { 50% { opacity: 0; } }
+.intro-tap-hint {
+  margin: 8px 0 0; font-family: var(--font-mono); font-size: 11px; color: var(--text-soft, #9a9fd0);
+  text-align: right; opacity: 0; transition: opacity 0.3s;
+}
+.intro-tap-hint.show { opacity: 1; animation: introBlink 1.2s steps(1) infinite; }
+.intro-confetti-piece { position: absolute; top: -20px; opacity: 0.95; will-change: transform, opacity; }
+@keyframes introConfettiFall {
+  0%   { transform: translateY(0) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(115vh) rotate(540deg); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .intro-tap-hint.show, .intro-text .intro-cursor { animation: none !important; }
+}
+
+/* Custom confirm dialog (used for Reset) — centered, matches app style */
+.confirm-overlay {
+  position: fixed; inset: 0; z-index: 3200;
+  background: rgba(0,0,0,0.55);
+  display: none; align-items: center; justify-content: center;
+  padding: 20px; box-sizing: border-box;
+}
+.confirm-overlay.show { display: flex; }
+.confirm-box {
+  width: 100%; max-width: 340px;
+  background: var(--card); border: 2px solid var(--card-border); border-radius: 16px;
+  padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); text-align: center;
+  opacity: 1;
+}
+.confirm-text {
+  margin: 0 0 16px; font-family: var(--font-mono); font-size: 13.5px; line-height: 1.6; color: var(--text);
+}
+.confirm-actions { display: flex; gap: 10px; justify-content: center; }
+.confirm-btn {
+  font-family: var(--font-mono); font-size: 12.5px; font-weight: 700; border-radius: 10px;
+  padding: 9px 18px; cursor: pointer; border: 2px solid var(--card-border); background: var(--tint);
+  color: var(--text);
+}
+.confirm-btn.confirm-ok { background: #ff4d6d; border-color: #ff4d6d; color: #fff; }
+.confirm-btn:hover { filter: brightness(1.1); }
 
 /* DEVICE — soft glossy plastic shell, rounder than the old toy-gadget look */
 .device {
@@ -1780,6 +1884,29 @@ body:not(.web-mode) #topHelpBtn { top:52px !important; }
 })();
 </script>
 <div class="bg-fx" id="bgFx" aria-hidden="true"></div>
+<!-- FIRST-TIME INTRO TUTORIAL (Step 1) — only shown once, ever, on a
+     visitor's very first load. Gated by a localStorage flag so closing
+     and reopening the app later never shows it again. -->
+<div class="intro-overlay" id="introOverlay" aria-hidden="true">
+  <div class="intro-textbox">
+    <p class="intro-text" id="introText"></p>
+    <p class="intro-tap-hint" id="introTapHint">▼ tap to continue</p>
+  </div>
+</div>
+<div class="tutorial-spotlight" id="tutorialSpotlight" aria-hidden="true"></div>
+<!-- Custom reset confirmation — a real window.confirm() dialog can be
+     silently suppressed in sandboxed/embedded browser contexts (in-app
+     browsers, preview iframes), which made Reset look broken even though
+     the handler itself ran fine. This dialog always works. -->
+<div class="confirm-overlay" id="resetConfirmOverlay" aria-hidden="true">
+  <div class="confirm-box">
+    <p class="confirm-text">Are you sure? This resets your InfoPet and all progress — this can't be undone.</p>
+    <div class="confirm-actions">
+      <button class="confirm-btn confirm-cancel" id="resetCancelBtn">Cancel</button>
+      <button class="confirm-btn confirm-ok" id="resetOkBtn">Reset</button>
+    </div>
+  </div>
+</div>
 <button id="topQuestBtn" class="orient-toggle phone-top-btn" style="right:228px" aria-label="Daily quest" title="Daily quest">⭐</button>
 <button id="topHelpBtn" class="orient-toggle phone-top-btn" style="right:174px" aria-label="Help" title="Help">❓</button>
 <button id="themeToggle" class="orient-toggle" style="right:120px" aria-label="Toggle light / dark mode" title="Light / dark mode">🌙</button>
@@ -1796,6 +1923,7 @@ body:not(.web-mode) #topHelpBtn { top:52px !important; }
     <p class="header-sub">A companion that grows as <strong style="color:var(--screen-glow)">you</strong> do.<br>Raise a thoughtful mind — curious, careful, kind.</p>
     <div class="header-pills" id="headerPills" aria-hidden="true">
       <span class="header-pill"><span id="headerStageEmblem">🥚</span> <b id="headerStageName">Info Egg</b></span>
+      <span class="header-pill">🔥 <b id="headerStreakVal">0</b> day streak</span>
     </div>
   </header>
 
@@ -3388,7 +3516,14 @@ function finishHatch(){
 function initEggStage(){
   if(!S.life || S.life.stage!=="egg") return;
   setThought("… …");
-  setTimeout(startHatchAnimation, 5000);
+  var HATCH_MS = 2*60*1000;      // 2 minutes as an egg before hatching
+  var WARNING_LEAD_MS = 15*1000; // heads-up shown 15s before it actually hatches
+  setTimeout(function(){
+    if(!S.life || S.life.stage!=="egg") return; // already hatched some other way
+    setThought("Wait, something is happening...");
+    if(typeof SFX!=="undefined" && SFX.chirp) SFX.chirp();
+  }, Math.max(0, HATCH_MS - WARNING_LEAD_MS));
+  setTimeout(startHatchAnimation, HATCH_MS);
 }
 
 // ─── EVOLUTION LIFECYCLE ──────────────────────────────────
@@ -4074,6 +4209,7 @@ function updateReadout(){
   document.getElementById("moodVal").textContent=S.mood;
   document.getElementById("stateVal").textContent=STATE_LABEL[st];
   document.getElementById("streakVal").textContent=S.streak;
+  var hsv=document.getElementById("headerStreakVal"); if(hsv) hsv.textContent=S.streak;
   var floatMood=document.getElementById("floatMoodFill"); if(floatMood) floatMood.style.width=S.mood+"%";
   var tb=document.getElementById("thoughtBar");
   var dep=(S.companion&&typeof S.companion.dependency==="number")?S.companion.dependency:0;
@@ -6265,8 +6401,11 @@ function initCustom(){
 }
 
 // ─── RESET ────────────────────────────────────────────────
-document.getElementById("resetBtn").onclick=function(){
-  if(!window.confirm("Are you sure? This resets your InfoPet and all progress — this can't be undone.")) return;
+// window.confirm() can be silently blocked in sandboxed/embedded browser
+// contexts (in-app browsers, preview iframes) — when that happens the
+// button looks broken, since the code after it just never runs. The
+// custom #resetConfirmOverlay dialog below always works instead.
+function doInfoPetReset(){
   S.mood=55; S.streak=0; S.mode=null; S.journal=[]; S.journalNotes={}; S.journalDates={}; journalUI.day=null;
   S.feed={doneIds:[],active:null,checks:0,tray:null,stage:null,domain:null};
   S.clean={cleaned:0,total:0,done:false,nestDone:false};
@@ -6288,6 +6427,21 @@ document.getElementById("resetBtn").onclick=function(){
   renderJournal();
   renderTrust(); renderImmunity(); renderGrowth(); renderBadges(); renderQuest(); renderCT();
   updateReadout();
+  initEggStage();       // restart the egg's hatch-countdown, not just its data
+  playIntroTutorial();  // replay the Step 1 welcome message + confetti
+}
+document.getElementById("resetBtn").onclick=function(){
+  var ov = document.getElementById("resetConfirmOverlay");
+  if(ov) ov.classList.add("show");
+};
+var resetCancelBtnEl = document.getElementById("resetCancelBtn");
+var resetOkBtnEl = document.getElementById("resetOkBtn");
+if(resetCancelBtnEl) resetCancelBtnEl.onclick = function(){
+  document.getElementById("resetConfirmOverlay").classList.remove("show");
+};
+if(resetOkBtnEl) resetOkBtnEl.onclick = function(){
+  document.getElementById("resetConfirmOverlay").classList.remove("show");
+  doInfoPetReset();
 };
 
 // ══════════════════════════════════════════════════════════
@@ -6816,18 +6970,26 @@ function placeQuestSection(){
   else { modalBody.appendChild(quest); }
 }
 // AUTO LAYOUT DETECTION — picks landscape/web-mode for desktop-sized
-// windows (Electron) and portrait/phone-mode for narrow mobile screens
-// (Capacitor), on top of the existing manual 🖥️/📱 toggle. Runs once on
-// load; the toggle button still works afterward for manual override.
+// windows and portrait/phone-mode for narrow mobile screens. Re-checks
+// live whenever the window is resized (or a tablet rotates), not just once
+// on load, since there's no manual toggle button anymore to fall back on.
 (function autoDetectLayout(){
   var pageEl = document.querySelector(".page");
   if(!pageEl) return;
-  var isWide = window.matchMedia("(min-width: 900px)").matches;
-  if(isWide){
-    pageEl.classList.add("landscape");
-    document.body.classList.add("web-mode");
-    if(orientBtn) orientBtn.textContent = "📱";
+  var mq = window.matchMedia("(min-width: 900px)");
+  function applyLayout(isWide){
+    var wasLandscape = pageEl.classList.contains("landscape");
+    if(isWide === wasLandscape) return; // no change, skip re-render work
+    pageEl.classList.toggle("landscape", isWide);
+    document.body.classList.toggle("web-mode", isWide);
+    if(orientBtn) orientBtn.textContent = isWide ? "📱" : "🖥️";
+    placeQuestSection();
+    renderDeviceMenu();
+    renderDashCard();
   }
+  applyLayout(mq.matches);
+  if(mq.addEventListener) mq.addEventListener("change", function(e){ applyLayout(e.matches); });
+  else if(mq.addListener) mq.addListener(function(e){ applyLayout(e.matches); }); // older Safari fallback
 })();
 placeQuestSection();
 // Garden is a place, not a stat — reached from the menu now, not buried in
@@ -6948,6 +7110,262 @@ if(diaryNextBtn) diaryNextBtn.onclick=function(){ turnJournalPage("newer"); };
 showMode("default");
 updateReadout();
 initEggStage();
+
+// INTRO TUTORIAL (Step 1) ----------------------------------------------
+// Types out a welcome line Pokémon-style, pops confetti once it's done,
+// then waits for a tap to dismiss. playIntroTutorial() is reusable — it
+// runs on someone's very first visit (gated by a localStorage flag so it
+// never repeats on its own), and also replays on demand after a Reset.
+function typewriterInto(el, segments, speed, onDone){
+  // segments: array of {text, cls}. cls (optional) wraps that chunk in a
+  // span with the given class — e.g. "intro-brand" for the pixel-font
+  // gradient, "intro-green" for plain solid green. Omit cls for plain text.
+  // Returns a controller with .skip() to instantly finish typing early.
+  el.textContent = "";
+  var cursor = document.createElement("span");
+  cursor.className = "intro-cursor";
+  cursor.textContent = "▌";
+  el.appendChild(cursor);
+  var segIdx = 0, charIdx = 0, styledSpan = null, done = false, timer = null;
+  function finishInstantly(){
+    if(done) return;
+    done = true;
+    if(timer) clearTimeout(timer);
+    while(segIdx < segments.length){
+      var seg = segments[segIdx];
+      var remaining = seg.text.slice(charIdx);
+      if(seg.cls){
+        var span = document.createElement("span");
+        span.className = seg.cls;
+        span.textContent = remaining;
+        cursor.insertAdjacentElement("beforebegin", span);
+      } else {
+        cursor.insertAdjacentText("beforebegin", remaining);
+      }
+      segIdx++; charIdx = 0;
+    }
+    cursor.remove();
+    if(onDone) onDone();
+  }
+  (function step(){
+    if(done) return;
+    if(segIdx >= segments.length){ finishInstantly(); return; }
+    var seg = segments[segIdx];
+    if(charIdx === 0 && seg.cls){
+      styledSpan = document.createElement("span");
+      styledSpan.className = seg.cls;
+      cursor.insertAdjacentElement("beforebegin", styledSpan);
+    }
+    if(charIdx < seg.text.length){
+      var ch = seg.text.charAt(charIdx);
+      if(seg.cls) styledSpan.appendChild(document.createTextNode(ch));
+      else cursor.insertAdjacentText("beforebegin", ch);
+      charIdx++;
+      timer = setTimeout(step, speed);
+    } else {
+      segIdx++; charIdx = 0; styledSpan = null;
+      step();
+    }
+  })();
+  return { skip: finishInstantly };
+}
+function popConfetti(){
+  var colors = ["#ffd166","#12c06c","#ff6b9d","#4ecdc4","#a78bfa","#ff9f43"];
+  var holder = document.createElement("div");
+  holder.style.cssText = "position:fixed; inset:0; pointer-events:none; z-index:3100; overflow:hidden;";
+  document.body.appendChild(holder);
+  for(var i=0; i<80; i++){
+    var piece = document.createElement("span");
+    piece.className = "intro-confetti-piece";
+    var size = 6 + Math.random()*6;
+    piece.style.left = (Math.random()*100) + "%";
+    piece.style.width = size + "px";
+    piece.style.height = (size*0.42) + "px";
+    piece.style.background = colors[Math.floor(Math.random()*colors.length)];
+    piece.style.transform = "rotate(" + Math.floor(Math.random()*360) + "deg)";
+    piece.style.animation = "introConfettiFall " + (4.5 + Math.random()*2.5) + "s ease-in " + (Math.random()*0.6) + "s forwards";
+    holder.appendChild(piece);
+  }
+  setTimeout(function(){ holder.remove(); }, 8000);
+}
+// TUTORIAL STEPS ---------------------------------------------------------
+// Each step: text (typewriter segments), target (function returning the
+// element to spotlight, or null for a plain full-dark step), before (setup
+// to run first, e.g. opening a panel/tab so there's something to point at),
+// and confetti (true to pop confetti once that step finishes typing).
+var TUTORIAL_STEPS = [
+  { // Step 1 — welcome
+    text: [
+      {text:"Hello, welcome to ", brand:false},
+      {text:"InfoPet", cls:"intro-brand"},
+      {text:" — a companion that grows as you do.", brand:false}
+    ],
+    target: null, confetti: true
+  },
+  { // Step 2 — the pet itself
+    text: [{text:"This is your InfoPet. Feed it good, reliable information and care for it well, and it will grow into a thoughtful, careful being.", brand:false}],
+    target: function(){ return document.querySelector(".screen-bezel"); }
+  },
+  { // Step 3 — first point at the physical button, then open it and explain the Status tab
+    phases: [
+      {
+        text: [{text:"See this button in the bottom-right of your device? Tap it to open your Status, Profile & Journey panel.", brand:false}],
+        target: function(){ return document.getElementById("tamaMid"); },
+        waitForTap: true
+      },
+      {
+        before: function(){ showDeviceStats(); switchStatsTab("status"); },
+        text: [{text:"This is your Status tab — it shows your Trust score, how well your pet judges who and what to believe, plus its MIL Skills: curiosity, critical thinking, empathy, and wisdom.", brand:false}],
+        target: null,
+        boxPosition: "top"
+      }
+    ]
+  },
+  { // Step 4 — Profile tab (panel already open from Step 3)
+    text: [{text:"The Profile tab is your pet's identity — its current stage, personality, the mix of content it's been fed, and its beliefs. Swipe through the cards to see it all.", brand:false}],
+    before: function(){ showDeviceStats(); switchStatsTab("profile"); },
+    target: null,
+    boxPosition: "top"
+  },
+  { // Step 5 — Journey tab, emphasis on the daily quest (plain green text, no highlight)
+    text: [
+      {text:"The Journey tab tracks how far your pet has come: badges earned and its Digital Resilience shield. Most important — ", brand:false},
+      {text:"Today's Quest", cls:"intro-green"},
+      {text:": completing it is the biggest way to earn CP, the points that grow your pet to its next stage. Don't skip it!", brand:false}
+    ],
+    before: function(){ showDeviceStats(); switchStatsTab("journey"); },
+    target: null,
+    boxPosition: "top"
+  },
+  { // Step 6 — exit the Status panel, back to the main page, then the menu button
+    text: [{text:"Right beside it is the menu button. It'll unlock once your pet hatches — that's where you'll Feed, Sleep, and Clean to take care of it.", brand:false}],
+    before: function(){ hideDeviceStats(); },
+    target: function(){ return document.getElementById("tamaLeft"); }
+  },
+  { // Step 7 — closing
+    text: [{text:"That's everything you need to get started. Your egg will hatch any minute now — go explore the app while you wait, and raise a thoughtful companion!", brand:false}],
+    before: function(){ hideDeviceStats(); hideDeviceMenu(); },
+    target: null, confetti: true
+  }
+];
+var lastGlowEl = null;
+function positionSpotlight(el){
+  var spot = document.getElementById("tutorialSpotlight");
+  var overlay = document.getElementById("introOverlay");
+  if(!spot || !overlay) return;
+  if(lastGlowEl && lastGlowEl !== el) lastGlowEl.classList.remove("tutorial-target-glow");
+  if(!el){
+    spot.classList.remove("show");
+    overlay.classList.remove("spotlight-mode");
+    lastGlowEl = null;
+    return;
+  }
+  var r = el.getBoundingClientRect();
+  var pad = 10;
+  spot.style.left = (r.left - pad) + "px";
+  spot.style.top = (r.top - pad) + "px";
+  spot.style.width = (r.width + pad*2) + "px";
+  spot.style.height = (r.height + pad*2) + "px";
+  overlay.classList.add("spotlight-mode");
+  spot.classList.add("show");
+  el.classList.add("tutorial-target-glow");
+  lastGlowEl = el;
+}
+function runTutorialStep(i){
+  var step = TUTORIAL_STEPS[i];
+  var overlay = document.getElementById("introOverlay");
+  var textEl = document.getElementById("introText");
+  var hintEl = document.getElementById("introTapHint");
+  if(!overlay || !textEl) return;
+  if(!step){
+    try{ localStorage.setItem("infopet_intro_seen", "1"); }catch(e){}
+    overlay.classList.remove("show", "spotlight-mode", "box-top");
+    document.body.classList.remove("tutorial-active");
+    var spot = document.getElementById("tutorialSpotlight");
+    if(spot) spot.classList.remove("show");
+    if(lastGlowEl){ lastGlowEl.classList.remove("tutorial-target-glow"); lastGlowEl = null; }
+    return;
+  }
+  document.body.classList.add("tutorial-active");
+  overlay.classList.add("show");
+  if(hintEl) hintEl.classList.remove("show");
+  // Normalize: a step is either {phases:[...]} or a single-phase shorthand
+  // ({text, target, before}) — treat both the same way below.
+  var phases = step.phases || [{ text: step.text, target: step.target, before: step.before }];
+  function runPhase(pIdx){
+    var phase = phases[pIdx];
+    // brief delay lets any panel-open animation finish before we measure
+    // the target's position, so the spotlight lands in the right spot.
+    // before() runs right here (not earlier) so there's no gap between
+    // opening the panel and measuring it.
+    setTimeout(function(){
+      if(phase.before){
+        try{ phase.before(); }catch(e){ console.error("Tutorial step before() failed:", e); }
+      }
+      measureAndType();
+    }, 80);
+    function measureAndType(retry){
+      var target = phase.target ? phase.target() : null;
+      if(target){
+        var r = target.getBoundingClientRect();
+        if(r.width < 2 && r.height < 2 && !retry){
+          // target exists but hasn't actually rendered/opened yet — give it
+          // one more moment (e.g. a sheet whose "show" class only just got
+          // added) rather than spotlighting a degenerate 0x0 box.
+          setTimeout(function(){ measureAndType(true); }, 150);
+          return;
+        }
+      }
+      positionSpotlight(target);
+      overlay.classList.toggle("box-top", phase.boxPosition === "top");
+      var isLastPhase = (pIdx === phases.length - 1);
+      var typingDone = false;
+      var typer = typewriterInto(textEl, phase.text, 32, function(){
+        typingDone = true;
+        if(!isLastPhase && !phase.waitForTap){
+          overlay.removeEventListener("click", onTap);
+          setTimeout(function(){ runPhase(pIdx+1); }, 900); // auto-advance, no tap needed mid-step
+          return;
+        }
+        if(step.confetti && isLastPhase) popConfetti();
+        if(hintEl) hintEl.classList.add("show");
+        // onTap stays attached — now that typingDone is true, the next tap advances instead of skipping
+      });
+      // One persistent handler for the whole phase: first tap (while typing)
+      // finishes the text instantly; the next tap (once typing is actually
+      // done) advances. Using a single handler gated on typingDone — instead
+      // of swapping in a second listener after typing completes — guarantees
+      // a single tap can never both skip AND advance at once.
+      function onTap(e){
+        if(e) e.stopPropagation();
+        if(!typingDone){ typer.skip(); return; }
+        overlay.removeEventListener("click", onTap);
+        if(isLastPhase) runTutorialStep(i+1);
+        else runPhase(pIdx+1);
+      }
+      overlay.addEventListener("click", onTap);
+    }
+  }
+  runPhase(0);
+}
+function playIntroTutorial(){ runTutorialStep(0); }
+(function firstVisitIntro(){
+  var seen = null, hasSave = false;
+  try{ seen = localStorage.getItem("infopet_intro_seen"); }catch(e){}
+  if(seen) return;
+  try{ hasSave = !!localStorage.getItem("infopet_v5"); }catch(e){}
+  // Genuinely brand-new visitor (no save file at all, not just a missing
+  // "seen" flag) — explicitly guarantee an egg start. The regular boot
+  // sequence above already calls initEggStage() once using the default
+  // state (which is "egg"), so this only needs to correct S.life directly
+  // if something ever changes that default — no second timer is armed here.
+  if(!hasSave && S.life){
+    S.life.stage = "egg";
+    renderGrowth();
+    updateReadout();
+  }
+  playIntroTutorial();
+})();
 
 // PWA — register service worker for offline caching + installability
 if("serviceWorker" in navigator){
