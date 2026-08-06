@@ -1217,6 +1217,12 @@ body.tutorial-active:not(.sheet-open) .readout { position: relative; z-index: 30
   body.sheet-open .page:not(.landscape) > .device {
     max-width: min(64vw, 240px); margin: 0 auto auto;
   }
+  /* ...except for the ☰ menu specifically — keep the shell at its normal
+     size instead of shrinking when just the menu (not Feed/Clean/etc, not
+     the Status sheet) is open. */
+  body.menu-open .page:not(.landscape) > .device {
+    max-width: min(92vw, 380px); margin: 6px auto auto;
+  }
   .page:not(.landscape) > #questAnchor { display: none; }
 }
 /* Header pills — tied to the phone/web toggle itself, not screen size, same
@@ -3336,6 +3342,7 @@ function renderDeviceMenu(onlyGroup){
 // (bottom ~50vh) can cover it exactly the same way the activity sheet did.
 function updateSheetOpenClass(){
   document.body.classList.toggle("sheet-open", deviceMenu.open || deviceStats.open);
+  document.body.classList.toggle("menu-open", deviceMenu.open);
 }
 function showDeviceMenu(onlyGroup){
   if(bedtime.active || (typeof phone!=='undefined' && phone.open)) return;
