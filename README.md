@@ -12,7 +12,7 @@ A digital companion that grows as you do. InfoPet is a Tamagotchi-style pet game
 - 📲 Installable as an app (PWA) — works offline
 
 ## Tech Stack
-Plain HTML, CSS, and JavaScript 
+HTML, CSS, and JavaScript 
 
 ## Install it
 Open the live link above, then:
