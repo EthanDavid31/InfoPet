@@ -1786,6 +1786,11 @@ body:not(.web-mode) .journal-book .journal-close {
      own color, like .br-ph, correctly inherit the phone's fixed light text
      instead of falling back to body's theme-flipping color */
   color: var(--text); }
+/* Browsers give <button> its own UA font instead of inheriting the page's —
+   .phone-screen sets Baloo 2 above, but every button inside it (.ph-back,
+   .ph-reply, .ph-home-btn, .ph-app, …) was still rendering in the system
+   default (Arial-ish on Windows) until this overrides it back to inherit. */
+.phone-screen button{ font-family:inherit; }
 .phone-screen::-webkit-scrollbar{ width:0; }
 .phone-home{ position:absolute; bottom:13px; left:50%; transform:translateX(-50%); width:42px; height:42px; border-radius:50%;
   background:radial-gradient(circle at 40% 35%, #f4f7ff, #cbd4ea 70%, #aeb9d6); border:3px solid #10141f; cursor:pointer;
@@ -1912,7 +1917,12 @@ body:not(.web-mode) .journal-book .journal-close {
    inline with surrounding text by default; specific contexts override
    width/height where a bigger or smaller icon reads better. */
 .px-ic{ display:inline-block; width:1em; height:1em; vertical-align:-0.15em; line-height:1; flex-shrink:0; }
-.px-ic svg{ display:block; width:100%; height:100%; }
+/* A thin dark halo around every icon shape — cheap insurance against the
+   icon's own fill landing on a same-hue background (the diet meter's
+   "Creativity" pill is the exact purple #c084fc the palette icon is
+   drawn in, which made it flat-out disappear before this). Subtle enough
+   to be invisible against the dark backgrounds most icons already sit on. */
+.px-ic svg{ display:block; width:100%; height:100%; filter:drop-shadow(0 0 0.6px rgba(0,0,0,0.65)) drop-shadow(0 0 0.6px rgba(0,0,0,0.65)); }
 .ph-friend-head{ display:none; } /* legacy — friendHead() no longer uses this, kept only so nothing errors if referenced */
 .ph-msg.ai{ display:flex; align-items:flex-end; gap:8px; max-width:92%; background:none; border:none; padding:0; margin:0 12px 10px; }
 .ph-msg.ai .ph-msg-ava{ width:28px; height:28px; border-radius:50%; overflow:hidden; flex-shrink:0; border:2px solid rgba(185,104,224,0.55); background:#1a1030; }
@@ -2388,7 +2398,6 @@ body:not(.web-mode) #orientToggle { top:94px !important; }
                     <div id="profileDietInsight"></div>
                   </div>
                 </div>
-                <div class="swipe-card"><div class="profile-card" id="companionCard"></div></div>
               </div>
               <div class="swipe-dots" id="profileDots"></div>
             </div>
@@ -4524,11 +4533,6 @@ var STAGE_REQUIRE = {
   thinker:  function(){ return STAGE_REQUIRE_LIST.thinker.every(function(r){ return r.get()>=r.need; }); },
   guardian: function(){ return STAGE_REQUIRE_LIST.guardian.every(function(r){ return r.get()>=r.need; }); }
 };
-var STAGE_REQUIRE_HINT = {
-  explorer: "Curiosity 40+ and 2 hatchling-world places visited",
-  thinker: "15 correct judgment calls, 3 sources explored, and 1 false belief corrected",
-  guardian: "30 correct judgment calls, 3 claims investigated, 1 claim traced to its source, 1 tactic identified, and a healthy AI boundary"
-};
 function stageReady(key){ var fn=STAGE_REQUIRE[key]; return !fn || fn(); }
 function stageIndex(){
   var idx=0;
@@ -4704,9 +4708,20 @@ function renderGrowth(){
     lab.textContent="Hatching any moment now…";
   } else if(next){
     var span=next.cp-stg.cp, into=S.life.cp-stg.cp;
-    frac=Math.max(0.03,Math.min(1,into/span));
+    var gpFrac=Math.max(0,Math.min(1,into/span));
+    // The bar tracks evolution readiness as a whole, not just GP — GP can
+    // cap out at 100% while behavioral requirements (see STAGE_REQUIRE_LIST)
+    // are still unmet, and a full-looking bar in that state reads as "done"
+    // when it isn't. Blending in how far the requirement checklist itself
+    // has progressed keeps the bar honest right up to actual evolution.
+    var reqs=STAGE_REQUIRE_LIST[next.key], reqFrac=1;
+    if(reqs && reqs.length){
+      var sum=0; reqs.forEach(function(r){ sum+=Math.max(0,Math.min(1,r.get()/r.need)); });
+      reqFrac=sum/reqs.length;
+    }
+    frac=Math.max(0.03,(gpFrac+reqFrac)/2);
     if(S.life.cp>=next.cp && !stageReady(next.key)){
-      lab.textContent=S.life.cp+" GP ready — now needs "+(STAGE_REQUIRE_HINT[next.key]||"more balanced growth")+" to evolve into "+next.name+".";
+      lab.textContent=S.life.cp+" GP · ready — a few more habits to evolve into "+next.name+".";
     } else {
       lab.textContent=S.life.cp+" GP · "+(next.cp-S.life.cp)+" more to "+next.name;
     }
@@ -4745,7 +4760,7 @@ function renderEvoChecklist(next){
   }
   if(reqs && reqs.length){
     html+=reqs.map(function(r){
-      var v=Math.max(0,Math.min(100,Math.round(r.get())));
+      var v=Math.max(0,Math.min(r.need,Math.round(r.get())));
       var ok=v>=r.need;
       return "<div class='evo-req"+(ok?" ok":"")+"'>"
         +"<div class='evo-req-top'><span class='evo-req-mark'>"+(ok?"✅":"❌")+"</span>"
@@ -5454,7 +5469,7 @@ function renderDashCard(){
     var d=(S.life&&S.life.diet)||{reliable:0,learning:0,creative:0,community:0,fun:0,junk:0};
     var segs=[{k:"reliable",c:"#4ade80"},{k:"learning",c:"#60a5fa"},{k:"creative",c:"#c084fc"},{k:"community",c:"#fb923c"},{k:"fun",c:"#f472b6"}];
     var total=segs.reduce(function(sum,s){ return sum+d[s.k]; },0);
-    if(total<=0){ dietBar.innerHTML="<span style='background:var(--tint-2);width:100%'></span>"; }
+    if(total<=0){ dietBar.innerHTML="<span style='width:100%;background:transparent;border:1.5px dashed var(--card-border);box-sizing:border-box;border-radius:999px'></span>"; }
     else { dietBar.innerHTML=segs.map(function(s){ var pct=Math.round(d[s.k]/total*100); return pct>0?"<span style='background:"+s.c+";width:"+pct+"%'></span>":""; }).join(""); }
     renderDietInsight(d, total, "dashDietInsight");
   }
@@ -5956,7 +5971,7 @@ function statRowHtml(m){
 }
 function renderStatBars(){
   var wrap=document.getElementById("statBars"); if(!wrap) return;
-  // A hatchling hasn't met ThinkSync yet (see renderCompanionCard's lock) —
+  // A hatchling hasn't met ThinkSync yet (it unlocks at Explorer) —
   // showing "Healthy AI Habits" before it's had a single chance to set a
   // boundary is misleading. Hide it here for now rather than showing a 0%
   // that reads like a failing grade.
@@ -6168,26 +6183,12 @@ function switchStatsTab(tab){
   var names={status:"statsPanelStatus",profile:"statsPanelProfile",journey:"statsPanelJourney"};
   document.querySelectorAll(".stats-panel").forEach(function(p){ p.classList.toggle("hidden", p.id!==names[tab]); });
 }
-// ThinkSync (the AI companion) doesn't unlock until Explorer — see
-// LOCKED_UNTIL_EXPLORER's "btn-phone" gate — so a hatchling has never met
-// it yet. Showing a fake dependency % before that would be lying to the
-// player about a stat that doesn't exist for their pet yet.
-function renderCompanionCard(){
-  var card=document.getElementById("companionCard"); if(!card) return;
-  if(isHatchling()){
-    card.innerHTML="<p class='status-card-label'>CURRENT COMPANION</p><p style='font-size:14px;font-weight:700;margin:4px 0 2px;color:var(--text-muted)'>🔒 Locked</p><p style='font-size:12.5px;color:var(--text-muted);margin:0'>"+petName()+" hasn't met ThinkSync yet — this unlocks at Explorer.</p>";
-    return;
-  }
-  var dep=(S.companion&&typeof S.companion.dependency==="number")?S.companion.dependency:50;
-  var tier = dep>=60?"Leaning on ThinkSync instead of thinking it through.":dep>=30?"Still forming its own opinions too.":"Mostly thinks for itself.";
-  card.innerHTML="<p class='status-card-label'>CURRENT COMPANION</p><p style='font-size:14px;font-weight:700;margin:4px 0 2px'>🤖 ThinkSync</p><p style='font-size:11.5px;color:var(--text-muted);margin:0'>"+tier+"</p>";
-}
 function renderProfileDiet(){
   var bar=document.getElementById("profileDietBar"); if(!bar) return;
   var d=(S.life&&S.life.diet)||{reliable:0,learning:0,creative:0,community:0,fun:0,junk:0};
   var segs=[{k:"reliable",c:"#4ade80"},{k:"learning",c:"#60a5fa"},{k:"creative",c:"#c084fc"},{k:"community",c:"#fb923c"},{k:"fun",c:"#f472b6"}];
   var total=segs.reduce(function(sum,s){ return sum+d[s.k]; },0);
-  if(total<=0){ bar.innerHTML="<span style='background:var(--tint-2);width:100%'></span>"; }
+  if(total<=0){ bar.innerHTML="<span style='width:100%;background:transparent;border:1.5px dashed var(--card-border);box-sizing:border-box;border-radius:999px'></span>"; }
   else { bar.innerHTML=segs.map(function(s){ var pct=Math.round(d[s.k]/total*100); return pct>0?"<span style='background:"+s.c+";width:"+pct+"%'></span>":""; }).join(""); }
   renderDietInsight(d, total, "profileDietInsight");
 }
@@ -6272,7 +6273,6 @@ function renderJourneyQuest(){
   };
 }
 function renderStatsExtra(){
-  renderCompanionCard();
   renderProfileDiet();
   renderJourneyBadges();
   renderJourneyQuest();
@@ -11590,158 +11590,169 @@ function P(){ return {px:[], bg:'#0e1418'}; }
 function rect(c,x,y,w,h,col){ c.px.push([x,y,col,w,h]); }
 function dot(c,x,y,col){ c.px.push([x,y,col,1,1]); }
 
-// ── PIXEL ICONS — small drawn-pixel icons, same shape-rendering:crispEdges
-// technique as pixelScene() above, sized to sit inline with text (1em
-// square) instead of pixelScene's full illustrated scenes. Every
-// occurrence of the emoji named in ICON_MAP below, anywhere in any
-// innerHTML InfoPet ever sets, becomes one of these instead — see
-// iconize()/the Element.prototype.innerHTML override further down.
-// 16x16 grid (up from an earlier 12x12 pass) — circular/curved shapes
-// (search, globe, target, faces, fruit, coins…) are generated from real
-// distance math (circleRows/ellipseRows/ringRows/crescentRows) rather
-// than hand-tuned row widths, which is what actually reads as "smooth"
-// at these sizes instead of blocky — a 12-wide circle only has room for
-// ~4 width-steps per quadrant; 16-wide roughly doubles that.
-var PXI_GRID = 16;
+// ── PIXEL ICONS — small drawn icons standing in for emoji everywhere
+// InfoPet sets innerHTML, keyed off ICON_MAP below (see iconize()/the
+// Element.prototype.innerHTML override further down). Each entry is a list
+// of primitives on a 24x24 viewBox — c/cs = filled/stroked circle, e =
+// filled ellipse, p/ps = filled/stroked path (real bezier curves, not a
+// rect grid), r = rounded rect, l = round-capped line, g = filled polygon.
+// Traces the actual silhouette of the thing being drawn (a magnifying
+// glass's ring + handle, a heart's two lobes, a flame's taper) rather than
+// approximating it from uniform grid cells, so icons stay recognizable at
+// 1em instead of reading as an abstract colored blob.
 function pxIcon(cells){
-  var out='<svg viewBox="0 0 '+PXI_GRID+' '+PXI_GRID+'" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges" aria-hidden="true" focusable="false">';
-  cells.forEach(function(p){ out+='<rect x="'+p[0]+'" y="'+p[1]+'" width="'+p[2]+'" height="'+p[3]+'" fill="'+p[4]+'"/>'; });
+  var out='<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">';
+  cells.forEach(function(p){
+    var t=p[0];
+    if(t==='c') out+='<circle cx="'+p[1]+'" cy="'+p[2]+'" r="'+p[3]+'" fill="'+p[4]+'"/>';
+    else if(t==='cs') out+='<circle cx="'+p[1]+'" cy="'+p[2]+'" r="'+p[3]+'" fill="none" stroke="'+p[4]+'" stroke-width="'+p[5]+'" stroke-linecap="round"/>';
+    else if(t==='e') out+='<ellipse cx="'+p[1]+'" cy="'+p[2]+'" rx="'+p[3]+'" ry="'+p[4]+'" fill="'+p[5]+'"/>';
+    else if(t==='p') out+='<path d="'+p[1]+'" fill="'+p[2]+'"/>';
+    else if(t==='ps') out+='<path d="'+p[1]+'" fill="none" stroke="'+p[2]+'" stroke-width="'+p[3]+'" stroke-linecap="round" stroke-linejoin="round"/>';
+    else if(t==='r') out+='<rect x="'+p[1]+'" y="'+p[2]+'" width="'+p[3]+'" height="'+p[4]+'" rx="'+p[5]+'" fill="'+p[6]+'"/>';
+    else if(t==='l') out+='<line x1="'+p[1]+'" y1="'+p[2]+'" x2="'+p[3]+'" y2="'+p[4]+'" stroke="'+p[5]+'" stroke-width="'+p[6]+'" stroke-linecap="round"/>';
+    else if(t==='g') out+='<polygon points="'+p[1]+'" fill="'+p[2]+'"/>';
+    else if(t==='raw') out+=p[1];
+  });
   return out+'</svg>';
 }
+
 var PX_ICONS = {
-  search: [[3,2,6,1,'#ffd166'],[2,3,2,1,'#ffd166'],[8,3,2,1,'#ffd166'],[2,4,1,1,'#ffd166'],[9,4,1,1,'#ffd166'],[2,5,1,1,'#ffd166'],[9,5,1,1,'#ffd166'],[2,6,1,1,'#ffd166'],[9,6,1,1,'#ffd166'],[2,7,1,1,'#ffd166'],[9,7,1,1,'#ffd166'],[2,8,2,1,'#ffd166'],[8,8,2,1,'#ffd166'],[3,9,6,1,'#ffd166'],[9,9,1,1,'#ffd166'],[10,10,2,2,'#ffd166'],[12,12,2,2,'#ffd166']],
-  globe: [[5,1,5,1,'#4a90c9'],[3,2,9,1,'#4a90c9'],[2,3,11,1,'#4a90c9'],[2,4,11,1,'#4a90c9'],[1,5,13,1,'#4a90c9'],[1,6,13,1,'#4a90c9'],[1,7,13,1,'#4a90c9'],[1,8,13,1,'#4a90c9'],[1,9,13,1,'#4a90c9'],[2,10,11,1,'#4a90c9'],[2,11,11,1,'#4a90c9'],[3,12,9,1,'#4a90c9'],[5,13,5,1,'#4a90c9'],[1,7,13,1,'#dbe4ea'],[7,1,1,1,'#dbe4ea'],[6,2,3,1,'#dbe4ea'],[6,3,3,1,'#dbe4ea'],[6,4,3,1,'#dbe4ea'],[5,5,5,1,'#dbe4ea'],[5,6,5,1,'#dbe4ea'],[5,7,5,1,'#dbe4ea'],[5,8,5,1,'#dbe4ea'],[5,9,5,1,'#dbe4ea'],[6,10,3,1,'#dbe4ea'],[6,11,3,1,'#dbe4ea'],[6,12,3,1,'#dbe4ea'],[7,13,1,1,'#dbe4ea']],
-  target: [[5,1,5,1,'#ff4d6d'],[3,2,9,1,'#ff4d6d'],[2,3,11,1,'#ff4d6d'],[2,4,11,1,'#ff4d6d'],[1,5,13,1,'#ff4d6d'],[1,6,13,1,'#ff4d6d'],[1,7,13,1,'#ff4d6d'],[1,8,13,1,'#ff4d6d'],[1,9,13,1,'#ff4d6d'],[2,10,11,1,'#ff4d6d'],[2,11,11,1,'#ff4d6d'],[3,12,9,1,'#ff4d6d'],[5,13,5,1,'#ff4d6d'],[6,3,3,1,'#f4f8fb'],[4,4,7,1,'#f4f8fb'],[4,5,7,1,'#f4f8fb'],[3,6,9,1,'#f4f8fb'],[3,7,9,1,'#f4f8fb'],[3,8,9,1,'#f4f8fb'],[4,9,7,1,'#f4f8fb'],[4,10,7,1,'#f4f8fb'],[6,11,3,1,'#f4f8fb'],[6,6,3,1,'#ff4d6d'],[6,7,3,1,'#ff4d6d'],[6,8,3,1,'#ff4d6d']],
-  sun: [[6,4,3,1,'#ffd166'],[5,5,5,1,'#ffd166'],[4,6,7,1,'#ffd166'],[4,7,7,1,'#ffd166'],[4,8,7,1,'#ffd166'],[5,9,5,1,'#ffd166'],[6,10,3,1,'#ffd166'],[7,0,2,2,'#ffd166'],[7,14,2,2,'#ffd166'],[0,7,2,2,'#ffd166'],[14,7,2,2,'#ffd166'],[2,2,2,2,'#ffd166'],[12,2,2,2,'#ffd166'],[2,12,2,2,'#ffd166'],[12,12,2,2,'#ffd166']],
-  moon: [[4,2,1,1,'#fff3b0'],[3,3,2,1,'#fff3b0'],[2,4,3,1,'#fff3b0'],[2,5,3,1,'#fff3b0'],[2,6,3,1,'#fff3b0'],[2,7,3,1,'#fff3b0'],[2,8,3,1,'#fff3b0'],[2,9,4,1,'#fff3b0'],[2,10,5,1,'#fff3b0'],[3,11,9,1,'#fff3b0'],[4,12,7,1,'#fff3b0']],
-  egg: [[5,2,5,1,'#f5f0e0'],[4,3,7,1,'#f5f0e0'],[3,4,9,1,'#f5f0e0'],[3,5,9,1,'#f5f0e0'],[2,6,11,1,'#f5f0e0'],[2,7,11,1,'#f5f0e0'],[2,8,11,1,'#f5f0e0'],[2,9,11,1,'#f5f0e0'],[2,10,11,1,'#f5f0e0'],[3,11,9,1,'#f5f0e0'],[3,12,9,1,'#f5f0e0'],[4,13,7,1,'#f5f0e0'],[5,14,5,1,'#f5f0e0']],
-  apple: [[5,3,5,1,'#c9432f'],[4,4,7,1,'#c9432f'],[3,5,9,1,'#c9432f'],[2,6,11,1,'#c9432f'],[2,7,11,1,'#c9432f'],[2,8,11,1,'#c9432f'],[2,9,11,1,'#c9432f'],[2,10,11,1,'#c9432f'],[2,11,11,1,'#c9432f'],[3,12,9,1,'#c9432f'],[4,13,7,1,'#c9432f'],[5,14,5,1,'#c9432f'],[9,2,2,3,'#4a7a3a'],[8,1,1,3,'#6a4a2a']],
-  plate: [[4,1,7,1,'#aebac2'],[3,2,9,1,'#aebac2'],[2,3,11,1,'#aebac2'],[1,4,13,1,'#aebac2'],[1,5,13,1,'#aebac2'],[1,6,13,1,'#aebac2'],[1,7,14,1,'#aebac2'],[1,8,13,1,'#aebac2'],[1,9,13,1,'#aebac2'],[1,10,13,1,'#aebac2'],[2,11,11,1,'#aebac2'],[3,12,9,1,'#aebac2'],[4,13,7,1,'#aebac2'],[6,2,3,1,'#f4f8fb'],[4,3,7,1,'#f4f8fb'],[3,4,9,1,'#f4f8fb'],[3,5,9,1,'#f4f8fb'],[2,6,11,1,'#f4f8fb'],[2,7,11,1,'#f4f8fb'],[2,8,11,1,'#f4f8fb'],[3,9,9,1,'#f4f8fb'],[3,10,9,1,'#f4f8fb'],[4,11,7,1,'#f4f8fb'],[6,12,3,1,'#f4f8fb']],
-  medal: [[6,1,1,4,'#3a6ea5'],[9,1,1,4,'#c23b3b'],[5,5,5,1,'#c9a227'],[4,6,7,1,'#c9a227'],[3,7,9,1,'#c9a227'],[3,8,9,1,'#c9a227'],[3,9,9,1,'#c9a227'],[3,10,9,1,'#c9a227'],[3,11,9,1,'#c9a227'],[3,12,9,1,'#c9a227'],[4,13,7,1,'#c9a227'],[5,14,5,1,'#c9a227'],[6,8,3,1,'#ffe9a8'],[5,9,5,1,'#ffe9a8'],[5,10,5,1,'#ffe9a8'],[6,11,3,1,'#ffe9a8']],
-  dotyellow: [[5,3,6,1,'#ffd166'],[4,4,8,1,'#ffd166'],[3,5,9,1,'#ffd166'],[3,6,9,1,'#ffd166'],[3,7,10,1,'#ffd166'],[3,8,9,1,'#ffd166'],[3,9,9,1,'#ffd166'],[4,10,8,1,'#ffd166'],[5,11,6,1,'#ffd166']],
-  dotgreen: [[5,3,6,1,'#06d6a0'],[4,4,8,1,'#06d6a0'],[3,5,9,1,'#06d6a0'],[3,6,9,1,'#06d6a0'],[3,7,10,1,'#06d6a0'],[3,8,9,1,'#06d6a0'],[3,9,9,1,'#06d6a0'],[4,10,8,1,'#06d6a0'],[5,11,6,1,'#06d6a0']],
-  dotred: [[5,3,6,1,'#ff4d6d'],[4,4,8,1,'#ff4d6d'],[3,5,9,1,'#ff4d6d'],[3,6,9,1,'#ff4d6d'],[3,7,10,1,'#ff4d6d'],[3,8,9,1,'#ff4d6d'],[3,9,9,1,'#ff4d6d'],[4,10,8,1,'#ff4d6d'],[5,11,6,1,'#ff4d6d']],
-  dotbrown: [[5,3,6,1,'#8a5a3a'],[4,4,8,1,'#8a5a3a'],[3,5,9,1,'#8a5a3a'],[3,6,9,1,'#8a5a3a'],[3,7,10,1,'#8a5a3a'],[3,8,9,1,'#8a5a3a'],[3,9,9,1,'#8a5a3a'],[4,10,8,1,'#8a5a3a'],[5,11,6,1,'#8a5a3a']],
-  pill: [[3,5,5,1,'#ff4d6d'],[2,6,7,1,'#ff4d6d'],[2,7,7,1,'#ff4d6d'],[2,8,7,1,'#ff4d6d'],[3,9,5,1,'#ff4d6d'],[8,5,4,1,'#f0f0f0'],[7,6,6,1,'#f0f0f0'],[6,7,8,1,'#f0f0f0'],[7,8,6,1,'#f0f0f0'],[8,9,4,1,'#f0f0f0']],
-  heart: [[3,3,5,1,'#ff4d6d'],[2,4,6,1,'#ff4d6d'],[2,5,7,1,'#ff4d6d'],[2,6,7,1,'#ff4d6d'],[2,7,6,1,'#ff4d6d'],[3,8,5,1,'#ff4d6d'],[8,3,5,1,'#ff4d6d'],[8,4,6,1,'#ff4d6d'],[7,5,7,1,'#ff4d6d'],[7,6,7,1,'#ff4d6d'],[8,7,6,1,'#ff4d6d'],[8,8,5,1,'#ff4d6d'],[2,6,12,3,'#ff4d6d'],[3,9,10,2,'#ff4d6d'],[4,11,8,1,'#ff4d6d'],[6,12,4,1,'#ff4d6d'],[7,13,2,1,'#ff4d6d']],
-  star: [[5,2,5,1,'#ffd166'],[4,3,7,1,'#ffd166'],[3,4,9,1,'#ffd166'],[3,5,9,1,'#ffd166'],[3,6,9,1,'#ffd166'],[3,7,9,1,'#ffd166'],[3,8,9,1,'#ffd166'],[4,9,7,1,'#ffd166'],[5,10,5,1,'#ffd166'],[1,8,3,2,'#ffd166'],[12,8,3,2,'#ffd166'],[0,10,3,2,'#ffd166'],[13,10,3,2,'#ffd166']],
-  sparkles: [[6,1,2,4,'#e8f4ff'],[6,11,2,4,'#e8f4ff'],[0,6,4,2,'#e8f4ff'],[12,6,4,2,'#e8f4ff'],[6,5,3,1,'#e8f4ff'],[5,6,5,1,'#e8f4ff'],[5,7,5,1,'#e8f4ff'],[5,8,5,1,'#e8f4ff'],[6,9,3,1,'#e8f4ff'],[12,1,1,1,'#ffd166'],[1,13,1,1,'#ffd166']],
-  face_neutral: [[5,1,5,1,'#f0c896'],[3,2,9,1,'#f0c896'],[2,3,11,1,'#f0c896'],[2,4,11,1,'#f0c896'],[1,5,13,1,'#f0c896'],[1,6,13,1,'#f0c896'],[1,7,13,1,'#f0c896'],[1,8,13,1,'#f0c896'],[1,9,13,1,'#f0c896'],[2,10,11,1,'#f0c896'],[2,11,11,1,'#f0c896'],[3,12,9,1,'#f0c896'],[5,13,5,1,'#f0c896'],[4,7,1.6,1.6,'#3a2a1a'],[10.4,7,1.6,1.6,'#3a2a1a'],[5,11,6,1.2,'#3a2a1a']],
-  face_happy: [[5,1,5,1,'#f0c896'],[3,2,9,1,'#f0c896'],[2,3,11,1,'#f0c896'],[2,4,11,1,'#f0c896'],[1,5,13,1,'#f0c896'],[1,6,13,1,'#f0c896'],[1,7,13,1,'#f0c896'],[1,8,13,1,'#f0c896'],[1,9,13,1,'#f0c896'],[2,10,11,1,'#f0c896'],[2,11,11,1,'#f0c896'],[3,12,9,1,'#f0c896'],[5,13,5,1,'#f0c896'],[3.5,6.5,2.4,1.4,'#3a2a1a'],[10.1,6.5,2.4,1.4,'#3a2a1a'],[3.5,10.5,1.4,1,'#3a2a1a'],[5,12,6,1.4,'#3a2a1a'],[11.1,10.5,1.4,1,'#3a2a1a']],
-  face_sad: [[5,1,5,1,'#f0c896'],[3,2,9,1,'#f0c896'],[2,3,11,1,'#f0c896'],[2,4,11,1,'#f0c896'],[1,5,13,1,'#f0c896'],[1,6,13,1,'#f0c896'],[1,7,13,1,'#f0c896'],[1,8,13,1,'#f0c896'],[1,9,13,1,'#f0c896'],[2,10,11,1,'#f0c896'],[2,11,11,1,'#f0c896'],[3,12,9,1,'#f0c896'],[5,13,5,1,'#f0c896'],[4,7,1.6,1.6,'#3a2a1a'],[10.4,7,1.6,1.6,'#3a2a1a'],[5,12,1.4,1,'#3a2a1a'],[6.4,10.8,3.2,1.2,'#3a2a1a'],[9.6,12,1.4,1,'#3a2a1a']],
-  face_shock: [[5,1,5,1,'#f0c896'],[3,2,9,1,'#f0c896'],[2,3,11,1,'#f0c896'],[2,4,11,1,'#f0c896'],[1,5,13,1,'#f0c896'],[1,6,13,1,'#f0c896'],[1,7,13,1,'#f0c896'],[1,8,13,1,'#f0c896'],[1,9,13,1,'#f0c896'],[2,10,11,1,'#f0c896'],[2,11,11,1,'#f0c896'],[3,12,9,1,'#f0c896'],[5,13,5,1,'#f0c896'],[3,6,4,1,'#fff'],[3,7,4,1,'#fff'],[3,8,4,1,'#fff'],[9,6,4,1,'#fff'],[9,7,4,1,'#fff'],[9,8,4,1,'#fff'],[4.2,6.8,1.2,1.2,'#3a2a1a'],[10.6,6.8,1.2,1.2,'#3a2a1a'],[6,10,3,1,'#3a2a1a'],[6,11,3,1,'#3a2a1a'],[6,12,3,1,'#3a2a1a']],
-  face_angry: [[5,1,5,1,'#e8a878'],[3,2,9,1,'#e8a878'],[2,3,11,1,'#e8a878'],[2,4,11,1,'#e8a878'],[1,5,13,1,'#e8a878'],[1,6,13,1,'#e8a878'],[1,7,13,1,'#e8a878'],[1,8,13,1,'#e8a878'],[1,9,13,1,'#e8a878'],[2,10,11,1,'#e8a878'],[2,11,11,1,'#e8a878'],[3,12,9,1,'#e8a878'],[5,13,5,1,'#e8a878'],[3,6,3.5,1,'#7a2a1a'],[9.5,6,3.5,1,'#7a2a1a'],[4,7.6,1.6,1.6,'#3a2a1a'],[10.4,7.6,1.6,1.6,'#3a2a1a'],[5,11.8,6,1.2,'#3a2a1a']],
-  face_sleepy: [[5,1,5,1,'#f0c896'],[3,2,9,1,'#f0c896'],[2,3,11,1,'#f0c896'],[2,4,11,1,'#f0c896'],[1,5,13,1,'#f0c896'],[1,6,13,1,'#f0c896'],[1,7,13,1,'#f0c896'],[1,8,13,1,'#f0c896'],[1,9,13,1,'#f0c896'],[2,10,11,1,'#f0c896'],[2,11,11,1,'#f0c896'],[3,12,9,1,'#f0c896'],[5,13,5,1,'#f0c896'],[3.5,7.3,2.4,1,'#3a2a1a'],[10.1,7.3,2.4,1,'#3a2a1a'],[6,11.5,4,1,'#3a2a1a'],[12,1,1.2,1.2,'#dbe4ea'],[13.4,-0.2,1.2,1.2,'#dbe4ea']],
-  robot: [[7,0,2,1.5,'#e6c6ff'],[7,1.5,2,2,'#e6c6ff'],[2.5,4,11,8,'#8a5fd6'],[4.5,7,2.5,2.5,'#f0dcff'],[9,7,2.5,2.5,'#f0dcff'],[5.5,10.5,5,1.3,'#1a1030'],[0,8,1.5,1.5,'#22d3ee'],[14.5,8,1.5,1.5,'#ff9de2']],
-  speech: [[1,1,14,8,'#8affd0'],[2,9,2.5,1.3,'#8affd0'],[2,10.3,1.3,1.3,'#8affd0']],
-  newspaper: [[1,1,12,12,'#dbe4ea'],[11,1,2.5,2.5,'#aebac2'],[2.5,2.5,7,4,'#3a4550'],[2.5,7.5,9,1.3,'#3a4550'],[2.5,10,9,1.3,'#3a4550']],
-  check: [[2.5,7.5,2.5,2.5,'#06d6a0'],[5,10,2.5,2.5,'#06d6a0'],[6.3,8.7,1.3,1.3,'#06d6a0'],[7.5,7.5,2.5,2.5,'#06d6a0'],[8.8,6.2,1.3,1.3,'#06d6a0'],[10,4,2.5,2.5,'#06d6a0']],
-  cross: [[2.5,2.5,2.5,2.5,'#ff4d6d'],[5,5,2.5,2.5,'#ff4d6d'],[7.5,7.5,2.5,2.5,'#ff4d6d'],[10,10,2.5,2.5,'#ff4d6d'],[10,2.5,2.5,2.5,'#ff4d6d'],[7.5,5,2.5,2.5,'#ff4d6d'],[5,10,2.5,2.5,'#ff4d6d'],[2.5,10,2.5,2.5,'#ff4d6d']],
-  warning: [[6.6,1.5,2.8,1.3,'#ffd166'],[5.6,2.8,4.8,1.3,'#ffd166'],[4.6,4.1,6.8,1.3,'#ffd166'],[3.6,5.4,8.8,1.3,'#ffd166'],[2.6,6.7,10.8,1.3,'#ffd166'],[1.6,8,12.8,1.3,'#ffd166'],[1,9.3,14,2,'#ffd166'],[6.8,4,2.4,3.6,'#3a2c00'],[6.8,9,2.4,1.4,'#3a2c00']],
-  shield: [[4,1.3,8,1.3,'#4dd8a0'],[2.6,2.6,10.8,5.4,'#4dd8a0'],[4,8,8,2.6,'#4dd8a0'],[5.3,10.6,5.4,1.3,'#4dd8a0'],[6.6,12,2.8,1.3,'#4dd8a0']],
-  thread: [[4,1.3,8,1.3,'#f472b6'],[2.6,2.6,1.3,1.3,'#f472b6'],[12.1,2.6,1.3,1.3,'#f472b6'],[4,4,8,8,'#d24f8f'],[2.6,12.1,1.3,1.3,'#f472b6'],[12.1,12.1,1.3,1.3,'#f472b6'],[4,13.4,8,1.3,'#f472b6'],[5.3,5.3,1.3,1.3,'#ffd6ea'],[8,8,1.3,1.3,'#ffd6ea'],[10.7,10.7,1.3,1.3,'#ffd6ea']],
-  brain: [[4,2.6,8,1.3,'#ff9de2'],[1.3,4,13.4,1.3,'#ff9de2'],[0,5.3,16,1.3,'#ff9de2'],[0,6.6,16,1.3,'#ff9de2'],[1.3,8,13.4,1.3,'#ff9de2'],[4,9.3,8,1.3,'#ff9de2'],[8,2.6,1.3,6.7,'#c23b8f'],[4,5.3,1.3,1.3,'#c23b8f'],[10.7,5.3,1.3,1.3,'#c23b8f']],
-  palette: [[4,2.6,6.7,1.3,'#c084fc'],[2.6,4,10.8,1.3,'#c084fc'],[1.3,5.3,12.1,1.3,'#c084fc'],[1.3,6.6,5.3,1.3,'#c084fc'],[9.3,6.6,4,1.3,'#c084fc'],[2.6,8,10.8,1.3,'#c084fc'],[4,9.3,8,1.3,'#c084fc'],[2.6,4,1.3,1.3,'#ff4d6d'],[5.3,2.6,1.3,1.3,'#ffd166'],[9.3,2.6,1.3,1.3,'#06d6a0'],[10.7,5.3,1.3,1.3,'#3a6ea5'],[8,8,1.3,1.3,'#ff9de2']],
-  compass: [[5,1,5,1,'#c9a227'],[3,2,9,1,'#c9a227'],[2,3,11,1,'#c9a227'],[2,4,11,1,'#c9a227'],[1,5,13,1,'#c9a227'],[1,6,13,1,'#c9a227'],[1,7,13,1,'#c9a227'],[1,8,13,1,'#c9a227'],[1,9,13,1,'#c9a227'],[2,10,11,1,'#c9a227'],[2,11,11,1,'#c9a227'],[3,12,9,1,'#c9a227'],[5,13,5,1,'#c9a227'],[5,3,5,1,'#e8c96a'],[4,4,7,1,'#e8c96a'],[3,5,9,1,'#e8c96a'],[3,6,9,1,'#e8c96a'],[3,7,9,1,'#e8c96a'],[3,8,9,1,'#e8c96a'],[3,9,9,1,'#e8c96a'],[4,10,7,1,'#e8c96a'],[5,11,5,1,'#e8c96a'],[6.7,4,1,1,'#ff4d6d'],[7.3,4,1,1,'#ff4d6d'],[6.7,5,2.6,2.6,'#ff4d6d'],[6.7,8.4,2.6,2.6,'#dbe4ea'],[6.7,11,1,1,'#dbe4ea'],[7.3,11,1,1,'#dbe4ea']],
-  flask: [[6.6,1.3,2.8,4,'#7fd6f0'],[5.3,5.3,5.4,1.3,'#7fd6f0'],[4,6.6,8,1.3,'#7fd6f0'],[2.6,8,10.8,1.3,'#06d6a0'],[2.6,9.3,10.8,3,'#06d6a0'],[5.3,7,1.3,1.3,'#dbe4ea'],[9.3,8,1.3,1.3,'#dbe4ea']],
-  megaphone: [[1.3,6.6,2.6,4,'#c9701f'],[4,5.3,2.6,2.6,'#ff9f43'],[6.6,4,2.6,5.3,'#ff9f43'],[9.3,2.6,5.3,8,'#ff9f43'],[15,4,1.3,1.3,'#ffcf9f'],[15,9.3,1.3,1.3,'#ffcf9f']],
-  lock: [[5.3,1.3,1.3,4,'#f0dcff'],[9.3,1.3,1.3,4,'#f0dcff'],[5.3,1.3,5.3,1.3,'#f0dcff'],[2.6,5.3,10.8,8,'#f0dcff'],[6.6,8,2.6,1.3,'#3a1a3a'],[6.6,10.7,2.6,1.3,'#3a1a3a']],
-  handshake: [[0,13.3,2.6,2.6,'#3a6ea5'],[2.6,10.7,2.6,2.6,'#3a6ea5'],[5.3,8,2.6,2.6,'#3a6ea5'],[13.3,13.3,2.6,2.6,'#c23b3b'],[10.7,10.7,2.6,2.6,'#c23b3b'],[8,8,2.6,2.6,'#c23b3b'],[5.3,6.6,5.3,4,'#e8c39a']],
-  person: [[6,2,3,1,'#c9d3dc'],[5,3,5,1,'#c9d3dc'],[4,4,7,1,'#c9d3dc'],[4,5,7,1,'#c9d3dc'],[4,6,7,1,'#c9d3dc'],[5,7,5,1,'#c9d3dc'],[6,8,3,1,'#c9d3dc'],[1.3,9.3,13.4,1.3,'#8a97a8'],[0,10.6,16,5.4,'#8a97a8']],
-  phone: [[4,1.3,8,13.4,'#3a6ea5'],[5.3,2.6,5.3,9.3,'#8fd3f4'],[6.6,13.4,2.6,1.3,'#dbe4ea']],
-  hamburger: [[1.3,2.6,13.4,2.6,'#dbe4ea'],[1.3,6.6,13.4,2.6,'#dbe4ea'],[1.3,10.7,13.4,2.6,'#dbe4ea']],
-  books: [[1.3,4,8,2.6,'#4dd8a0'],[2.6,6.6,10.8,2.6,'#3a6ea5'],[1.3,9.3,13.4,2.6,'#c9432f']],
-  soap: [[2.6,8,10.8,5.3,'#dbe4ea'],[4,4,2.6,2.6,'#eaf6ff'],[9.3,2.6,2.6,2.6,'#eaf6ff'],[6.6,5.3,1.3,1.3,'#eaf6ff']],
-  fire: [[6.6,1.3,2.6,1.3,'#ff6b35'],[5.3,2.6,5.3,1.3,'#ff6b35'],[4,4,8,1.3,'#ff6b35'],[2.6,5.3,10.8,2.6,'#ff6b35'],[4,8,8,1.3,'#ff6b35'],[5.3,9.3,5.3,1.3,'#ff6b35'],[6.6,5.3,2.6,4,'#ffd166']],
-  siren: [[5.3,2.6,5.3,4,'#ff4d6d'],[2.6,6.6,10.8,4,'#2a2a2a'],[1.3,4,1.3,1.3,'#ffd166'],[13.4,4,1.3,1.3,'#ffd166']],
-  link: [[1.3,1.3,8,5.3,'#7fd6f0'],[4,2.6,2.6,2.6,'#0e1418'],[6.6,9.3,8,5.3,'#7fd6f0'],[9.3,10.6,2.6,2.6,'#0e1418']],
-  openbook: [[0,4,8,8,'#f0e6d2'],[8,4,8,8,'#f0e6d2'],[6.6,2.6,2.6,9.3,'#8a6a4a'],[1.3,6.6,4,1.3,'#c9b89a'],[9.3,6.6,4,1.3,'#c9b89a'],[1.3,9.3,4,1.3,'#c9b89a'],[9.3,9.3,4,1.3,'#c9b89a']],
-  question: [[4,1.3,8,1.3,'#ffd166'],[2.6,2.6,2.6,1.3,'#ffd166'],[10.7,2.6,2.6,1.3,'#ffd166'],[10.7,4,2.6,1.3,'#ffd166'],[8,5.3,4,1.3,'#ffd166'],[5.3,6.6,4,1.3,'#ffd166'],[5.3,8,2.6,1.3,'#ffd166'],[5.3,10.7,2.6,1.3,'#ffd166']],
-  pause: [[4,2.6,2.6,10.8,'#dbe4ea'],[9.3,2.6,2.6,10.8,'#dbe4ea']],
-  eyes: [[2,5,5,1,'#f4f8fb'],[2,6,5,1,'#f4f8fb'],[2,7,6,1,'#f4f8fb'],[2,8,5,1,'#f4f8fb'],[2,9,5,1,'#f4f8fb'],[4,6,1,1,'#1a1a1a'],[3,7,3,1,'#1a1a1a'],[4,8,1,1,'#1a1a1a'],[9,5,5,1,'#f4f8fb'],[9,6,5,1,'#f4f8fb'],[9,7,6,1,'#f4f8fb'],[9,8,5,1,'#f4f8fb'],[9,9,5,1,'#f4f8fb'],[11,6,1,1,'#1a1a1a'],[10,7,3,1,'#1a1a1a'],[11,8,1,1,'#1a1a1a']],
-  flag: [[2.6,1.3,1.3,13.4,'#8a97a8'],[4,1.3,8,1.3,'#ff4d6d'],[4,2.6,9.3,1.3,'#ff4d6d'],[4,4,8,1.3,'#ff4d6d'],[4,5.3,6.6,1.3,'#ff4d6d'],[4,6.6,4,1.3,'#ff4d6d']],
-  monster: [[2.6,1.3,1.3,1.3,'#c9432f'],[12.1,1.3,1.3,1.3,'#c9432f'],[4,2,7,1,'#c9432f'],[3,3,9,1,'#c9432f'],[2,4,11,1,'#c9432f'],[2,5,11,1,'#c9432f'],[2,6,11,1,'#c9432f'],[2,7,12,1,'#c9432f'],[2,8,11,1,'#c9432f'],[2,9,11,1,'#c9432f'],[2,10,11,1,'#c9432f'],[3,11,9,1,'#c9432f'],[4,12,7,1,'#c9432f'],[5.3,5.3,1.3,1.3,'#1a1a1a'],[9.3,5.3,1.3,1.3,'#1a1a1a'],[4,9.3,8,1.3,'#1a1a1a'],[5.3,9.3,1.3,1.3,'#fff'],[9.3,9.3,1.3,1.3,'#fff']],
-  puzzle: [[5.3,0,5.3,2.6,'#8a5fd6'],[2.6,2.6,10.8,10.8,'#8a5fd6'],[2.6,6.6,2.6,2.6,'#0e1418']],
-  clipboard: [[2.6,2.6,10.8,12,'#dbe4ea'],[5.3,1.3,5.3,2.6,'#8a97a8'],[4,6.6,8,1.3,'#3a4550'],[4,9.3,8,1.3,'#3a4550'],[4,12,5.3,1.3,'#3a4550']],
-  chick: [[4,8,8,1.3,'#f5f0e0'],[2.6,9.3,10.8,4,'#f5f0e0'],[4,13.4,8,1.3,'#f5f0e0'],[5.3,9.3,1.3,1.3,'#d9cba8'],[8,10.7,1.3,1.3,'#d9cba8'],[6,0,3,1,'#ffd166'],[5,1,5,1,'#ffd166'],[4,2,7,1,'#ffd166'],[4,3,7,1,'#ffd166'],[4,4,7,1,'#ffd166'],[5,5,5,1,'#ffd166'],[6,6,3,1,'#ffd166'],[6.6,3.5,1.3,1.3,'#1a1a1a'],[9.3,4.6,2.6,1.3,'#ff9f43']],
-  party: [[1.3,9.3,2.6,4,'#c9a227'],[4,6.6,2.6,5.3,'#c9a227'],[1.3,8,5.3,1.3,'#c9a227'],[9.3,1.3,1.3,1.3,'#ff4d6d'],[12.1,4,1.3,1.3,'#4dd8a0'],[13.4,8,1.3,1.3,'#7fd6f0'],[10.7,10.7,1.3,1.3,'#ffd166']],
-  pin: [[5,1,5,1,'#ff4d6d'],[4,2,7,1,'#ff4d6d'],[3,3,9,1,'#ff4d6d'],[3,4,9,1,'#ff4d6d'],[3,5,9,1,'#ff4d6d'],[3,6,9,1,'#ff4d6d'],[3,7,9,1,'#ff4d6d'],[4,8,7,1,'#ff4d6d'],[5,9,5,1,'#ff4d6d'],[5,3,2,1,'#fff'],[4,4,4,1,'#fff'],[5,5,2,1,'#fff'],[6.6,9.3,2.6,1.3,'#ff4d6d'],[7.3,10.7,1.3,1.3,'#ff4d6d'],[8,12,1,1,'#ff4d6d']],
-  calendar: [[1.3,2.6,13.4,10.8,'#dbe4ea'],[1.3,2.6,13.4,2.6,'#ff4d6d'],[4,0,1.3,2.6,'#3a3a3a'],[10.7,0,1.3,2.6,'#3a3a3a'],[4,8,1.3,1.3,'#8a97a8'],[7.3,8,1.3,1.3,'#8a97a8'],[10.7,8,1.3,1.3,'#8a97a8'],[4,10.7,1.3,1.3,'#8a97a8'],[7.3,10.7,1.3,1.3,'#8a97a8']],
-  seedling: [[6.6,8,2.6,6.6,'#4a7a3a'],[1.3,6.6,6.6,4,'#6b9a4a'],[8,4,6.6,4,'#8fc75a']],
-  writing: [[1.3,13.4,4,1.3,'#8a97a8'],[2.6,10.7,2.6,2.6,'#c9a227'],[5.3,8,2.6,2.6,'#c9a227'],[8,5.3,2.6,2.6,'#dbe4ea'],[10.7,2.6,2.6,2.6,'#3a2a1a']],
-  tree: [[5,0,5,1,'#4a7a3a'],[4,1,7,1,'#4a7a3a'],[3,2,9,1,'#4a7a3a'],[2,3,11,1,'#4a7a3a'],[2,4,11,1,'#4a7a3a'],[2,5,11,1,'#4a7a3a'],[2,6,11,1,'#4a7a3a'],[2,7,11,1,'#4a7a3a'],[3,8,9,1,'#4a7a3a'],[4,9,7,1,'#4a7a3a'],[5,10,5,1,'#4a7a3a'],[6.6,9.3,2.6,5.3,'#6a4a2a']],
-  pray: [[1.3,10.7,2.6,2.6,'#e8c39a'],[4,8,2.6,2.6,'#e8c39a'],[6.6,5.3,2.6,2.6,'#e8c39a'],[13.4,10.7,2.6,2.6,'#d9b48a'],[10.7,8,2.6,2.6,'#d9b48a'],[8,5.3,2.6,2.6,'#d9b48a'],[4,12,8,2.6,'#e8c39a']],
-  tag: [[1.3,1.3,8,1.3,'#ff9f43'],[1.3,2.6,9.3,1.3,'#ff9f43'],[1.3,4,10.7,1.3,'#ff9f43'],[1.3,5.3,10.7,1.3,'#ff9f43'],[1.3,6.6,9.3,1.3,'#ff9f43'],[2.6,8,6.6,1.3,'#ff9f43'],[4,9.3,4,1.3,'#ff9f43'],[5.3,10.7,1.3,1.3,'#ff9f43'],[2.6,4,1.3,1.3,'#8a4a1a']],
-  speakinghead: [[2.6,2.6,8,9.3,'#e8c39a'],[12.1,5.3,1.3,1.3,'#dbe4ea'],[13.4,6.6,1.3,1.3,'#dbe4ea'],[12.1,9.3,1.3,1.3,'#dbe4ea']],
-  detective: [[2.6,1.3,10.8,2.6,'#2a2a2a'],[1.3,2.6,1.3,1.3,'#2a2a2a'],[13.4,2.6,1.3,1.3,'#2a2a2a'],[4,4,8,5.3,'#e8c39a'],[10.7,10.7,1.3,1.3,'#ffd166'],[12.1,12.1,2.6,2.6,'#ffd166']],
-  scale: [[6.6,1.3,2.6,9.3,'#8a97a8'],[1.3,2.6,13.4,1.3,'#8a97a8'],[0,5.3,5.3,1.3,'#8a97a8'],[1.3,6.6,2.6,1.3,'#8a97a8'],[10.7,5.3,5.3,1.3,'#8a97a8'],[12.1,6.6,2.6,1.3,'#8a97a8'],[5.3,12,5.3,2.6,'#8a97a8']],
-  thumbsup: [[4,8,9.3,6.6,'#e8c39a'],[5.3,9.3,1.3,4,'#c9a06a'],[8,9.3,1.3,4,'#c9a06a'],[10.7,9.3,1.3,4,'#c9a06a'],[1.3,2.6,4,6.6,'#d9b48a'],[4,13.4,8,1.3,'#c9a06a']],
-  people: [[3,1,3,1,'#e8c39a'],[2,2,5,1,'#e8c39a'],[2,3,5,1,'#e8c39a'],[2,4,5,1,'#e8c39a'],[3,5,3,1,'#e8c39a'],[1.3,6.6,5.3,6.6,'#3a6ea5'],[10,1,3,1,'#e8c39a'],[9,2,5,1,'#e8c39a'],[9,3,5,1,'#e8c39a'],[9,4,5,1,'#e8c39a'],[10,5,3,1,'#e8c39a'],[9.3,6.6,5.3,6.6,'#c9825a']],
-  teacher: [[5,1,5,1,'#e8c39a'],[4,2,7,1,'#e8c39a'],[4,3,7,1,'#e8c39a'],[4,4,7,1,'#e8c39a'],[4,5,7,1,'#e8c39a'],[5,6,5,1,'#e8c39a'],[4,7.3,9.3,8,'#3a6ea5'],[13.4,8,1.3,4,'#c9a227']],
-  gamepad: [[1.3,5.3,13.4,6.6,'#3a4550'],[2.6,6.6,1.3,4,'#dbe4ea'],[1.3,8,4,1.3,'#dbe4ea'],[10.7,6.6,1.3,1.3,'#ff4d6d'],[12.1,8,1.3,1.3,'#7fd6f0']],
-  walk: [[7,0,1,1,'#e8c39a'],[6,1,3,1,'#e8c39a'],[6,2,3,1,'#e8c39a'],[6,3,3,1,'#e8c39a'],[5.3,4,5.3,5.3,'#3a6ea5'],[4,9.3,2.6,2.6,'#2a2a2a'],[9.3,9.3,2.6,2.6,'#2a2a2a'],[2.6,12,2.6,1.3,'#2a2a2a'],[10.7,12,2.6,1.3,'#2a2a2a']],
-  swords: [[1.3,1.3,2.6,2.6,'#c9d3dc'],[4,4,2.6,2.6,'#c9d3dc'],[6.6,6.6,2.6,2.6,'#c9d3dc'],[9.3,9.3,2.6,2.6,'#c9d3dc'],[12.1,1.3,2.6,2.6,'#c9d3dc'],[9.3,4,2.6,2.6,'#c9d3dc'],[4,9.3,2.6,2.6,'#c9d3dc'],[0,0,1.3,1.3,'#c9a227'],[13.4,0,1.3,1.3,'#c9a227'],[0,12.1,2.6,2.6,'#c9a227'],[12.1,12.1,2.6,2.6,'#c9a227']],
-  clapper: [[1.3,1.3,13.4,2.6,'#2a2a2a'],[1.3,1.3,2.6,2.6,'#dbe4ea'],[5.3,1.3,2.6,2.6,'#dbe4ea'],[9.3,1.3,2.6,2.6,'#dbe4ea'],[1.3,5.3,13.4,8,'#3a4550']],
-  barchart: [[1.3,12,2.6,2.6,'#06d6a0'],[5.3,8,2.6,6.6,'#ffd166'],[9.3,4,2.6,10.7,'#ff9f43'],[13.4,9.3,1.3,5.3,'#ff4d6d']],
-  school: [[0,2.6,16,2.6,'#6a4a2a'],[1.3,5.3,13.4,9.3,'#8a5a3a'],[4,8,2.6,2.6,'#8fd3f4'],[9.3,8,2.6,2.6,'#8fd3f4'],[6.6,10.7,2.6,4,'#3a2a1a']],
-  house: [[6.6,1.3,2.6,1.3,'#c23b3b'],[5.3,2.6,5.3,1.3,'#c23b3b'],[4,4,8,1.3,'#c23b3b'],[2.6,5.3,10.8,1.3,'#c23b3b'],[2.6,6.6,10.8,6.6,'#dbc9a3'],[6.6,9.3,2.6,4,'#6a4a2a']],
-  bulb: [[5.3,1.3,5.3,1.3,'#ffd166'],[4,2.6,8,5.3,'#ffd166'],[5.3,8,5.3,1.3,'#ffd166'],[5.3,9.3,5.3,2.6,'#8a97a8'],[6.6,4,2.6,2.6,'#fff3b0']],
-  thought: [[4,2.6,8,1.3,'#e8eef2'],[1.3,4,13.4,5.3,'#e8eef2'],[4,9.3,8,1.3,'#e8eef2'],[2.6,12,1.3,1.3,'#e8eef2'],[1.3,13.4,1.3,1.3,'#e8eef2']],
-  trash: [[6.6,0,2.6,1.3,'#8a97a8'],[2.6,1.3,10.8,1.3,'#8a97a8'],[4,4,8,10.7,'#8a97a8'],[5.3,5.3,1.3,8,'#0e1418'],[7.3,5.3,1.3,8,'#0e1418'],[9.3,5.3,1.3,8,'#0e1418']],
-  playtri: [[2.6,2.6,1.3,10.8,'#e8eef2'],[4,4,1.3,8,'#e8eef2'],[5.3,5.3,1.3,5.3,'#e8eef2'],[6.6,6.6,1.3,2.6,'#e8eef2']],
-  backtri: [[12.1,2.6,1.3,10.8,'#e8eef2'],[10.7,4,1.3,8,'#e8eef2'],[9.3,5.3,1.3,5.3,'#e8eef2'],[8,6.6,1.3,2.6,'#e8eef2']],
-  bell: [[5.3,2.6,5.3,1.3,'#c9a227'],[4,4,8,5.3,'#c9a227'],[2.6,9.3,10.8,1.3,'#c9a227'],[6.6,12,2.6,1.3,'#8a6a1a']],
-  mute: [[1.3,5.3,4,5.3,'#8a97a8'],[5.3,4,2.6,8,'#8a97a8'],[9.3,5.3,2.6,2.6,'#ff4d6d'],[12.1,8,2.6,2.6,'#ff4d6d'],[12.1,5.3,2.6,2.6,'#ff4d6d'],[9.3,8,2.6,2.6,'#ff4d6d']],
-  speaker: [[1.3,5.3,4,5.3,'#8a97a8'],[5.3,4,2.6,8,'#8a97a8'],[9.3,6.6,1.3,2.6,'#dbe4ea'],[11.7,5.3,1.3,5.3,'#dbe4ea'],[14.1,4,1.3,8,'#dbe4ea']],
-  wave: [[4,1.3,1.3,5.3,'#e8c39a'],[6.6,0,1.3,6.6,'#e8c39a'],[9.3,1.3,1.3,5.3,'#e8c39a'],[12,2.6,1.3,4,'#e8c39a'],[4,6.6,9.3,6.6,'#e8c39a']],
-  camera: [[2.6,2.6,4,2.6,'#2a2a2a'],[1.3,5.3,13.4,8,'#2a2a2a'],[6,7,4,1,'#8a97a8'],[5,8,6,1,'#8a97a8'],[5,9,6,1,'#8a97a8'],[5,10,6,1,'#8a97a8'],[6,11,4,1,'#8a97a8'],[7,8,2,1,'#7fd6f0'],[6,9,4,1,'#7fd6f0'],[7,10,2,1,'#7fd6f0']],
-  musicnote: [[9.3,1.3,1.3,9.3,'#e8eef2'],[10.6,1.3,2.6,2.6,'#e8eef2'],[6,9,3,1,'#e8eef2'],[5,10,5,1,'#e8eef2'],[5,11,5,1,'#e8eef2'],[5,12,5,1,'#e8eef2'],[5,13,4,1,'#e8eef2']],
-  trophy: [[4,1.3,8,5.3,'#c9a227'],[1.3,2.6,2.6,2.6,'#c9a227'],[12.1,2.6,2.6,2.6,'#c9a227'],[6.6,6.6,2.6,2.6,'#c9a227'],[4,9.3,8,1.3,'#c9a227'],[5.3,10.7,5.3,2.6,'#c9a227']],
-  notebook: [[0,1.3,1.3,13.4,'#5a3f8a'],[1.3,1.3,12.1,13.4,'#8a5fd6'],[4,5.3,6.6,1.3,'#c9b8ea'],[4,8,6.6,1.3,'#c9b8ea'],[4,10.7,6.6,1.3,'#c9b8ea']],
-  web: [[6,6,3,1,'#dbe4ea'],[6,7,4,1,'#dbe4ea'],[6,8,3,1,'#dbe4ea'],[6.6,0,2.6,4,'#8a97a8'],[6.6,12,2.6,4,'#8a97a8'],[0,6.6,4,2.6,'#8a97a8'],[12,6.6,4,2.6,'#8a97a8'],[1.3,1.3,4,4,'#8a97a8'],[10.7,1.3,4,4,'#8a97a8'],[1.3,10.7,4,4,'#8a97a8'],[10.7,10.7,4,4,'#8a97a8']],
-  fog: [[1.3,4,13.4,2.6,'#c9d3dc'],[0,8,16,2.6,'#aebac2'],[2.6,12,10.8,2.6,'#c9d3dc']],
-  lightning: [[8,0,4,1.3,'#ffd166'],[5.3,1.3,5.3,1.3,'#ffd166'],[2.6,2.6,5.3,1.3,'#ffd166'],[5.3,4,6.6,1.3,'#ffd166'],[6.6,5.3,2.6,1.3,'#ffd166'],[4,6.6,5.3,1.3,'#ffd166'],[6.6,8,5.3,1.3,'#ffd166'],[9.3,9.3,2.6,1.3,'#ffd166'],[8,10.7,2.6,1.3,'#ffd166']],
-  tv: [[1.3,2.6,13.4,9.3,'#2a2a2a'],[2.6,4,10.8,6.6,'#7fd6f0'],[5.3,13.4,5.3,1.3,'#8a97a8']],
-  masks: [[1.3,4,6.6,8,'#ff4d6d'],[8,4,6.6,8,'#7fd6f0'],[2.6,6.6,1.3,1.3,'#0e1418'],[5.3,6.6,1.3,1.3,'#0e1418'],[9.3,6.6,1.3,1.3,'#0e1418'],[12.1,6.6,1.3,1.3,'#0e1418'],[4,9.3,2.6,1.3,'#0e1418'],[9.3,9.3,2.6,1.3,'#0e1418']],
-  broom: [[9.3,1.3,1.3,1.3,'#8a6a4a'],[8,2.6,1.3,1.3,'#8a6a4a'],[6.6,4,1.3,2.6,'#8a6a4a'],[5.3,6.6,1.3,1.3,'#8a6a4a'],[1.3,8,9.3,6.6,'#ffd166']],
-  square: [[2.6,2.6,10.8,10.8,'#e8eef2']],
-  gear: [[5.3,0,5.3,2.6,'#8a97a8'],[5.3,13.4,5.3,2.6,'#8a97a8'],[0,5.3,2.6,5.3,'#8a97a8'],[13.4,5.3,2.6,5.3,'#8a97a8'],[1.3,1.3,4,4,'#8a97a8'],[10.7,1.3,4,4,'#8a97a8'],[1.3,10.7,4,4,'#8a97a8'],[10.7,10.7,4,4,'#8a97a8'],[6,3,3,1,'#8a97a8'],[4,4,7,1,'#8a97a8'],[4,5,7,1,'#8a97a8'],[3,6,9,1,'#8a97a8'],[3,7,9,1,'#8a97a8'],[3,8,9,1,'#8a97a8'],[4,9,7,1,'#8a97a8'],[4,10,7,1,'#8a97a8'],[6,11,3,1,'#8a97a8'],[6,6,3,1,'#0e1418'],[6,7,3,1,'#0e1418'],[6,8,3,1,'#0e1418']],
-  rainbow: [[1.3,5.3,13.4,3,'#ff4d6d'],[1.3,8,13.4,2.6,'#ffd166'],[1.3,10.3,13.4,2.6,'#4dd8a0']],
-  gift: [[2.6,5.3,10.8,9.3,'#c23b3b'],[1.3,5.3,13.4,2.6,'#e8a8a8'],[6.6,1.3,2.6,13.4,'#ffd166']],
-  money: [[2.6,4,10.8,8,'#4dd8a0'],[6,6,4,1,'#1a6a4a'],[6,7,4,1,'#1a6a4a'],[6,8,4,1,'#1a6a4a'],[6,9,4,1,'#1a6a4a']],
-  droplet: [[5,6,5,1,'#3a6ea5'],[4,7,7,1,'#3a6ea5'],[3,8,9,1,'#3a6ea5'],[3,9,9,1,'#3a6ea5'],[3,10,9,1,'#3a6ea5'],[3,11,9,1,'#3a6ea5'],[4,12,7,1,'#3a6ea5'],[5,13,5,1,'#3a6ea5'],[6.6,1.3,2.6,2.6,'#3a6ea5'],[5.3,4,5.3,2.6,'#3a6ea5'],[6,7.5,1.3,1.3,'#8fd3f4']],
-  raincloud: [[5,1,5,1,'#8a97a8'],[4,2,7,1,'#8a97a8'],[3,3,9,1,'#8a97a8'],[3,4,9,1,'#8a97a8'],[3,5,9,1,'#8a97a8'],[3,6,9,1,'#8a97a8'],[3,7,9,1,'#8a97a8'],[4,8,7,1,'#8a97a8'],[5,9,5,1,'#8a97a8'],[4,10.7,1.3,2.6,'#3a6ea5'],[7.3,10.7,1.3,2.6,'#3a6ea5'],[10.7,10.7,1.3,2.6,'#3a6ea5']],
-  pawprint: [[6,7,3,1,'#8a6a4a'],[5,8,5,1,'#8a6a4a'],[4,9,7,1,'#8a6a4a'],[4,10,7,1,'#8a6a4a'],[4,11,7,1,'#8a6a4a'],[5,12,5,1,'#8a6a4a'],[6,13,3,1,'#8a6a4a'],[2,4,3,1,'#8a6a4a'],[2,5,3,1,'#8a6a4a'],[2,6,3,1,'#8a6a4a'],[6,2,3,1,'#8a6a4a'],[6,3,3,1,'#8a6a4a'],[6,4,3,1,'#8a6a4a'],[10,4,3,1,'#8a6a4a'],[10,5,3,1,'#8a6a4a'],[10,6,3,1,'#8a6a4a']],
-  skull: [[5,1,5,1,'#e8eef2'],[4,2,7,1,'#e8eef2'],[3,3,9,1,'#e8eef2'],[3,4,9,1,'#e8eef2'],[3,5,9,1,'#e8eef2'],[3,6,9,1,'#e8eef2'],[3,7,9,1,'#e8eef2'],[3,8,9,1,'#e8eef2'],[4,9,7,1,'#e8eef2'],[5,10,5,1,'#e8eef2'],[4,9.5,2.6,2.6,'#e8eef2'],[9.3,9.5,2.6,2.6,'#e8eef2'],[5,5,1,1,'#0e1418'],[5,6,1,1,'#0e1418'],[9,5,1,1,'#0e1418'],[9,6,1,1,'#0e1418']],
-  paperclip: [[4,1.3,5.3,1.3,'#8a97a8'],[2.6,2.6,1.3,9.3,'#8a97a8'],[8,2.6,1.3,6.6,'#8a97a8'],[4,10.7,5.3,1.3,'#8a97a8'],[4,2.6,1.3,9.3,'#8a97a8'],[5.3,9.3,4,1.3,'#8a97a8']],
-  dotpurple: [[5,3,6,1,'#c084fc'],[4,4,8,1,'#c084fc'],[3,5,9,1,'#c084fc'],[3,6,9,1,'#c084fc'],[3,7,10,1,'#c084fc'],[3,8,9,1,'#c084fc'],[3,9,9,1,'#c084fc'],[4,10,8,1,'#c084fc'],[5,11,6,1,'#c084fc']],
-  dotblue: [[5,3,6,1,'#3a6ea5'],[4,4,8,1,'#3a6ea5'],[3,5,9,1,'#3a6ea5'],[3,6,9,1,'#3a6ea5'],[3,7,10,1,'#3a6ea5'],[3,8,9,1,'#3a6ea5'],[3,9,9,1,'#3a6ea5'],[4,10,8,1,'#3a6ea5'],[5,11,6,1,'#3a6ea5']],
-  donut: [[6,1,3,1,'#c9a06a'],[4,2,7,1,'#c9a06a'],[3,3,9,1,'#c9a06a'],[2,4,11,1,'#c9a06a'],[2,5,3,1,'#c9a06a'],[10,5,3,1,'#c9a06a'],[1,6,4,1,'#c9a06a'],[10,6,4,1,'#c9a06a'],[1,7,4,1,'#c9a06a'],[11,7,3,1,'#c9a06a'],[1,8,4,1,'#c9a06a'],[10,8,4,1,'#c9a06a'],[2,9,3,1,'#c9a06a'],[10,9,3,1,'#c9a06a'],[2,10,11,1,'#c9a06a'],[3,11,9,1,'#c9a06a'],[4,12,7,1,'#c9a06a'],[6,13,3,1,'#c9a06a'],[4,4,1,1,'#ffb3d9'],[10,5,1,1,'#ffb3d9'],[5,11,1,1,'#ffb3d9'],[10.5,10.5,1,1,'#ffb3d9']],
-  computer: [[2.6,2.6,10.8,7,'#2a2a2a'],[3.6,3.6,8.8,5,'#7fd6f0'],[6.6,9.6,2.6,2,'#8a97a8'],[4,13,8,1.3,'#8a97a8']],
-  salad: [[2.6,7.5,10.8,5.5,'#dbe4ea'],[4,5.3,2.6,2.6,'#4dd8a0'],[7.3,4,2.6,2.6,'#c9432f'],[10,5.8,2.6,2.6,'#ffd166']],
-  loveletter: [[1.3,3.6,13.4,9,'#f4f8fb'],[1.3,3.6,6.7,4.5,'#dbe4ea'],[8,3.6,6.7,4.5,'#dbe4ea'],[6,6,3,1,'#ff4d6d'],[6,7,4,1,'#ff4d6d'],[6,8,3,1,'#ff4d6d']],
-  bread: [[4,3,7,1,'#d9a86a'],[2,4,11,1,'#d9a86a'],[2,5,11,1,'#d9a86a'],[1,6,13,1,'#d9a86a'],[1,7,13,1,'#d9a86a'],[1,8,13,1,'#d9a86a'],[1,9,13,1,'#d9a86a'],[2,10,11,1,'#d9a86a'],[2,11,11,1,'#d9a86a'],[4,12,7,1,'#d9a86a'],[4,4,1.3,4,'#c9905a'],[7,3.3,1.3,4.6,'#c9905a'],[10,4,1.3,4,'#c9905a']],
-  honeyjar: [[4,4,8,9.3,'#f5b942'],[5.3,1.3,5.3,2.6,'#8a6a1a'],[4,7,8,1.3,'#c9902a']],
-  mirror: [[7,0,1,1,'#c9e8f5'],[5,1,5,1,'#c9e8f5'],[4,2,7,1,'#c9e8f5'],[3,3,9,1,'#c9e8f5'],[3,4,9,1,'#c9e8f5'],[3,5,9,1,'#c9e8f5'],[3,6,9,1,'#c9e8f5'],[3,7,9,1,'#c9e8f5'],[3,8,9,1,'#c9e8f5'],[4,9,7,1,'#c9e8f5'],[5,10,5,1,'#c9e8f5'],[7,11,1,1,'#c9e8f5'],[6.6,12.6,2.6,3,'#8a97a8']],
-  cyclone: [[4,2,7,1,'#7fd6f0'],[3,3,9,1,'#7fd6f0'],[2,4,11,1,'#7fd6f0'],[2,5,11,1,'#7fd6f0'],[2,6,11,1,'#7fd6f0'],[2,7,12,1,'#7fd6f0'],[2,8,11,1,'#7fd6f0'],[2,9,11,1,'#7fd6f0'],[2,10,11,1,'#7fd6f0'],[3,11,9,1,'#7fd6f0'],[4,12,7,1,'#7fd6f0'],[7.5,7.5,8,1.3,'#0e1418'],[1.3,4,6,1.3,'#0e1418'],[8.5,11,6,1.3,'#0e1418']],
-  watermelon: [[4,3,7,1,'#4a7a3a'],[3,4,9,1,'#4a7a3a'],[2,5,11,1,'#4a7a3a'],[2,6,11,1,'#4a7a3a'],[1,7,13,1,'#4a7a3a'],[1,8,13,1,'#4a7a3a'],[1,9,13,1,'#4a7a3a'],[1,10,13,1,'#4a7a3a'],[2,11,11,1,'#4a7a3a'],[2,12,11,1,'#4a7a3a'],[3,13,9,1,'#4a7a3a'],[4,14,7,1,'#4a7a3a'],[6,4,3,1,'#e8eef2'],[4,5,7,1,'#e8eef2'],[3,6,9,1,'#e8eef2'],[3,7,9,1,'#e8eef2'],[2,8,11,1,'#e8eef2'],[2,9,11,1,'#e8eef2'],[2,10,11,1,'#e8eef2'],[2,11,11,1,'#e8eef2'],[3,12,9,1,'#e8eef2'],[4,13,7,1,'#e8eef2'],[5,14,5,1,'#e8eef2'],[5,6,5,1,'#e8455a'],[4,7,7,1,'#e8455a'],[3,8,9,1,'#e8455a'],[3,9,9,1,'#e8455a'],[3,10,9,1,'#e8455a'],[3,11,9,1,'#e8455a'],[4,12,7,1,'#e8455a'],[4,13,7,1,'#e8455a'],[6,14,3,1,'#e8455a'],[6,8.5,1,1,'#2a2a2a'],[9,8.5,1,1,'#2a2a2a'],[7.5,10.5,1,1,'#2a2a2a']],
-  milk: [[4,2.6,8,11.4,'#f4f8fb'],[4,2.6,8,1.3,'#8a97a8'],[4,6.6,8,7.4,'#dbe9f5']],
-  carrot: [[6.6,1.3,2.6,2.6,'#4a7a3a'],[5.3,2.6,5.3,1.3,'#4a7a3a'],[5.3,4,5.3,2.6,'#ff9f43'],[6,6.6,4,2.6,'#ff9f43'],[6.8,9.3,2.4,2.6,'#ff9f43'],[7.3,12,1.4,1.6,'#ff9f43']],
-  broccoli: [[4,2,3,1,'#4a7a3a'],[3,3,5,1,'#4a7a3a'],[2,4,7,1,'#4a7a3a'],[2,5,7,1,'#4a7a3a'],[2,6,7,1,'#4a7a3a'],[3,7,5,1,'#4a7a3a'],[4,8,3,1,'#4a7a3a'],[8,2,3,1,'#6b9a4a'],[7,3,5,1,'#6b9a4a'],[7,4,5,1,'#6b9a4a'],[7,5,5,1,'#6b9a4a'],[7,6,5,1,'#6b9a4a'],[5,4,4,1,'#5a8a3a'],[4,5,6,1,'#5a8a3a'],[4,6,6,1,'#5a8a3a'],[4,7,6,1,'#5a8a3a'],[4,8,6,1,'#5a8a3a'],[5,9,4,1,'#5a8a3a'],[6.6,9.3,2.6,5.3,'#c9dba0']],
-  cookie: [[6,1,3,1,'#d9a86a'],[4,2,7,1,'#d9a86a'],[3,3,9,1,'#d9a86a'],[2,4,11,1,'#d9a86a'],[2,5,11,1,'#d9a86a'],[1,6,13,1,'#d9a86a'],[1,7,13,1,'#d9a86a'],[1,8,13,1,'#d9a86a'],[2,9,11,1,'#d9a86a'],[2,10,11,1,'#d9a86a'],[3,11,9,1,'#d9a86a'],[4,12,7,1,'#d9a86a'],[6,13,3,1,'#d9a86a'],[4,4,1.3,1.3,'#5a3a1a'],[9.3,5.3,1.3,1.3,'#5a3a1a'],[6,8,1.3,1.3,'#5a3a1a'],[10,10,1.3,1.3,'#5a3a1a'],[4.5,10,1.3,1.3,'#5a3a1a']],
-  popcorn: [[3,7,10,7,'#e8455a'],[3,7,10,1.3,'#f4f8fb'],[3,9.6,10,1.3,'#f4f8fb'],[4,4,2,1,'#fff3d0'],[3,5,4,1,'#fff3d0'],[3,6,4,1,'#fff3d0'],[4,7,2,1,'#fff3d0'],[7,2,2,1,'#fff3d0'],[6,3,4,1,'#fff3d0'],[6,4,4,1,'#fff3d0'],[6,5,4,1,'#fff3d0'],[7,6,2,1,'#fff3d0'],[10,4,2,1,'#fff3d0'],[9,5,4,1,'#fff3d0'],[9,6,4,1,'#fff3d0'],[10,7,2,1,'#fff3d0']],
-  icecream: [[5.3,8,5.3,7,'#e8c9a0'],[6,3,4,1,'#ffd6e8'],[5,4,6,1,'#ffd6e8'],[4,5,8,1,'#ffd6e8'],[4,6,8,1,'#ffd6e8'],[4,7,8,1,'#ffd6e8'],[4,8,8,1,'#ffd6e8'],[5,9,6,1,'#ffd6e8'],[6,10,4,1,'#ffd6e8'],[6.5,3.5,1,1,'#c23b3b']],
-  cupcake: [[4,9.3,8,5.3,'#e8455a'],[6,3,4,1,'#f4e6d0'],[5,4,6,1,'#f4e6d0'],[4,5,8,1,'#f4e6d0'],[4,6,8,1,'#f4e6d0'],[3,7,10,1,'#f4e6d0'],[4,8,8,1,'#f4e6d0'],[4,9,8,1,'#f4e6d0'],[5,10,6,1,'#f4e6d0'],[6,11,4,1,'#f4e6d0'],[7,2.5,2,2,'#ff4d6d']],
-  dango: [[6,1,3,1,'#ffd6e8'],[5,2,5,1,'#ffd6e8'],[5,3,5,1,'#ffd6e8'],[5,4,5,1,'#ffd6e8'],[6,5,3,1,'#ffd6e8'],[6,5,3,1,'#f4f0e0'],[5,6,5,1,'#f4f0e0'],[5,7,5,1,'#f4f0e0'],[5,8,5,1,'#f4f0e0'],[6,9,3,1,'#f4f0e0'],[6,9,3,1,'#d9a86a'],[5,10,5,1,'#d9a86a'],[5,11,5,1,'#d9a86a'],[5,12,5,1,'#d9a86a'],[6,13,3,1,'#d9a86a'],[7,1,1,13,'#c9a06a']],
-  candy: [[5.3,5.3,5.3,5.3,'#ff4d6d'],[2.6,4,2.6,2.6,'#ff9f43'],[2.6,9.3,2.6,2.6,'#ff9f43'],[10.7,4,2.6,2.6,'#ffd166'],[10.7,9.3,2.6,2.6,'#ffd166']],
-  lollipop: [[5,1,5,1,'#ff9de2'],[4,2,7,1,'#ff9de2'],[4,3,7,1,'#ff9de2'],[3,4,9,1,'#ff9de2'],[3,5,9,1,'#ff9de2'],[4,6,7,1,'#ff9de2'],[4,7,7,1,'#ff9de2'],[5,8,5,1,'#ff9de2'],[6,3,3,1,'#ffd6ea'],[5,4,5,1,'#ffd6ea'],[5,5,5,1,'#ffd6ea'],[6,6,3,1,'#ffd6ea'],[7,9,1.3,6,'#f4f8fb']],
-  fries: [[2.6,6.6,10.8,7.4,'#e8455a'],[3.5,2,1.6,7,'#ffd166'],[5.8,1.3,1.6,7.7,'#ffd166'],[8.1,2,1.6,7,'#ffd166'],[10.4,1.3,1.6,7.7,'#ffd166']],
-  cake: [[2.6,9.3,10.8,4,'#f4c9d9'],[3.6,6,8.8,3.3,'#ff9dc0'],[4.6,2.6,6.7,3.4,'#f4f8fb'],[7.3,0,1.3,2.6,'#ffd166'],[7,0,2,1,'#ff9f43']],
-  banana: [[5,1,3,1,'#ffd966'],[4,2,4,1,'#ffd966'],[3,3,5,1,'#ffd966'],[3,4,5,1,'#ffd966'],[2,5,7,1,'#ffd966'],[2,6,8,1,'#ffd966'],[2,7,9,1,'#ffd966'],[2,8,14,1,'#ffd966'],[2,9,14,1,'#ffd966'],[3,10,12,1,'#ffd966'],[3,11,12,1,'#ffd966'],[4,12,10,1,'#ffd966'],[5,13,8,1,'#ffd966']],
-  drinkcup: [[3.6,4,8.8,10,'#e8455a'],[6.6,1.3,1,3,'#dbe4ea']],
-  mango: [[6,2,3,1,'#ff9f43'],[5,3,5,1,'#ff9f43'],[4,4,7,1,'#ff9f43'],[3,5,9,1,'#ff9f43'],[3,6,9,1,'#ff9f43'],[3,7,9,1,'#ff9f43'],[3,8,9,1,'#ff9f43'],[3,9,9,1,'#ff9f43'],[3,10,9,1,'#ff9f43'],[4,11,7,1,'#ff9f43'],[5,12,5,1,'#ff9f43'],[6,13,3,1,'#ff9f43']],
-  berries: [[3,4,4,1,'#4a6bc9'],[3,5,4,1,'#4a6bc9'],[3,6,4,1,'#4a6bc9'],[3,7,4,1,'#4a6bc9'],[7,3,4,1,'#5a7bd9'],[7,4,4,1,'#5a7bd9'],[7,5,4,1,'#5a7bd9'],[7,6,4,1,'#5a7bd9'],[6,7,3,1,'#3a5bb9'],[5,8,5,1,'#3a5bb9'],[5,9,5,1,'#3a5bb9'],[6,10,3,1,'#3a5bb9']],
-  swap: [[1.3,2.6,10.8,1.3,'#e6c6ff'],[10.7,1.3,1.3,1.3,'#e6c6ff'],[10.7,2.6,2.6,1.3,'#e6c6ff'],[10.7,4,1.3,1.3,'#e6c6ff'],[4,12.1,10.8,1.3,'#e6c6ff'],[4,10.7,1.3,1.3,'#e6c6ff'],[2.6,12.1,1.3,1.3,'#e6c6ff'],[4,13.4,1.3,1.3,'#e6c6ff']]
+  search: [['cs',10,10,6,'#ffd166',2.3],['l',14.4,14.4,20.5,20.5,'#ffd166',2.7]],
+  globe: [['c',12,12,9,'#4a90c9'],['ps','M3,12 H21','#dbe4ea',1.2],['ps','M12,3 C7.2,3 7.2,21 12,21 C16.8,21 16.8,3 12,3 Z','#dbe4ea',1.2],['ps','M4,7.5 H20','#dbe4ea',1],['ps','M4,16.5 H20','#dbe4ea',1]],
+  target: [['c',12,12,9,'#ff4d6d'],['c',12,12,6,'#f4f8fb'],['c',12,12,3,'#ff4d6d']],
+  sun: [['c',12,12,5,'#ffd166'],['l',12,1.5,12,4.5,'#ffd166',1.8],['l',12,19.5,12,22.5,'#ffd166',1.8],['l',1.5,12,4.5,12,'#ffd166',1.8],['l',19.5,12,22.5,12,'#ffd166',1.8],['l',4.4,4.4,6.5,6.5,'#ffd166',1.8],['l',17.5,17.5,19.6,19.6,'#ffd166',1.8],['l',17.5,6.5,19.6,4.4,'#ffd166',1.8],['l',4.4,19.6,6.5,17.5,'#ffd166',1.8]],
+  moon: [['p','M21,12.79 A9,9 0 1,1 11.21,3 A7,7 0 0,0 21,12.79 Z','#fff3b0']],
+  egg: [['p','M12,2 C17,8 20,13.5 20,17 A8,7 0 0 1 4,17 C4,13.5 7,8 12,2 Z','#f5f0e0']],
+  apple: [['p','M12,10 C7.5,10 4.5,13.2 4.8,17 C5.1,20.6 8.2,22.5 12,22.5 C15.8,22.5 18.9,20.6 19.2,17 C19.5,13.2 16.5,10 12,10 Z','#c9432f'],['l',12,10,11.3,6,'#6a4a2a',1.4],['p','M11.5,6.5 C13,5.3 15.2,5.6 15.8,7.1 C14.3,8.3 12.1,8 11.5,6.5 Z','#4a7a3a']],
+  plate: [['r',1.5,2.5,1,7.5,0.5,'#aebac2'],['r',2.9,2,1,8,0.5,'#aebac2'],['r',4.3,2.5,1,7.5,0.5,'#aebac2'],['r',2.4,10,1.8,11.5,0.9,'#aebac2'],
+    ['c',12,13,6.8,'#c9d3dc'],['c',12,13,5.6,'#eef2f5'],['c',12,13,4.6,'#f8fbfc'],
+    ['e',20,5,2.6,3.6,'#aebac2'],['r',19.1,8.5,1.8,13,0.9,'#aebac2']],
+  medal: [['l',9,2,5.5,10,'#3a6ea5',3],['l',15,2,9.5,10,'#c23b3b',3],['c',12,15,7,'#c9a227'],['c',12,15,4.6,'#ffe9a8']],
+  dotyellow: [['c',12,12,7,'#ffd166']],
+  dotgreen: [['c',12,12,7,'#06d6a0']],
+  dotred: [['c',12,12,7,'#ff4d6d']],
+  dotbrown: [['c',12,12,7,'#8a5a3a']],
+  dotpurple: [['c',12,12,7,'#c084fc']],
+  dotblue: [['c',12,12,7,'#3a6ea5']],
+  donut: [['cs',12,12,7,'#c9a06a',6],['c',7.5,7,0.8,'#ffb3d9'],['c',16.5,7.5,0.8,'#a8e0c9'],['c',18,13,0.8,'#ffb3d9'],['c',7,17,0.8,'#a8e0c9'],['c',13,18.5,0.8,'#ffb3d9']],
+  pill: [['p','M14.97,14.97 L12.283,17.657 A4.2,4.2 0 0 1 6.343,11.717 L9.03,9.03 Z','#ff4d6d'],['p','M9.03,9.03 L11.717,6.343 A4.2,4.2 0 0 1 17.657,12.283 L14.97,14.97 Z','#f4f8fb']],
+  heart: [['p','M12,21 C12,21 4,14.3 4,8.8 C4,5.6 6.5,3 9.6,3 C11,3 12,3.9 12,5.4 C12,3.9 13,3 14.4,3 C17.5,3 20,5.6 20,8.8 C20,14.3 12,21 12,21 Z','#ff4d6d']],
+  star: [['p','M12,2.5 L14.9,9 L22,9.7 L16.7,14.4 L18.3,21.5 L12,17.8 L5.7,21.5 L7.3,14.4 L2,9.7 L9.1,9 Z','#ffd166']],
+  sparkles: [['p','M12,2 L14,9 L21,11 L14,13 L12,20 L10,13 L3,11 L10,9 Z','#e8f4ff'],['p','M19,2 L20,4.5 L22.5,5.5 L20,6.5 L19,9 L18,6.5 L15.5,5.5 L18,4.5 Z','#ffd166'],['p','M4,15 L4.6,16.6 L6.2,17.2 L4.6,17.8 L4,19.4 L3.4,17.8 L1.8,17.2 L3.4,16.6 Z','#ffd166']],
+  face_neutral: [['c',12,12,9.5,'#f0c896'],['c',9,11,1.1,'#3a2a1a'],['c',15,11,1.1,'#3a2a1a'],['ps','M8.5,16 H15.5','#3a2a1a',1.6]],
+  face_happy: [['c',12,12,9.5,'#f0c896'],['ps','M7,10.5 Q9,8.5 11,10.5','#3a2a1a',1.6],['ps','M13,10.5 Q15,8.5 17,10.5','#3a2a1a',1.6],['ps','M7.5,15 Q12,20 16.5,15','#3a2a1a',1.8]],
+  face_sad: [['c',12,12,9.5,'#f0c896'],['c',9,11,1.1,'#3a2a1a'],['c',15,11,1.1,'#3a2a1a'],['ps','M8,17.5 Q12,13.5 16,17.5','#3a2a1a',1.6]],
+  face_shock: [['c',12,12,9.5,'#f0c896'],['cs',9,11,1.6,'#3a2a1a',1.5],['cs',15,11,1.6,'#3a2a1a',1.5],['e',12,17,1.8,2.3,'#3a2a1a']],
+  face_angry: [['c',12,12,9.5,'#e8a878'],['ps','M6.8,9 L10.5,10.5','#7a2a1a',1.8],['ps','M17.2,9 L13.5,10.5','#7a2a1a',1.8],['c',9,12.5,1.1,'#3a2a1a'],['c',15,12.5,1.1,'#3a2a1a'],['ps','M8,18 Q12,15.5 16,18','#3a2a1a',1.6]],
+  face_sleepy: [['c',12,12,9.5,'#f0c896'],['ps','M7,11 Q9,9.5 11,11','#3a2a1a',1.6],['ps','M13,11 Q15,9.5 17,11','#3a2a1a',1.6],['ps','M9.5,16 Q12,17.5 14.5,16','#3a2a1a',1.4],['ps','M18,3.5 L20,1.5 M19,5 L21.5,3.5','#a9b4bd',1.1]],
+  robot: [['r',5,7,14,12,3,'#8a5fd6'],['l',12,3,12,7,'#e6c6ff',1.8],['c',12,2.6,1.3,'#e6c6ff'],['c',9,13,1.6,'#f0dcff'],['c',15,13,1.6,'#f0dcff'],['ps','M9,17.5 H15','#1a1030',1.8],['c',3,13,1.4,'#22d3ee'],['c',21,13,1.4,'#ff9de2']],
+  speech: [['p','M3,4 A2,2 0 0 1 5,2 H19 A2,2 0 0 1 21,4 V14 A2,2 0 0 1 19,16 H9 L4,20 V16 H5 A2,2 0 0 1 3,14 Z','#8affd0']],
+  newspaper: [['r',2,3,20,18,1.5,'#dbe4ea'],['r',15,5,4.5,4.5,0.8,'#aebac2'],['ps','M4,11 H19','#3a4550',1.4],['ps','M4,14.5 H19','#3a4550',1.4],['ps','M4,18 H19','#3a4550',1.4]],
+  check: [['ps','M4.5,12.5 L9.5,17.5 L19.5,6.5','#06d6a0',3]],
+  cross: [['ps','M6,6 L18,18','#ff4d6d',3],['ps','M18,6 L6,18','#ff4d6d',3]],
+  warning: [['p','M12,2.5 L22.5,21 H1.5 Z','#ffd166'],['r',11,8.5,2,7,1,'#3a2c00'],['c',12,18.5,1.2,'#3a2c00']],
+  shield: [['p','M12,2 L20,5.5 V12 C20,17 16.5,20.5 12,22.5 C7.5,20.5 4,17 4,12 V5.5 Z','#4dd8a0']],
+  thread: [['cs',7.5,7.5,3,'#f472b6',2],['cs',16.5,16.5,3,'#d24f8f',2],['ps','M10.2,10.2 L13.8,13.8','#f472b6',2]],
+  brain: [['p','M8.5,3.5 C5.5,3.5 3.5,6 4,8.5 C2.5,9.5 2.5,12.5 4.3,13.5 C3.5,16 5.5,18.5 8,18 C8.5,20 11,21 12.5,19.5 C14,21 16.5,20 17,18 C19.5,18.5 21.5,16 20.7,13.5 C22.5,12.5 22.5,9.5 21,8.5 C21.5,6 19.5,3.5 16.5,3.5 C15,3.5 14,4.2 13,5 C12.6,4 12,3.5 12,3.5 C12,3.5 11.4,4 11,5 C10,4.2 9,3.5 8.5,3.5 Z','#ff9de2'],['ps','M12,5 V19.5','#c23b8f',1.2],['ps','M8,9 Q10,10 8,12','#c23b8f',1],['ps','M16,9 Q14,10 16,12','#c23b8f',1]],
+  palette: [['p','M12,3 C6.5,3 2,7 2,11.5 C2,15 4.5,15.5 6.5,15 C7.5,14.7 8.5,15.5 8,16.5 C7.5,17.5 8,19 9.5,19.5 C15,21 22,17 22,11.5 C22,6.5 17.5,3 12,3 Z','#c084fc'],['c',7,9,1.4,'#ff4d6d'],['c',11,6.5,1.4,'#ffd166'],['c',16,7,1.4,'#06d6a0'],['c',18.5,11,1.4,'#3a6ea5']],
+  compass: [['cs',12,12,9,'#c9a227',1.8],['g','12,6 14.5,11.5 12,12.7','#ff4d6d'],['g','12,6 9.5,11.5 12,12.7','#ff9f43'],['g','12,18 9.5,12.5 12,11.3','#dbe4ea'],['g','12,18 14.5,12.5 12,11.3','#c9d3dc'],['c',12,12,1.2,'#3a2c00']],
+  flask: [['p','M10,2.5 H14 V8 L19,19 C19.8,20.7 18.6,22.5 16.7,22.5 H7.3 C5.4,22.5 4.2,20.7 5,19 L10,8 Z','#7fd6f0'],['p','M6.6,16 H17.4 L19,19 C19.8,20.7 18.6,22.5 16.7,22.5 H7.3 C5.4,22.5 4.2,20.7 5,19 Z','#06d6a0'],['ps','M10,2.5 H14','#4a97ad',1.6]],
+  megaphone: [['p','M3,10 H7 L16,4 V20 L7,14 H3 Z','#ff9f43'],['r',2,10,2,4,1,'#c9701f'],['ps','M18,9 C19.5,10.2 19.5,13.8 18,15','#ff9f43',1.6]],
+  lock: [['ps','M7,10 V7 A5,5 0 0 1 17,7 V10','#8a97a8',2.2],['r',5,10,14,10,2.5,'#f0dcff'],['c',12,14.5,1.6,'#3a1a3a'],['r',11,15.5,2,3,1,'#3a1a3a']],
+  handshake: [['p','M2,13 L7,9 L11,12 L8,16 Z','#3a6ea5'],['p','M22,13 L17,9 L13,12 L16,16 Z','#c23b3b'],['p','M11,12 L13,12 L13.5,14 L10.5,14 Z','#e8c39a'],['l',7,9,10,7,'#3a6ea5',2.6],['l',17,9,14,7,'#c23b3b',2.6]],
+  person: [['c',12,7,4,'#c9d3dc'],['p','M5,21 C5,15.5 8,13 12,13 C16,13 19,15.5 19,21 Z','#8a97a8']],
+  phone: [['r',6,2,12,20,2.5,'#3a6ea5'],['r',7.2,4.2,9.6,13.6,0.8,'#8fd3f4'],['l',10.5,19,13.5,19,'#dbe4ea',1.6]],
+  hamburger: [['ps','M3,6.5 H21','#dbe4ea',2],['ps','M3,12 H21','#dbe4ea',2],['ps','M3,17.5 H21','#dbe4ea',2]],
+  books: [['r',2,15,20,4,1,'#c9432f'],['r',3,10,18,4,1,'#3a6ea5'],['r',4,5,16,4,1,'#4dd8a0']],
+  soap: [['r',3,13,18,8,4,'#ff8fb3'],['r',4.5,14,15,2.2,1.1,'#ffb8d4'],['c',7,8,2,'#f8fbfc'],['c',12.5,5,2.6,'#f8fbfc'],['c',17,7.5,1.8,'#f8fbfc'],['c',9.5,4,1,'#f8fbfc'],['c',15,4.2,1.1,'#f8fbfc']],
+  fire: [['p','M12,2 C13,6 17,7 17,12.5 C17,17 14.5,21 11.5,21 C7.5,21 5,18 5,14 C5,11.5 6.5,10.5 6.8,12 C7.2,9 9.5,7 9,4 C10.5,5 11,6 11,6 C11.5,4 11,2.8 12,2 Z','#ff6b35'],['p','M12,10 C12.8,12 14,13 14,15.3 C14,17.5 12.7,19 11.3,19 C9.3,19 8,17.3 8,15.3 C8,13.8 8.8,13.3 9,14.2 C9.7,13 10.3,12.5 10,11 C11,11.5 11.3,12 11.3,12 C11.7,11.3 11.3,10.7 12,10 Z','#ffd166']],
+  siren: [['p','M6,14 A6,6 0 0 1 18,14 Z','#ff4d6d'],['r',3,14,18,5,1.5,'#2a2a2a'],['c',3,10,1.3,'#ffd166'],['c',21,10,1.3,'#ffd166']],
+  link: [['ps','M10,13 A5,5 0 0 0 17.54,13.54 L20.54,10.54 A5,5 0 0 0 13.47,3.47 L11.76,5.18','#7fd6f0',2.4],['ps','M14,11 A5,5 0 0 0 6.46,10.46 L3.46,13.46 A5,5 0 0 0 10.53,20.53 L12.24,18.82','#7fd6f0',2.4]],
+  openbook: [['p','M12,6 C10,4.5 6,4 3,4.5 V17.5 C6,17 10,17.5 12,19 C14,17.5 18,17 21,17.5 V4.5 C18,4 14,4.5 12,6 Z','#f0e6d2'],['ps','M12,6 V19','#8a6a4a',1.4],['ps','M5,8 H9.5 M5,11 H9.5 M5,14 H9.5','#c9b89a',1.1],['ps','M14.5,8 H19 M14.5,11 H19 M14.5,14 H19','#c9b89a',1.1]],
+  question: [['p','M8,8 A4,4 0 1 1 14.3,10.8 C13,11.6 12,12.5 12,14.5','#ffd166'],['ps','M12,14.5 V14.6','#ffd166',3.4],['c',12,19.2,1.3,'#ffd166']],
+  pause: [['r',5,4,4.5,16,2,'#dbe4ea'],['r',14.5,4,4.5,16,2,'#dbe4ea']],
+  eyes: [['e',7,12,4.5,3.2,'#f4f8fb'],['c',8,12,1.8,'#1a1a1a'],['e',17,12,4.5,3.2,'#f4f8fb'],['c',18,12,1.8,'#1a1a1a']],
+  flag: [['l',5,2,5,22,'#8a97a8',2],['p','M5,3 H18 L15,7.5 L18,12 H5 Z','#ff4d6d']],
+  monster: [['p','M4,12 C4,6.5 7.5,3 12,3 C16.5,3 20,6.5 20,12 V17 C20,19 18,20.5 16,19.5 L14.5,21 L12,19 L9.5,21 L8,19.5 C6,20.5 4,19 4,17 Z','#c9432f'],['c',9,10.5,1.4,'#1a1a1a'],['c',15,10.5,1.4,'#1a1a1a'],['p','M8,14.5 L10,16.5 L12,14.5 L14,16.5 L16,14.5','#1a1a1a']],
+  puzzle: [['p','M5,5 H10.5 C10.5,3.3 11.8,2 13.5,2 C15.2,2 16.5,3.3 16.5,5 H22 V10.5 C23.7,10.5 25,11.8 25,13.5 C25,15.2 23.7,16.5 22,16.5 V22 H16.5 C16.5,20.3 15.2,19 13.5,19 C11.8,19 10.5,20.3 10.5,22 H5 V16.5 C3.3,16.5 2,15.2 2,13.5 C2,11.8 3.3,10.5 5,10.5 Z','#8a5fd6'],['c',7,7.5,1.3,'#0e1418']],
+  clipboard: [['r',4,4,16,18,2,'#dbe4ea'],['r',9,2,6,4,1.3,'#8a97a8'],['ps','M7.5,11 H16.5 M7.5,14.5 H16.5 M7.5,18 H13','#3a4550',1.4]],
+  chick: [['c',12,15,7,'#f5f0e0'],['c',12,8,5,'#ffd166'],['c',10.6,7.5,1,'#1a1a1a'],['g','13.5,8.5 17.5,9.5 13.5,10.5','#ff9f43'],['c',9.5,15,1,'#d9cba8'],['c',14.5,15,1,'#d9cba8']],
+  party: [['g','4,22 6,10 12,16','#c9a227'],['c',17,4,1.3,'#ff4d6d'],['c',21,8,1.3,'#4dd8a0'],['c',20,14,1.3,'#7fd6f0'],['c',15,10,1.3,'#ffd166'],['c',12,4,1,'#ff9f43']],
+  pin: [['p','M12,2 C7.5,2 4,5.4 4,9.7 C4,15 12,22 12,22 C12,22 20,15 20,9.7 C20,5.4 16.5,2 12,2 Z','#ff4d6d'],['c',12,9.5,3,'#fff']],
+  calendar: [['r',3,4,18,17,2,'#dbe4ea'],['r',3,4,18,4.5,2,'#ff4d6d'],['l',8,2,8,6,'#3a3a3a',1.8],['l',16,2,16,6,'#3a3a3a',1.8],['c',8,13,1.1,'#8a97a8'],['c',12,13,1.1,'#8a97a8'],['c',16,13,1.1,'#8a97a8'],['c',8,17,1.1,'#8a97a8'],['c',12,17,1.1,'#8a97a8']],
+  seedling: [['l',12,22,12,12,'#4a7a3a',2],['p','M12,13 C12,9 8,8 4,8.5 C4.5,13 8,14.5 12,13 Z','#6b9a4a'],['p','M12,10 C12,6.5 15.5,5 19,5.5 C18.7,9.5 15.5,11.3 12,10 Z','#8fc75a']],
+  writing: [['p','M4,20 L5,16 L15.5,5.5 L18.5,8.5 L8,19 Z','#dbe4ea'],['p','M15.5,5.5 L18,3 L21,6 L18.5,8.5 Z','#3a2a1a'],['g','4,20 5,16 7,18','#c9a227']],
+  tree: [['c',9,8,5,'#4a7a3a'],['c',15,8,5,'#4a7a3a'],['c',12,11.5,5.5,'#4a7a3a'],['r',10.5,15,3,7,1,'#6a4a2a']],
+  pray: [['p','M11.4,3 C9,3.3 8,6 8,10 L8,19 C8,20.5 9.3,21.2 10.3,20.4 C11,19.8 11.4,18.9 11.4,18 Z','#e8c39a'],['p','M12.6,3 C15,3.3 16,6 16,10 L16,19 C16,20.5 14.7,21.2 13.7,20.4 C13,19.8 12.6,18.9 12.6,18 Z','#d9b48a'],['ps','M9.8,7 V17 M10.9,6 V18.5','#c9a06a',0.5],['ps','M14.2,7 V17 M13.1,6 V18.5','#b89468',0.5]],
+  tag: [['p','M3,12 L12,3 H19 A2,2 0 0 1 21,5 V12 L12,21 A2,2 0 0 1 9,21 L3,15 A2,2 0 0 1 3,12 Z','#ff9f43'],['c',16.5,7.5,1.6,'#8a4a1a']],
+  speakinghead: [['p','M6,3 C10,3 13,6 13,10.5 C13,13 12,14.7 10.5,16 L11,21 H7 L6.5,16.5 C4.8,15.7 3.5,13.8 3.5,11.5 C3.5,7 4,3 6,3 Z','#e8c39a'],['ps','M15,8 Q17,10.5 15,13','#dbe4ea',1.4],['ps','M17.5,6 Q21,10.5 17.5,15','#dbe4ea',1.4]],
+  detective: [['p','M3,8 C3,4 6.5,3 12,3 C17.5,3 21,4 21,8 L19,8 C19,5.5 16,5 12,5 C8,5 5,5.5 5,8 Z','#2a2a2a'],['r',2,7,20,1.6,0.8,'#2a2a2a'],['c',12,13,6,'#e8c39a'],['cs',15.5,17,2.6,'#3a2a1a',1.6],['l',17.4,18.9,20,21.5,'#3a2a1a',1.8]],
+  scale: [['l',12,2,12,17,'#8a97a8',1.8],['ps','M4,6 H20','#8a97a8',1.8],['p','M0,9 L4,9 L2,13 A2.2,2.2 0 0 1 0,9 Z','#8a97a8'],['p','M8,9 L4,9 L6,13 A2.2,2.2 0 0 0 8,9 Z','#8a97a8'],['p','M20,9 L24,9 L22,13 A2.2,2.2 0 0 1 20,9 Z','#8a97a8'],['p','M16,9 L20,9 L18,13 A2.2,2.2 0 0 0 16,9 Z','#8a97a8'],['r',7,19,10,2.5,1.2,'#8a97a8']],
+  thumbsup: [['r',3,11,4,9,1.5,'#d9b48a'],['p','M8,11 L8,20 H15 C17,20 18.5,19 19,17 L20.5,13.5 C21,12 20,10.5 18.5,10.5 H14.5 L15.3,7 C15.6,5.5 14.5,4 13,4 C12.4,4 11.9,4.4 11.7,5 L9.5,10 C9,10.7 8.5,11 8,11 Z','#e8c39a']],
+  people: [['c',7,7,3,'#e8c39a'],['p','M2,20 C2,15.5 4,13.5 7,13.5 C10,13.5 12,15.5 12,20 Z','#3a6ea5'],['c',17,7,3,'#e8c39a'],['p','M12,20 C12,15.5 14,13.5 17,13.5 C20,13.5 22,15.5 22,20 Z','#c9825a']],
+  teacher: [['c',12,7,4,'#e8c39a'],['p','M5,21 C5,15.5 8,13 12,13 C16,13 19,15.5 19,21 Z','#3a6ea5'],['g','8,2.5 12,0.5 16,2.5 12,4.5','#c9a227']],
+  gamepad: [['r',2,7,20,10,4,'#3a4550'],['ps','M6,10.5 V15.5 M3.5,13 H8.5','#dbe4ea',1.6],['c',16,10.5,1.4,'#ff4d6d'],['c',19,13.5,1.4,'#7fd6f0']],
+  walk: [['c',13,4,2.4,'#e8c39a'],['p','M13,7 C10.5,7 9,8.5 9,10.5 L9,15 L5,19.5 L6.5,21 L11,16.5 L11.5,19 L9.5,22.5 L11.3,23.3 L14,19 L13.5,13.5 L16.5,16 L19.5,13.5 L18.2,12 L15.5,14 L13,11.5 Z','#3a6ea5']],
+  swords: [['ps','M4,20 L16,8','#c9d3dc',2.4],['g','16,8 19,5 20,6 17,9','#c9a227'],['ps','M20,20 L8,8','#c9d3dc',2.4],['g','8,8 5,5 4,6 7,9','#c9a227']],
+  clapper: [['r',3,8,18,13,1.5,'#3a4550'],['g','3,8 6,4 9,4 6.5,8','#dbe4ea'],['g','9.5,8 12.5,4 15.5,4 13,8','#2a2a2a'],['g','16,8 19,4 21,4 21,8','#dbe4ea']],
+  barchart: [['r',3,16,4,5,1,'#06d6a0'],['r',10,10,4,11,1,'#ffd166'],['r',17,4,4,17,1,'#ff9f43']],
+  school: [['g','12,2 22,8 2,8','#6a4a2a'],['r',3,8,18,13,0.5,'#8a5a3a'],['r',6,11,3,4,0.5,'#8fd3f4'],['r',15,11,3,4,0.5,'#8fd3f4'],['r',10.5,15,3,6,0.5,'#3a2a1a']],
+  house: [['g','12,2 22,12 18,12 18,21 6,21 6,12 2,12','#c23b3b'],['r',6,12,12,9,0.5,'#dbc9a3'],['r',10,15,4,6,0.5,'#6a4a2a']],
+  bulb: [['p','M7,9 A5,5 0 1 1 17,9 C17,11.5 15.5,12.5 15,14.5 H9 C8.5,12.5 7,11.5 7,9 Z','#ffd166'],['r',9,14.8,6,2.4,0.8,'#8a97a8'],['ps','M10.2,18 H13.8','#8a97a8',1]],
+  thought: [['c',7,15,3.2,'#e8eef2'],['c',12,10.5,5,'#e8eef2'],['c',17,13,4,'#e8eef2'],['c',4,20,1.3,'#e8eef2'],['c',2,22.5,0.8,'#e8eef2']],
+  trash: [['r',3,5,3,2,1,'#8a97a8'],['r',9,2.5,6,2.5,1,'#8a97a8'],['p','M5,7.5 H19 L17.5,21 A2,2 0 0 1 15.5,23 H8.5 A2,2 0 0 1 6.5,21 Z','#8a97a8'],['l',9.5,11,10.2,19,'#0e1418',1.3],['l',12,11,12,19,'#0e1418',1.3],['l',14.5,11,13.8,19,'#0e1418',1.3]],
+  playtri: [['g','7,4 19,12 7,20','#e8eef2']],
+  backtri: [['g','17,4 5,12 17,20','#e8eef2']],
+  bell: [['p','M6,17 C6,10 8,6 12,6 C16,6 18,10 18,17 Z','#c9a227'],['r',4,17,16,2,1,'#c9a227'],['c',12,20.5,1.6,'#8a6a1a'],['l',12,3.5,12,6,'#8a6a1a',1.6]],
+  speaker: [['p','M3,9 H7 L12,5 V19 L7,15 H3 Z','#8a97a8'],['ps','M15.5,8.5 Q18,12 15.5,15.5','#dbe4ea',1.6],['ps','M18.5,6 Q22.5,12 18.5,18','#dbe4ea',1.6]],
+  mute: [['p','M3,9 H7 L12,5 V19 L7,15 H3 Z','#8a97a8'],['ps','M15.5,9.5 L20.5,14.5','#ff4d6d',1.8],['ps','M20.5,9.5 L15.5,14.5','#ff4d6d',1.8]],
+  wave: [['p','M8,22 V13 A9,9 0 0 1 6.5,10 A1.4,1.4 0 0 1 9.2,9.2 C9.2,9.2 9,10 9.5,10.5','#e8c39a'],['r',7.7,3.5,2,9,1,'#e8c39a'],['r',10.3,1.8,2,10.5,1,'#e8c39a'],['r',12.9,2.3,2,10,1,'#e8c39a'],['r',15.5,4,2,8.5,1,'#e8c39a'],['p','M8,13 H18 V17 C18,20 15.5,22 13,22 H11 C9.3,22 8,20.7 8,19 Z','#e8c39a']],
+  camera: [['r',5,3,4,2.5,0.8,'#2a2a2a'],['r',2,6.5,20,14,2.5,'#2a2a2a'],['cs',12,13.5,4.5,'#8a97a8',1.6],['c',12,13.5,2.4,'#7fd6f0']],
+  musicnote: [['c',7,19,3,'#e8eef2'],['c',17,17,3,'#e8eef2'],['l',10,19,10,4,'#e8eef2',1.6],['l',20,17,20,2,'#e8eef2',1.6],['ps','M10,4 L20,2 V6 L10,8 Z','#e8eef2',0.2]],
+  trophy: [['p','M7,3 H17 V10 C17,13.5 14.8,16 12,16 C9.2,16 7,13.5 7,10 Z','#c9a227'],['ps','M7,4.5 H3 V7 A4,4 0 0 0 7,11','#c9a227',1.8],['ps','M17,4.5 H21 V7 A4,4 0 0 1 17,11','#c9a227',1.8],['r',10.5,16,3,4,1,'#c9a227'],['r',7,20,10,2.5,1,'#c9a227']],
+  notebook: [['r',2,2,3,20,1.5,'#5a3f8a'],['r',5,2,15,20,1.5,'#8a5fd6'],['c',3.5,6,0.7,'#c9b8ea'],['c',3.5,12,0.7,'#c9b8ea'],['c',3.5,18,0.7,'#c9b8ea'],['ps','M8,8 H17 M8,12 H17 M8,16 H14','#c9b8ea',1.3]],
+  web: [['cs',12,12,3.5,'#dbe4ea',1],['cs',12,12,7,'#8a97a8',1],['cs',12,12,10,'#8a97a8',1],['ps','M12,2 V22 M2,12 H22 M4.9,4.9 L19.1,19.1 M19.1,4.9 L4.9,19.1','#8a97a8',1]],
+  fog: [['ps','M2,8 H22','#c9d3dc',2],['ps','M2,12 H22','#aebac2',2.4],['ps','M4,16 H20','#c9d3dc',2]],
+  tv: [['r',2,4,20,13,2,'#2a2a2a'],['r',3.5,5.5,17,10,1,'#7fd6f0'],['l',9,20,15,20,'#8a97a8',1.8]],
+  masks: [['p','M2,5 C2,3.3 3.3,2 5,2 C6.7,2 8,3.3 8,5 V13 C8,16.9 6.2,20 5,20 C3.8,20 2,16.9 2,13 Z','#ff4d6d'],['c',4,7,0.9,'#0e1418'],['c',6,7,0.9,'#0e1418'],['ps','M3.5,11 Q5,10 6.5,11','#0e1418',1],['p','M16,2 C17.7,2 19,3.3 19,5 V13 C19,16.9 17.2,20 16,20 C14.8,20 13,16.9 13,13 V5 C13,3.3 14.3,2 16,2 Z','#7fd6f0'],['c',14.7,7,0.9,'#0e1418'],['c',17.3,7,0.9,'#0e1418'],['ps','M14.3,11.5 Q16,13 17.7,11.5','#0e1418',1]],
+  broom: [['l',18,2,7,15,'#8a6a4a',1.8],['p','M7,15 L11,12.5 L18,20 C15,23 8,22.5 4,20.5 Z','#ffd166']],
+  square: [['r',4,4,16,16,2.5,'#e8eef2']],
+  gear: [['p','M12,2 L13.3,2 L13.9,5 L16,5.8 L18.5,4.2 L20.3,6 L18.7,8.5 L19.5,10.6 L22.5,11.2 V13.3 L19.5,13.9 L18.7,16 L20.3,18.5 L18.5,20.3 L16,18.7 L13.9,19.5 L13.3,22.5 H10.7 L10.1,19.5 L8,18.7 L5.5,20.3 L3.7,18.5 L5.3,16 L4.5,13.9 L1.5,13.3 V10.7 L4.5,10.1 L5.3,8 L3.7,5.5 L5.5,3.7 L8,5.3 L10.1,4.5 L10.7,1.5 Z','#8a97a8'],['c',12,12,4,'#0e1418']],
+  rainbow: [['ps','M2,17 A10,10 0 0 1 22,17','#ff4d6d',2.6],['ps','M4.3,17 A7.7,7.7 0 0 1 19.7,17','#ffd166',2.6],['ps','M6.6,17 A5.4,5.4 0 0 1 17.4,17','#4dd8a0',2.6]],
+  gift: [['r',3,10,18,11,1.5,'#c23b3b'],['r',2,8,20,4,1,'#e8a8a8'],['r',10.5,2,3,19,1,'#ffd166'],['p','M12,8 C9,8 7,6 7,4.5 C7,3.2 8,2.5 9,3 C10.5,3.7 12,6 12,8 Z','#c23b3b'],['p','M12,8 C15,8 17,6 17,4.5 C17,3.2 16,2.5 15,3 C13.5,3.7 12,6 12,8 Z','#c23b3b']],
+  money: [['r',2,5,20,14,2,'#4dd8a0'],['cs',12,12,3.6,'#1a6a4a',1.4],['c',5,7,1,'#1a6a4a'],['c',19,17,1,'#1a6a4a']],
+  droplet: [['p','M12,2.5 C12,2.5 5,12 5,16.5 A7,7 0 0 0 19,16.5 C19,12 12,2.5 12,2.5 Z','#3a6ea5'],['c',9.5,16,1.5,'#8fd3f4']],
+  raincloud: [['p','M6,17 A5,5 0 0 1 6.5,7.1 A6,6 0 0 1 18.4,8.5 A4.5,4.5 0 0 1 18,17 Z','#8a97a8'],['l',8,19,7,22,'#3a6ea5',1.8],['l',12,19,11,22,'#3a6ea5',1.8],['l',16,19,15,22,'#3a6ea5',1.8]],
+  pawprint: [['e',12,16,5,4,'#8a6a4a'],['e',5,11,2.2,3,'#8a6a4a'],['e',10,6.5,2.2,3,'#8a6a4a'],['e',15,6.5,2.2,3,'#8a6a4a'],['e',19.5,11,2.2,3,'#8a6a4a']],
+  skull: [['p','M12,2.5 C6.5,2.5 4,6.5 4,10.5 C4,13.5 5.2,15 6,16.5 V19 H9 V17 H11 V19 H13 V17 H15 V19 H18 V16.5 C18.8,15 20,13.5 20,10.5 C20,6.5 17.5,2.5 12,2.5 Z','#e8eef2'],['e',8.3,10.5,1.6,2,'#0e1418'],['e',15.7,10.5,1.6,2,'#0e1418'],['g','12,12 10.8,15 13.2,15','#0e1418']],
+  paperclip: [['ps','M8,13.5 V6.5 A3.5,3.5 0 0 1 15,6.5 V16 A5.5,5.5 0 0 1 4,16 V9','#8a97a8',2]],
+  mirror: [['cs',12,9,6.3,'#c9e8f5',1.8],['l',12,15.3,12,21,'#8a97a8',2],['l',8.5,22,15.5,22,'#8a97a8',2]],
+  cyclone: [['p','M12,3 A9,9 0 1,1 3,12','#7fd6f0'],['p','M12,7 A5,5 0 1,1 7,12','#7fd6f0'],['c',12,12,1.4,'#7fd6f0']],
+  computer: [['r',2,3,20,13,2,'#2a2a2a'],['r',3.5,4.5,17,9.5,1,'#7fd6f0'],['g','9,20 15,20 16.5,23 7.5,23','#8a97a8'],['r',6,22,12,1.4,0.7,'#8a97a8']],
+  salad: [['p','M3,10 H21 L19,19 A3,3 0 0 1 16,21.5 H8 A3,3 0 0 1 5,19 Z','#dbe4ea'],['c',8,13,1.6,'#4dd8a0'],['c',13,11.5,1.6,'#c9432f'],['c',17,13.5,1.6,'#ffd166']],
+  loveletter: [['r',2,5,20,14,1.5,'#f4f8fb'],['p','M2,5 L12,14 L22,5','#dbe4ea'],['p','M12,15 C11,13.5 9,13.5 9,15.3 C9,16.6 10.5,17.7 12,19 C13.5,17.7 15,16.6 15,15.3 C15,13.5 13,13.5 12,15 Z','#ff4d6d']],
+  bread: [['p','M3,20 V12 C3,7 7,4 12,4 C17,4 21,7 21,12 V20 Z','#d9a86a'],['ps','M7,10 C7.5,8 8.5,7 9.5,7 C10.5,7 10.5,9.5 9.5,10','#c9905a',1.2],['ps','M11.5,9.5 C12,7 13,6 14,6 C15,6 15,9 14,9.5','#c9905a',1.2],['ps','M15.5,10.5 C16,8.5 17,7.5 18,7.5','#c9905a',1.2]],
+  honeyjar: [['p','M6,8 H18 C19,8 19.5,8.8 19.3,9.7 L18,20 A2,2 0 0 1 16,21.5 H8 A2,2 0 0 1 6,20 L4.7,9.7 C4.5,8.8 5,8 6,8 Z','#f5b942'],['r',8,4.5,8,3.5,1,'#8a6a1a'],['ps','M6.5,13 H17.5','#c9902a',1.4]],
+  watermelon: [['p','M2,12 A10,10 0 0 1 22,12 Z','#4a7a3a'],['p','M3.6,12 A8.4,8.4 0 0 1 20.4,12 Z','#e8eef2'],['p','M5,12 A7,7 0 0 1 19,12 Z','#e8455a'],['c',9,9.5,0.7,'#2a2a2a'],['c',12,8,0.7,'#2a2a2a'],['c',15,9.5,0.7,'#2a2a2a']],
+  milk: [['p','M8,2 H16 V6 L19,9 V21 A1.3,1.3 0 0 1 17.7,22.3 H6.3 A1.3,1.3 0 0 1 5,21 V9 Z','#f4f8fb'],['r',5,12.5,14,9.8,0,'#dbe9f5'],['r',8,2,8,1.6,0.5,'#8a97a8']],
+  carrot: [['p','M9.5,10 C9,15 9.7,19.5 11.5,22 C12.5,22.3 13.3,21.7 13.3,20.7 C13.3,17 14,13 14.5,10 C13,8.5 11,8.5 9.5,10 Z','#ff9f43'],['ps','M11,9 C10,6 8,5 6,5.3 M12.3,8.7 C12,5.5 13,3.7 15,3 M13.6,9 C14.6,6.5 16.7,5.7 18.5,6.3','#4a7a3a',1.5]],
+  broccoli: [['c',9,8,4.2,'#4a7a3a'],['c',14.5,7,3.6,'#6b9a4a'],['c',11.5,10.5,3.6,'#5a8a3a'],['r',10.5,13,3,8,1,'#c9dba0']],
+  cookie: [['c',12,12,9,'#d9a86a'],['c',9,9,1.1,'#5a3a1a'],['c',15,10.5,1.1,'#5a3a1a'],['c',11,14,1.1,'#5a3a1a'],['c',15.5,15.5,1.1,'#5a3a1a'],['c',8,15,1.1,'#5a3a1a']],
+  popcorn: [['p','M5,10 H19 L17.5,21 A2,2 0 0 1 15.5,23 H8.5 A2,2 0 0 1 6.5,21 Z','#e8455a'],['ps','M5,10 H19','#f4f8fb',1.6],['c',7,6,2.4,'#fff3d0'],['c',10.5,4.5,2.6,'#fff3d0'],['c',14,4.5,2.6,'#fff3d0'],['c',17.3,6,2.4,'#fff3d0'],['c',12,6.5,2.6,'#fff3d0']],
+  icecream: [['g','9,10 15,10 12,22','#e8c9a0'],['c',12,7,5,'#ffd6e8'],['c',8.3,8,1,'#c23b3b']],
+  cupcake: [['p','M4,12 H20 L18,21.5 A2,2 0 0 1 16,23 H8 A2,2 0 0 1 6,21.5 Z','#e8455a'],['ps','M6.5,13.5 L7.5,20.5 M12,13.5 V20.8 M17.5,13.5 L16.5,20.5','#c9432f',1],['p','M12,2 C9,2 8,4.5 9.5,6 C7.5,6.3 6.5,8.5 8,10 C6.5,11.5 8,13.3 10,12.8 C10,14 11,14.5 12,13.5 C13,14.5 14,14 14,12.8 C16,13.3 17.5,11.5 16,10 C17.5,8.5 16.5,6.3 14.5,6 C16,4.5 15,2 12,2 Z','#f4e6d0'],['c',12,4.5,1.3,'#ff4d6d']],
+  dango: [['l',12,3,12,20,'#c9a06a',1.6],['c',12,6.5,3.6,'#ffd6e8'],['c',12,12,3.6,'#f4f0e0'],['c',12,17.5,3.6,'#d9a86a']],
+  candy: [['c',12,12,4.2,'#ff4d6d'],['g','7,9 1.5,6.5 1.5,17.5 7,15','#ff9f43'],['g','17,9 22.5,6.5 22.5,17.5 17,15','#ffd166']],
+  lollipop: [['cs',11,8,6,'#ff9de2',3.2],['cs',11,8,6,'#ffd6ea',1.4],['l',15.2,12.2,20,20,'#f4f8fb',1.8]],
+  fries: [['p','M4,9 H20 L18,21 A1.6,1.6 0 0 1 16.4,22.5 H7.6 A1.6,1.6 0 0 1 6,21 Z','#e8455a'],['r',6.5,2,2,10,0.6,'#ffd166'],['r',9.5,1,2,11,0.6,'#ffd166'],['r',12.5,2,2,10,0.6,'#ffd166'],['r',15.5,3,2,9,0.6,'#ffd166']],
+  cake: [['p','M4,22 L4,15 L12,8 L20,15 L20,22 Z','#f4c9d9'],['p','M4,15 L12,8 L20,15 L17,17.3 L12,13 L7,17.3 Z','#ff9dc0'],['r',11,4,2,4,1,'#ffd166'],['g','10.7,4 12,1.5 13.3,4','#ff9f43']],
+  banana: [['p','M5,5 C5,5 4,13 8,18 C11.5,22.3 18,21.5 19.5,17 C17,19 12.5,19 10,15.5 C7.5,12 8,6 8,6 Z','#ffd966'],['p','M18.5,16 C19.5,16.3 20.3,17 19.8,18 C19,19.6 17,20 15.5,19.5','#c9a237']],
+  drinkcup: [['p','M6,7 H18 L16.5,21 A2,2 0 0 1 14.5,23 H9.5 A2,2 0 0 1 7.5,21 Z','#e8455a'],['ps','M12,3 V9','#dbe4ea',1.6],['ps','M7,10.5 H17','#c23b3b',1]],
+  mango: [['p','M12,3 C7,3 4,7.5 4.5,13 C5,18.5 8,22 12,22 C16,22 19,18.5 19.5,13 C20,7.5 17,3 12,3 Z','#ff9f43'],['ps','M11,3.5 C9.5,2 8,1.7 6.5,2.3','#4a7a3a',1.4]],
+  berries: [['c',8,9,3.4,'#4a6bc9'],['c',15,8,3.4,'#5a7bd9'],['c',11.5,14,3.6,'#3a5bb9'],['ps','M8,4.5 Q9,2.5 11,2.5','#4a7a3a',1.2]],
+  swap: [['ps','M4,8 H17 M13,4 L17,8 L13,12','#e6c6ff',1.9],['ps','M20,16 H7 M11,12 L7,16 L11,20','#e6c6ff',1.9]],
+  lightning: [['p','M13,2 L5,14 H11 L9.5,22 L19,10 H13 Z','#ffd166']]
 };
 function icon(name){ return "<span class='px-ic'>"+pxIcon(PX_ICONS[name]||[])+"</span>"; }
 // Emoji → icon key. Every occurrence of the emoji on the left, anywhere in
