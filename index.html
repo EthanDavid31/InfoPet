@@ -1332,10 +1332,25 @@ body.tutorial-active:not(.sheet-open) .screen-readout { position: relative; z-in
      now (not duck under a full-width row of 5 icons like before), so it
      can come way down — this is most of what actually moves the header
      and the auto-centered device shell below it higher up the page. */
-  .page:not(.landscape) > .header { flex: 0 0 auto; margin-bottom: 4px; padding-top: 14px; }
+  .page:not(.landscape) > .header {
+    flex: 0 0 auto; margin-bottom: 4px; padding-top: 14px;
+    max-height: 220px; opacity: 1; overflow: hidden;
+    transition: max-height .28s ease, opacity .18s ease, margin-bottom .28s ease, padding-top .28s ease;
+  }
   .page:not(.landscape) > .header .header-title { font-size: 19px; margin-bottom: 0; letter-spacing: 0.02em; }
   .page:not(.landscape) > .header .header-sub { font-size: 14px; line-height: 1.45; margin-top: 6px; }
   .page:not(.landscape) > .header .header-sparkle { display: none; }
+  /* Any open sheet (activity/menu/stats — see updateSheetOpenClass()) can
+     run up to ~50-52vh tall, and on a real phone there just isn't enough
+     leftover height for the header block AND the device AND that sheet
+     without the sheet burying the LED screen — the whole point of "the pet
+     is always on screen." So the header collapses out of the way instead:
+     the device (flex:0 1 auto below) isn't touched directly, it just rides
+     the freed flex space upward automatically as the header's box shrinks
+     to nothing. */
+  body.sheet-open .page:not(.landscape) > .header {
+    max-height: 0; opacity: 0; margin-bottom: 0; padding-top: 0; pointer-events: none;
+  }
   /* The device itself is left completely alone here — same shell,
      stickers, readout row and physical buttons as web mode, unmodified.
      The only phone-specific thing it needs is sizing: capped to a
@@ -1349,10 +1364,6 @@ body.tutorial-active:not(.sheet-open) .screen-readout { position: relative; z-in
     flex: 0 1 auto; min-height: 0; margin: 6px auto auto; max-width: min(92vw, 380px); width: 100%;
     transition: max-width .3s ease, margin .3s ease;
   }
-  /* The device shell no longer shrinks for any open sheet — activity
-     sheets (Feed/Clean/etc), the Status/Profile/Journey panel, and the ☰
-     menu all now overlay on top at their normal fixed-bottom size instead
-     of the shell resizing/repositioning to make room for them. */
   .page:not(.landscape) > #questAnchor { display: none; }
 }
 /* Header pills — tied to the phone/web toggle itself, not screen size, same
@@ -4263,13 +4274,18 @@ function renderDeviceMenu(onlyGroup){
       + "</div>";
   }).join("");
 }
-// Same shrink-and-pin the device does for an open activity sheet
-// (body:not(.idle-default)) also needs to happen for the ☰ menu and 💚
-// stats sheets — those don't touch S.mode/idle-default at all, so without
-// this the LED screen stays full-size and centered and the menu sheet
-// (bottom ~50vh) can cover it exactly the same way the activity sheet did.
+// Single source of truth for "some phone-mode bottom sheet is open" —
+// activity sheets (Feed/Clean/Explore/etc, tracked via S.mode/idle-default)
+// and the ☰ menu / 💚 stats sheets (tracked via deviceMenu.open/
+// deviceStats.open) are two separate systems that both need the same
+// result: on a real phone there isn't room for the header block AND the
+// device AND a ~50vh sheet all at once without the sheet burying the LED
+// screen, so body.sheet-open collapses the header (see the phone-mode
+// media query) to pull the device shell up and keep the screen visible
+// above whichever sheet is open, regardless of which system opened it.
 function updateSheetOpenClass(){
-  document.body.classList.toggle("sheet-open", deviceMenu.open || deviceStats.open);
+  var anySheetOpen = deviceMenu.open || deviceStats.open || (S.mode && S.mode!=="default");
+  document.body.classList.toggle("sheet-open", anySheetOpen);
   document.body.classList.toggle("menu-open", deviceMenu.open);
 }
 function showDeviceMenu(onlyGroup){
@@ -7254,6 +7270,7 @@ function showMode(m){
     b.setAttribute("aria-pressed",id===m?"true":"false");
   });
   S.mode=m;
+  updateSheetOpenClass();
   if(m!=="explore" && S.explore.scene){ S.explore.scene=null; drawPet(); } // leaving Explore mid-encounter — stop showing that illustration
   if(m==="feed"){ setBackdrop("kitchen"); }
   // Bathroom is a Hatchling-era metaphor (scrub your feed like a sink) — from
