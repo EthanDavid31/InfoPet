@@ -1,7 +1,7 @@
 // InfoPet service worker — caches the app shell so it still loads (and keeps
 // working) if wifi drops mid-demo. Bump CACHE_NAME whenever you deploy an
 // update, so returning visitors pick up the new version instead of a stale one.
-const CACHE_NAME = "infopet-cache-v37";
+const CACHE_NAME = "infopet-cache-v50";
 const APP_SHELL = [
   "./",
   "./index.html",
