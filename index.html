@@ -305,7 +305,7 @@ body {
    but only on the main device screen. When a sheet (Status/Profile/Journey
    or the menu) is open, it should stay behind that sheet as normal, or it
    visually leaks through and overlaps the sheet's own content. */
-body.tutorial-active:not(.sheet-open) .readout { position: relative; z-index: 3010; }
+body.tutorial-active:not(.sheet-open) .screen-readout { position: relative; z-index: 3010; }
 /* Applied directly to the real element being explained, in addition to the
    moving spotlight overlay — guarantees a visible highlight even in edge
    cases where the overlay's position lags behind (e.g. a sheet still
@@ -580,40 +580,56 @@ body.tutorial-active:not(.sheet-open) .readout { position: relative; z-index: 30
   line-height: 1.6;
 }
 
-/* READOUT */
-.readout {
-  margin-top: 14px;
-  background: rgba(0,0,0,0.25);
-  border-radius: 10px;
-  padding: 10px 14px;
+/* SCREEN READOUT — Mood/State/Clean/Hunger/Energy, drawn as a compact HUD
+   strip on the LED screen itself (top of .screen-inner, directly above the
+   pet) instead of a separate panel on the device casing below. Same dark,
+   glowing-green screen language as .thought-bar at the screen's bottom
+   edge — including matching its font-px/7px sizing — so the two strips
+   read as one screen framing the pet, not two unrelated widgets bolted on
+   above and below it. */
+.screen-readout {
+  position: relative; z-index: 1;
+  padding: 6px 8px;
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
-  gap: 8px;
-  /* sits on the device shell as a dark instrument panel in both themes */
-  --text:#eef0fb; --text-soft:#9a9fd0; --text-muted:#5a5f94;
+  grid-template-rows: auto auto;
+  gap: 4px 8px;
 }
 .stat {
   display: flex;
-  flex-direction: column;
   align-items: center;
   gap: 4px;
+  min-width: 0;
 }
+.stat.sr-wide { justify-content: center; }
+.sr-mood   { grid-column: 1; grid-row: 1; }
+.sr-hunger { grid-column: 1; grid-row: 2; }
+.sr-clean  { grid-column: 3; grid-row: 1; }
+.sr-energy { grid-column: 3; grid-row: 2; }
+.sr-state  { grid-column: 2; grid-row: 1 / span 2; align-self: center; }
 .stat-label {
   font-family: var(--font-mono);
-  font-size: 9px;
-  letter-spacing: 0.08em;
-  color: var(--text-muted);
+  font-size: 6.5px;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
+  color: #6fae8f;
+  flex-shrink: 0;
 }
 .stat-val {
   font-family: var(--font-px);
-  font-size: 11px;
-  color: var(--text);
+  font-size: 7px;
+  color: #ffffff;
+  letter-spacing: 0.02em;
+  flex-shrink: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .stat-bar {
-  width: 100%;
-  height: 4px;
-  background: var(--tint-2);
+  flex: 1;
+  min-width: 12px;
+  height: 3px;
+  background: rgba(255,255,255,0.12);
   border-radius: 3px;
   overflow: hidden;
 }
@@ -2327,6 +2343,50 @@ body:not(.web-mode) #orientToggle { top:94px !important; }
     </div>
     <div class="screen-bezel">
       <div class="screen-inner">
+        <!-- .screen-readout is a 3-column, 2-row grid with each stat
+             explicitly placed (see the .sr-* grid-column/grid-row rules) —
+             Mood/Hunger stack in column 1, Clean/Energy stack in column 3,
+             and State sits alone in the middle column, spanning both rows
+             and vertically centered so it's dead center of the whole strip
+             rather than just another grid cell. Lives on
+             the LED screen itself, directly above the pet — parallel to
+             .thought-bar's dialogue strip at the screen's bottom edge, same
+             glowing-text screen language on both ends with the pet framed
+             in between (no panel background of its own — it reads as part
+             of the screen, not a bar bolted onto it). Days Practiced used
+             to live here too but doesn't change per-tick like these do —
+             it's a once-a-day number, so it moved to the Journey tab where
+             the rest of the pet's progression history lives (see
+             renderJourneyStreak()). -->
+        <div class="screen-readout" role="status" aria-label="Pet stats">
+          <div class="stat sr-mood">
+            <span class="stat-label">Mood</span>
+            <div class="stat-bar"><div class="stat-fill" id="moodBar"></div></div>
+            <span class="stat-val" id="moodVal">50</span>
+          </div>
+          <div class="stat sr-wide sr-state">
+            <span class="stat-label">State</span>
+            <span class="stat-val" id="stateVal">—</span>
+          </div>
+          <!-- CARE METERS — hunger/cleanliness/energy. Restored by Feed/Clean/Sleep,
+               decayed only by real days actually missed (see applyNeglectDecay() in
+               loadV4()) — never by mere time passing while you're actively playing. -->
+          <div class="stat sr-clean">
+            <span class="stat-label">Clean</span>
+            <div class="stat-bar"><div class="stat-fill" id="cleanlinessBar"></div></div>
+            <span class="stat-val" id="cleanlinessVal">100</span>
+          </div>
+          <div class="stat sr-hunger">
+            <span class="stat-label">Hunger</span>
+            <div class="stat-bar"><div class="stat-fill" id="hungerBar"></div></div>
+            <span class="stat-val" id="hungerVal">100</span>
+          </div>
+          <div class="stat sr-energy">
+            <span class="stat-label">Energy</span>
+            <div class="stat-bar"><div class="stat-fill" id="energyBar"></div></div>
+            <span class="stat-val" id="energyVal">100</span>
+          </div>
+        </div>
         <canvas id="petCanvas" width="280" height="180" role="img" aria-label="InfoPet pixel art character"></canvas>
         <div class="scanlines" aria-hidden="true"></div>
         <div class="screen-glow-overlay" aria-hidden="true"></div>
@@ -2410,57 +2470,12 @@ body:not(.web-mode) #orientToggle { top:94px !important; }
             <div class="stats-panel hidden" id="statsPanelJourney">
               <div class="profile-card" id="journeyBadges"></div>
               <div class="profile-card" id="journeyQuest"></div>
+              <div class="profile-card" id="journeyStreak"></div>
             </div>
 
           </div>
         </div>
         <div class="thought-bar" id="thoughtBar">…waiting.</div>
-      </div>
-    </div>
-    <!-- .readout is a 3-column CSS grid (see .readout's grid-template-columns),
-         not a single vertical list — items fill left-to-right, then wrap to
-         the next row. So "State" and "Days Practiced" only stack one above
-         the other if they land in the SAME column across two rows, which
-         means Clean has to move up next to Mood to keep row 1 filled. -->
-    <div class="readout" role="status" aria-label="Pet stats">
-      <div class="stat">
-        <span class="stat-label">Mood</span>
-        <div class="stat-bar"><div class="stat-fill" id="moodBar"></div></div>
-        <span class="stat-val" id="moodVal">50</span>
-      </div>
-      <div class="stat">
-        <span class="stat-label">State</span>
-        <span class="stat-val" id="stateVal">—</span>
-      </div>
-      <!-- CARE METERS — hunger/cleanliness/energy. Restored by Feed/Clean/Sleep,
-           decayed only by real days actually missed (see applyNeglectDecay() in
-           loadV4()) — never by mere time passing while you're actively playing. -->
-      <div class="stat">
-        <span class="stat-label">Clean</span>
-        <div class="stat-bar"><div class="stat-fill" id="cleanlinessBar"></div></div>
-        <span class="stat-val" id="cleanlinessVal">100</span>
-      </div>
-      <div class="stat">
-        <span class="stat-label">Hunger</span>
-        <div class="stat-bar"><div class="stat-fill" id="hungerBar"></div></div>
-        <span class="stat-val" id="hungerVal">100</span>
-      </div>
-      <!-- DAYS PRACTICED — total distinct real calendar days played, deliberately
-           NOT a consecutive-day streak that resets on a missed day (see
-           S.life.streakDays in loadV4()) — a reset-on-miss counter creates the
-           same daily-obligation pressure the game's own AI-boundary lessons
-           argue against, so missing a day here costs nothing. Sits directly
-           below State (same grid column, next row) — see the comment above
-           .readout for why it's positioned here in the source instead of
-           right after State. -->
-      <div class="stat">
-        <span class="stat-label">Days Practiced</span>
-        <span class="stat-val" id="streakVal">📅 1</span>
-      </div>
-      <div class="stat">
-        <span class="stat-label">Energy</span>
-        <div class="stat-bar"><div class="stat-fill" id="energyBar"></div></div>
-        <span class="stat-val" id="energyVal">100</span>
       </div>
     </div>
 
@@ -5586,8 +5601,6 @@ function updateReadout(){
     if(bar){ bar.style.width=v+"%"; bar.style.background=pair[1]; }
     if(val) val.textContent=v;
   });
-  var streakVal=document.getElementById("streakVal");
-  if(streakVal) streakVal.textContent="📅 "+((S.life&&S.life.streakDays)||1);
   var floatMood=document.getElementById("floatMoodFill"); if(floatMood) floatMood.style.width=S.mood+"%";
   var tb=document.getElementById("thoughtBar");
   var hungerLow=S.life && S.life.hunger!=null && S.life.hunger<30;
@@ -6272,10 +6285,21 @@ function renderJourneyQuest(){
     else { showQuestModal(); }
   };
 }
+// Days Practiced — total distinct real calendar days played (see streakDays'
+// comment in loadV4()). Moved here from the LED screen's live readout: it's
+// a once-a-day number, not something that changes tick-to-tick like Mood or
+// Hunger, so it belongs with the rest of the pet's progression history
+// instead of competing for space in the always-on HUD.
+function renderJourneyStreak(){
+  var card=document.getElementById("journeyStreak"); if(!card) return;
+  var n=(S.life&&S.life.streakDays)||1;
+  card.innerHTML="<p class='status-card-label'>📅 DAYS PRACTICED</p><p style='font-size:16px;font-weight:700;margin:4px 0 0'>"+n+(n===1?" day":" days")+"</p>";
+}
 function renderStatsExtra(){
   renderProfileDiet();
   renderJourneyBadges();
   renderJourneyQuest();
+  renderJourneyStreak();
 }
 // Wires the Profile tab's horizontal swipe once — dots both reflect scroll
 // position and act as a click target for mouse users.
@@ -6359,8 +6383,8 @@ function loadV4(){
         // healthy-boundary content). Every genuine new day (dayGap!==null,
         // i.e. not the very first load) adds one, whether the player came
         // back tomorrow or next week — missing days costs nothing. See
-        // streakVal/streakLine() below for the matching "Days Practiced"
-        // framing (was "🔥 Streak").
+        // renderJourneyStreak()/streakLine() below for the matching "Days
+        // Practiced" framing (was "🔥 Streak").
         if(dayGap!==null) S.life.streakDays=(S.life.streakDays||1)+1;
         // Backfill for saves made before hunger/cleanliness/energy existed —
         // default to full (100), NOT the usual 0-default above, or every
@@ -6404,7 +6428,7 @@ function saveV4(){
 // Perspectives, Explore) instead of an "X/Y correct" tally — coming back at
 // all matters more here than one session's score, and deliberately not
 // framed as a chain to keep unbroken (see streakDays' comment in loadV4()).
-// Also always visible in the readout (see streakVal in updateReadout()).
+// Also always visible on the Journey tab (see renderJourneyStreak() below).
 function streakLine(){
   var n=(S.life&&S.life.streakDays)||1;
   return n>1 ? "📅 "+n+" days practiced" : "📅 Your first day practicing";
