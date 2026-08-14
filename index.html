@@ -77,6 +77,14 @@
 *::-webkit-scrollbar-thumb { background: var(--screen-glow); border-radius: 999px; border: 2px solid transparent; background-clip: padding-box; }
 *::-webkit-scrollbar-thumb:hover { background: var(--screen-dark); }
 *::-webkit-scrollbar-corner { background: transparent; }
+/* The outer page/browser-window scrollbar (desktop) is hidden — scrolling
+   still works fine with the wheel/trackpad, it just doesn't need a visible
+   track competing with the device's own inner scrollbars. Same "hide the
+   chrome, keep the scroll" approach already used for .phone-screen and
+   .swipe-cards below, just applied to the page itself. More specific than
+   the generic `*` rule above, so this wins for html/body specifically. */
+html, body { scrollbar-width: none; }
+html::-webkit-scrollbar, body::-webkit-scrollbar { display: none; }
 body {
   margin: 0;
   background: linear-gradient(180deg, #3a2373 0%, #4b2c92 35%, #2c4a72 70%, #1b5e63 100%);
@@ -832,13 +840,13 @@ body.tutorial-active:not(.sheet-open) .screen-readout { position: relative; z-in
 .diet-meter-title{ font-family:var(--font-mono); font-size:10.5px; letter-spacing:0.05em; color:var(--text-soft); margin:0 0 8px; }
 .diet-segments{ display:flex; gap:3px; height:16px; border-radius:8px; overflow:hidden; margin-bottom:8px; }
 /* No min-width here on purpose — a category with a real count of 0 needs to
-   actually collapse to nothing, same as it does in the Quick Actions
-   (.dash-diet-bar) and Profile (#profileDietBar) percentage bars. A CSS
-   floor here would silently force a visible sliver for every segment
-   regardless of what renderDietMeter()'s JS computes its flex-grow to be —
-   which is exactly what kept this bar's proportions visibly disagreeing
-   with the other two even after the matching floor was removed from the
-   JS side (see renderDietMeter()'s comment). */
+   actually collapse to nothing. A CSS floor here would silently force a
+   visible sliver for every segment regardless of what renderDietMeter()'s
+   JS computes its flex-grow to be. This same meter (see dietMeterHtml()) is
+   reused as-is for the web/desktop Quick Actions dashboard shortcut
+   (#dashDietMeter) via a suffixed id set, and Profile's own simpler
+   percentage bar (#profileDietBar / .dash-diet-bar) is the one place that
+   still draws diet differently. */
 .diet-seg{ flex:1; display:flex; align-items:center; justify-content:center; transition:flex .4s ease; }
 .diet-seg-lbl{ font-size:9px; filter:drop-shadow(0 1px 1px rgba(0,0,0,0.4)); }
 .diet-cats{ display:flex; flex-wrap:wrap; gap:8px 12px; font-size:10px; color:var(--text-muted); margin-bottom:4px; }
@@ -1098,28 +1106,55 @@ body.tutorial-active:not(.sheet-open) .screen-readout { position: relative; z-in
   backdrop-filter: blur(4px);
 }
 .journal-modal.show { display: flex; animation: cerFade 0.3s ease; }
+/* A storybook diary, not a technical logbook: fully-rounded chunky
+   corners, a warm candy-gradient cover, a big bouncy bookmark, and a row
+   of little "spiral binding" dots down the side instead of a plain dashed
+   spine line — same cerPop pop-in everything else already uses, this one
+   just looks like a birthday card instead of a terminal.
+   Colors are all local custom properties on .journal-book (dark values by
+   default, light-theme values under :root[data-theme="light"] .journal-book
+   — same pattern as .growth/.quest/.ach-book elsewhere in this file) so
+   the "cartoony" redesign still actually follows the app's theme instead
+   of being stuck looking like a bright paper page in dark mode. */
 .journal-book {
+  --jr-paper: #1f2b27; --jr-paper-line: rgba(74,222,128,0.3);
+  --jr-ink: #eef7f0; --jr-ink-soft: #a8c9b8; --jr-ink-muted: #7a9c8c;
+  --jr-accent: #4ade80; --jr-row: #23352f; --jr-row-border: rgba(74,222,128,0.3);
+  --jr-row-learned: #1f3d2f; --jr-row-learned-border: #3ecf9e;
+  --jr-input-line: #2f453d; --jr-nav-bg: #23352f; --jr-nav-border: #4ade80;
+  --jr-close-bg: #23352f; --jr-close-border: #4ade80; --jr-close-fg: #eafff0;
+  --jr-banner-bg: #23352f; --jr-banner-border: #ffd166; --jr-banner-fg: #ffe9b3;
   position: relative; max-width: 440px; width: 100%; max-height: 88vh;
   display: flex; flex-direction: column;
-  padding: 5px 5px 5px 17px;
-  background: linear-gradient(165deg, #2a2d4a 0%, #181929 100%);
-  border: 1px solid var(--device-rim);
-  border-radius: 8px 18px 18px 8px;
-  box-shadow: 0 0 60px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.06);
+  padding: 8px 8px 8px 24px;
+  background: linear-gradient(165deg, #ffd166 0%, #4ade80 55%, #059669 100%);
+  border: 4px solid #fef9ec;
+  border-radius: 26px;
+  box-shadow: 0 14px 0 rgba(0,0,0,0.18), 0 0 0 2px rgba(255,255,255,0.25) inset, 0 0 40px rgba(74,222,128,0.35);
   animation: cerPop 0.45s cubic-bezier(.2,1.3,.4,1);
 }
-:root[data-theme="light"] .journal-book { background: linear-gradient(165deg, #ffffff 0%, #f1ecfb 100%); border-color: #ded7f0; }
+:root[data-theme="light"] .journal-book {
+  --jr-paper: #fdfbf3; --jr-paper-line: #86e0b0;
+  --jr-ink: #1f3d33; --jr-ink-soft: #4d7566; --jr-ink-muted: #7fa393;
+  --jr-accent: #059669; --jr-row: #eafaf0; --jr-row-border: #cdeedd;
+  --jr-row-learned: #f2fdf5; --jr-row-learned-border: #b8f4c0;
+  --jr-input-line: #cdeedd; --jr-nav-bg: #eafaf0; --jr-nav-border: #86e0b0;
+  --jr-close-bg: #eafaf0; --jr-close-border: #fff; --jr-close-fg: #059669;
+  --jr-banner-bg: #fff6df; --jr-banner-border: #ffd166; --jr-banner-fg: #a5750f;
+  background: linear-gradient(165deg, #ffe9b3 0%, #bdf0d1 55%, #a8e0c5 100%); border-color: #ffffff;
+}
 .journal-cover-spine {
-  position: absolute; left: 0; top: 10px; bottom: 10px; width: 13px;
-  background: repeating-linear-gradient(180deg, var(--screen-glow) 0px, var(--screen-glow) 2px, transparent 2px, transparent 9px);
-  opacity: 0.35; border-radius: 5px 0 0 5px;
+  position: absolute; left: 9px; top: 20px; bottom: 20px; width: 8px;
+  background-image: radial-gradient(circle, #fef9ec 40%, transparent 42%);
+  background-size: 8px 18px; background-repeat: repeat-y; background-position: center;
 }
 .journal-ribbon {
-  position: absolute; top: -10px; left: 38px; width: 18px; height: 32px;
-  background: linear-gradient(180deg, var(--screen-glow), var(--screen-dark));
-  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 74%, 0 100%);
-  filter: drop-shadow(0 3px 3px rgba(0,0,0,0.5));
-  opacity: 0.85; z-index: 1;
+  position: absolute; top: -14px; left: 34px; width: 24px; height: 40px;
+  background: linear-gradient(180deg, #ffd166, #ff9f43);
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 78%, 0 100%);
+  filter: drop-shadow(0 4px 4px rgba(0,0,0,0.25));
+  border-radius: 6px 6px 0 0;
+  z-index: 1;
 }
 .journal-close {
   position: absolute; top: 12px; right: 12px; background: var(--tint-2);
@@ -1127,11 +1162,16 @@ body.tutorial-active:not(.sheet-open) .screen-readout { position: relative; z-in
   width: 28px; height: 28px; cursor: pointer; font-size: 12px; z-index: 2;
 }
 .journal-close:hover { color: var(--text); }
+.journal-book .journal-close {
+  background: var(--jr-close-bg); border: 2px solid var(--jr-close-border); color: var(--jr-close-fg); width: 30px; height: 30px; font-size: 13px; font-weight: 700;
+  box-shadow: 0 2px 0 rgba(0,0,0,0.15); transition: transform .1s;
+}
+.journal-book .journal-close:hover { color: var(--jr-accent); transform: scale(1.08); }
 .journal-bedtime-banner {
-  background: rgba(124,92,196,0.1); border: 1px solid rgba(124,92,196,0.3); border-radius: 12px;
+  background: var(--jr-banner-bg); border: 2px dashed var(--jr-banner-border); border-radius: 16px;
   padding: 10px 14px; margin: 8px 10px 4px 2px;
 }
-.journal-bedtime-banner p { font-size: 12.5px; color: var(--text-soft); margin: 0; line-height: 1.4; }
+.journal-bedtime-banner p { font-size: 12.5px; color: var(--jr-banner-fg); margin: 0; line-height: 1.4; font-weight: 600; }
 .help-popup { position: relative; max-width: 420px; width: 100%; animation: cerPop 0.4s cubic-bezier(.2,1.3,.4,1); }
 .help-popup .journal-close { top: -12px; right: -8px; background: var(--card); box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
 .morning-line {
@@ -1146,74 +1186,103 @@ body.tutorial-active:not(.sheet-open) .screen-readout { position: relative; z-in
 .morning-line:nth-child(5){ animation-delay: .33s; }
 .diary-page {
   position: relative;
-  background: var(--card);
-  border: 1px solid var(--card-border);
-  border-radius: 4px 14px 14px 4px;
-  padding: 22px 20px 18px 24px;
+  background: var(--jr-paper);
+  border: 3px solid var(--jr-row-border);
+  border-radius: 20px;
+  padding: 22px 20px 18px 26px;
   overflow-y: auto; flex: 1; min-height: 0;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.15);
 }
 .diary-page::before {
   content: '';
-  position: absolute; left: 8px; top: 12px; bottom: 12px; width: 1px;
-  background: rgba(18,192,108,0.25);
+  position: absolute; left: 10px; top: 14px; bottom: 14px; width: 3px;
+  background: repeating-linear-gradient(180deg, var(--jr-paper-line) 0px, var(--jr-paper-line) 6px, transparent 6px, transparent 12px);
+  border-radius: 3px;
 }
 .diary-heading {
-  font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
-  color: var(--screen-glow); margin: 0 0 10px; font-style: italic;
+  font-family: var(--font-body); font-size: 15px; font-weight: 800;
+  color: var(--jr-accent); margin: 0 0 10px;
 }
-.log-list { display: flex; flex-direction: column; gap: 6px; max-height: 220px; overflow-y: auto; padding-right: 4px; }
+.log-list { display: flex; flex-direction: column; gap: 7px; max-height: 220px; overflow-y: auto; padding-right: 4px; }
 .journal-empty {
-  font-family: var(--font-mono); font-size: 11.5px; color: var(--text-muted); font-style: italic;
+  font-family: var(--font-body); font-size: 12.5px; color: var(--jr-ink-muted); font-style: italic;
   padding: 10px 2px; line-height: 1.5;
 }
 .diary-pagehead { display: flex; align-items: center; justify-content: center; gap: 14px; margin: 0 0 14px; }
 .diary-nav {
-  background: var(--tint-2); border: 1.5px solid var(--card-border); color: var(--text-soft);
-  width: 26px; height: 26px; border-radius: 50%; font-size: 15px; line-height: 1; cursor: pointer; flex-shrink: 0;
-  display: flex; align-items: center; justify-content: center; transition: opacity .15s, color .15s, border-color .15s;
+  background: var(--jr-nav-bg); border: 2px solid var(--jr-nav-border); color: var(--jr-ink-soft);
+  width: 30px; height: 30px; border-radius: 50%; font-size: 16px; font-weight: 700; line-height: 1; cursor: pointer; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center; transition: transform .1s, color .15s, border-color .15s;
 }
-.diary-nav:hover:not(:disabled) { color: var(--text); border-color: var(--text-soft); }
-.diary-nav:disabled { opacity: 0.25; cursor: default; }
+.diary-nav:hover:not(:disabled) { color: var(--jr-accent); border-color: var(--jr-accent); transform: scale(1.1); }
+.diary-nav:disabled { opacity: 0.3; cursor: default; }
 .diary-dateblock { text-align: center; min-width: 130px; }
-.diary-day { font-family: var(--font-body); font-weight: 700; font-size: 13px; letter-spacing: 0.02em; color: var(--screen-glow); margin: 0; }
-.diary-date { font-family: var(--font-body); font-size: 13px; color: var(--text-soft); margin: 3px 0 0; }
+.diary-day { font-family: var(--font-body); font-weight: 800; font-size: 14px; letter-spacing: 0.02em; color: var(--jr-accent); margin: 0; }
+.diary-date { font-family: var(--font-body); font-size: 12.5px; color: var(--jr-ink-soft); margin: 3px 0 0; }
+.diary-pick {
+  display: block; margin: 5px auto 0; font-family: var(--font-body); font-size: 10.5px; font-weight: 700;
+  color: var(--jr-accent); background: none; border: none; cursor: pointer; padding: 2px 6px;
+  text-decoration: underline; text-underline-offset: 2px;
+}
+.diary-pick:hover { opacity: 0.75; }
+/* A dropdown list of every day that actually has something in it, so
+   jumping from day 1 to day 30 doesn't mean clicking ‹ thirty times. */
+.diary-picker {
+  position: absolute; top: 58px; left: 50%; transform: translateX(-50%) translateY(-6px);
+  width: 200px; max-height: 220px; z-index: 6;
+  background: var(--jr-row); border: 2px solid var(--jr-row-border); border-radius: 14px;
+  box-shadow: 0 10px 28px rgba(0,0,0,0.3);
+  opacity: 0; pointer-events: none; transition: opacity .15s ease, transform .15s ease;
+}
+.diary-picker.show { opacity: 1; pointer-events: auto; transform: translateX(-50%) translateY(0); }
+.diary-picker-list { max-height: 220px; overflow-y: auto; padding: 6px; }
+.diary-picker-day {
+  display: flex; justify-content: space-between; align-items: center; gap: 8px; width: 100%;
+  background: none; border: none; border-radius: 10px; padding: 7px 10px; margin: 1px 0;
+  font-family: var(--font-body); font-size: 12.5px; color: var(--jr-ink); text-align: left; cursor: pointer;
+}
+.diary-picker-day:hover { background: var(--jr-nav-bg); }
+.diary-picker-day.current { background: var(--jr-row-learned); color: var(--jr-accent); font-weight: 700; }
+.diary-picker-day-date { font-size: 11px; color: var(--jr-ink-muted); flex-shrink: 0; }
+.diary-picker-day.current .diary-picker-day-date { color: var(--jr-accent); }
 .diary-reflect { margin-bottom: 6px; }
 .diary-input {
   width: 100%; min-height: 78px; resize: vertical; box-sizing: border-box;
-  background: repeating-linear-gradient(var(--card) 0px, var(--card) 25px, rgba(18,192,108,0.16) 26px);
-  border: 1px solid var(--card-border); border-radius: 8px; padding: 8px 10px;
-  font-family: var(--font-body); font-size: 14px; color: var(--text); line-height: 26px;
+  background: repeating-linear-gradient(var(--jr-paper) 0px, var(--jr-paper) 25px, var(--jr-input-line) 26px);
+  border: 2px solid var(--jr-input-line); border-radius: 14px; padding: 8px 10px;
+  font-family: var(--font-body); font-size: 14px; color: var(--jr-ink); line-height: 26px;
 }
-.diary-input:focus { outline: none; border-color: var(--screen-glow); }
+.diary-input:focus { outline: none; border-color: var(--jr-accent); }
 .diary-save {
-  display: block; margin: 8px 0 0 auto; font-family: var(--font-body); font-weight: 700; font-size: 11.5px;
-  color: #04140d; background: var(--clean-col); border: none; border-radius: 999px; padding: 7px 16px; cursor: pointer;
-  transition: transform .1s, filter .15s;
+  display: block; margin: 8px 0 0 auto; font-family: var(--font-body); font-weight: 800; font-size: 12px;
+  color: #063b1e; background: linear-gradient(180deg, #4ade80, #22c55e); border: none; border-radius: 999px; padding: 8px 18px; cursor: pointer;
+  box-shadow: 0 3px 0 #16a34a; transition: transform .1s, box-shadow .1s;
 }
-.diary-save:hover { filter: brightness(1.08); }
-.diary-save:active { transform: translateY(2px); }
-.diary-note-text { font-family: var(--font-body); font-size: 14px; color: var(--text); line-height: 1.5; white-space: pre-wrap; margin: 0; }
-.diary-note-empty { font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); font-style: italic; margin: 0; }
+.diary-save:hover { transform: translateY(-1px); box-shadow: 0 4px 0 #16a34a; }
+.diary-save:active { transform: translateY(2px); box-shadow: 0 1px 0 #16a34a; }
+.diary-note-text { font-family: var(--font-body); font-size: 14px; color: var(--jr-ink); line-height: 1.5; white-space: pre-wrap; margin: 0; }
+.diary-note-empty { font-family: var(--font-body); font-size: 12px; color: var(--jr-ink-muted); font-style: italic; margin: 0; }
 .diary-sub-label {
-  font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted);
-  margin: 16px 0 8px; padding-top: 12px; border-top: 1px dashed var(--card-border);
+  font-family: var(--font-body); font-size: 11px; font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase; color: #c9a227;
+  margin: 16px 0 8px; padding-top: 12px; border-top: 2px dashed var(--jr-input-line);
 }
 .journal-row {
-  display: flex; gap: 9px; align-items: flex-start; padding: 8px 10px;
-  background: var(--tint-2); border: 1px solid var(--card-border); border-radius: 10px;
-  transition: border-color .15s;
+  display: flex; gap: 9px; align-items: flex-start; padding: 9px 12px;
+  background: var(--jr-row); border: 2px solid var(--jr-row-border); border-radius: 14px;
+  transition: transform .1s, border-color .15s;
 }
-.journal-row.learned { border-color: rgba(18,192,108,0.35); }
+.journal-row.learned { border-color: var(--jr-row-learned-border); background: var(--jr-row-learned); }
 .journal-check {
-  color: var(--clean-col); font-size: 11px; line-height: 1; flex-shrink: 0; margin-top: 3px;
-  width: 16px; height: 16px; border-radius: 50%; background: rgba(18,192,108,0.16);
+  color: #06d6a0; font-size: 11px; line-height: 1; flex-shrink: 0; margin-top: 3px;
+  width: 20px; height: 20px; border-radius: 50%;
+  background: radial-gradient(circle at 32% 28%, #eafff2, #a0f0c4 55%, #06d6a0 100%);
+  box-shadow: 0 2px 4px rgba(6,214,160,0.35);
   display: flex; align-items: center; justify-content: center;
 }
-.journal-dot { color: var(--text-muted); font-size: 13px; line-height: 1.6; flex-shrink: 0; }
-.journal-lesson { font-family: var(--font-body); font-size: 14px; color: var(--text); line-height: 1.3; font-weight: 700; }
-.journal-detail { font-family: var(--font-mono); font-size: 10px; color: var(--text-muted); line-height: 1.4; margin-top: 3px; }
-.journal-detail.plain { font-size: 11px; color: var(--text-soft); margin-top: 0; }
+.journal-dot { color: var(--jr-accent); font-size: 16px; line-height: 1.4; flex-shrink: 0; }
+.journal-lesson { font-family: var(--font-body); font-size: 14px; color: var(--jr-ink); line-height: 1.3; font-weight: 700; }
+.journal-detail { font-family: var(--font-body); font-size: 11.5px; color: var(--jr-ink-muted); line-height: 1.4; margin-top: 3px; }
+.journal-detail.plain { font-size: 12px; color: var(--jr-ink-soft); margin-top: 0; }
 .log-item { background: var(--tint); border: 1px solid var(--card-border); border-radius: 8px; padding: 8px 12px; font-family: var(--font-mono); font-size: 11px; color: var(--text-soft); display: flex; gap: 8px; align-items: flex-start; line-height: 1.4; }
 .log-item.empty { color: var(--text-muted); font-style: italic; border-style: dashed; }
 
@@ -1515,8 +1584,11 @@ body:not(.web-mode) .journal-book .journal-close {
 :root[data-theme="light"] .growth-name { color: #6b21a8; }
 .growth-line { font-size: 11px; color: var(--text-soft); font-style: italic; margin: 0; line-height: 1.4; }
 .stage-dots { display: flex; justify-content: space-between; margin-bottom: 10px; padding: 0 2px; }
+.stage-dot-wrap { display: flex; flex-direction: column; align-items: center; gap: 2px; flex: 1; min-width: 0; }
 .stage-dot { font-size: 15px; filter: grayscale(1) opacity(0.35); transition: filter 0.4s, transform 0.3s; }
 .stage-dot.on { filter: none; transform: scale(1.12); }
+.stage-dot-label { font-size: 8.5px; line-height: 1.15; text-align: center; color: var(--text-muted); max-width: 100%; overflow-wrap: break-word; }
+.stage-dot-label.on { color: var(--text-soft); font-weight: 600; }
 .cp-label { font-family: var(--font-mono); font-weight: 700; font-size: 11px; color: var(--screen-glow); margin: 0 0 6px; }
 .cp-bar-track { position: relative; height: 8px; background: var(--tint-2); border-radius: 6px; overflow: hidden; margin-bottom: 10px; }
 .cp-bar-fill { height: 100%; width: 3%; background: linear-gradient(90deg, var(--screen-dark), var(--screen-glow)); border-radius: 6px; transition: width 0.5s cubic-bezier(.2,.7,.3,1); }
@@ -1825,7 +1897,17 @@ body:not(.web-mode) .journal-book .journal-close {
 .phone-home:active{ transform:translateX(-50%) translateY(3px); box-shadow:0 1px 0 #0b0f18, inset 0 -2px 3px rgba(0,0,0,0.15); }
 .phone-home:focus-visible{ outline:3px solid var(--screen-glow); outline-offset:3px; }
 
-.ph-status{ display:flex; justify-content:space-between; padding:13px 20px 6px; font-family:var(--font-body); font-size:11px; color:var(--text-soft); }
+.ph-status{ display:flex; justify-content:space-between; align-items:center; padding:13px 20px 6px; font-family:var(--font-body); font-size:11px; color:var(--text-soft); }
+.ph-status-icons{ display:flex; align-items:center; gap:5px; }
+.ph-signal{ display:flex; align-items:flex-end; gap:1.5px; height:8px; }
+.ph-signal span{ width:2.5px; background:var(--text-soft); border-radius:1px; }
+.ph-signal span:nth-child(1){ height:35%; }
+.ph-signal span:nth-child(2){ height:60%; }
+.ph-signal span:nth-child(3){ height:80%; }
+.ph-signal span:nth-child(4){ height:100%; }
+.ph-battery{ width:19px; height:10px; border:1px solid var(--text-soft); border-radius:2.5px; padding:1.5px; box-sizing:border-box; position:relative; }
+.ph-battery::after{ content:""; position:absolute; right:-3px; top:2.5px; width:2px; height:5px; background:var(--text-soft); border-radius:0 1px 1px 0; }
+.ph-battery-fill{ height:100%; width:100%; background:var(--text-soft); border-radius:1px; }
 .ph-hometop{ padding:16px 18px 6px; }
 .ph-hint{ font-size:13px; color:var(--text-soft); line-height:1.5; margin:0; text-align:center; }
 .ph-hint b{ color:var(--screen-glow); }
@@ -1954,6 +2036,10 @@ body:not(.web-mode) .journal-book .journal-close {
 .ph-msg.ai{ display:flex; align-items:flex-end; gap:8px; max-width:92%; background:none; border:none; padding:0; margin:0 12px 10px; }
 .ph-msg.ai .ph-msg-ava{ width:28px; height:28px; border-radius:50%; overflow:hidden; flex-shrink:0; border:2px solid rgba(185,104,224,0.55); background:#1a1030; }
 .ph-msg.ai .ph-msg-bubble{ background:linear-gradient(160deg,#2e2255,#221a40); border:1.5px solid rgba(185,104,224,0.4); border-radius:16px 16px 16px 4px; padding:10px 12px; box-shadow:0 3px 10px rgba(0,0,0,0.25); }
+/* ThinkSync's own side of the conversation — right-aligned, no avatar, same
+   "echo what you picked" pattern as ChatGPT/Gemini/Claude's user bubbles. */
+.ph-msg.user{ display:flex; justify-content:flex-end; max-width:92%; margin:0 12px 10px 12px; margin-left:auto; }
+.ph-msg.user .ph-msg-bubble{ background:#3a3f5c; color:#f1f0ff; border-radius:16px 16px 4px 16px; padding:10px 12px; box-shadow:0 3px 10px rgba(0,0,0,0.25); }
 .sy-tip{ margin:0 12px 10px; padding:9px 11px; background:rgba(185,104,224,0.09); border:1px solid rgba(185,104,224,0.3); border-radius:11px;
   font-size:11px; color:#d9c8ef; line-height:1.45; }
 .sy-tip b{ color:#e6c6ff; }
@@ -2017,7 +2103,11 @@ body:not(.web-mode) .journal-book .journal-close {
 /* ── CHATTERBOX → Facebook-style feed (dark theme, since the phone screen
    itself stays dark regardless of page theme — see .phone-wrap's pinned
    vars) ── */
-.fb-composer{ display:flex; align-items:center; gap:10px; margin:10px 12px; padding:11px 12px; background:#242526; border:1px solid #3e4042; border-radius:12px; }
+/* width:100% is required here, not optional — a <button> defaults to
+   fitting its content (unlike a <div>) even with display:flex, so without
+   it these composer buttons visibly stopped short of the right edge
+   instead of spanning the full width like the rest of the feed. */
+.fb-composer{ display:flex; align-items:center; gap:10px; width:calc(100% - 24px); box-sizing:border-box; margin:10px 12px; padding:11px 12px; background:#242526; border:1px solid #3e4042; border-radius:12px; }
 .fb-composer-ava{ width:36px; height:36px; border-radius:50%; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:17px; background:#7c5cc4; }
 .fb-composer-field{ flex:1; text-align:left; background:#3a3b3c; color:#b0b3b8; font-size:13px; font-family:var(--font-body); padding:9px 14px; border-radius:999px; cursor:pointer; }
 .fb-feed{ display:flex; flex-direction:column; }
@@ -2221,6 +2311,10 @@ body:not(.web-mode) .journal-book .journal-close {
 .orient-toggle:hover{ filter:brightness(1.15); }
 .orient-toggle:active{ transform:translateY(2px); box-shadow:0 1px 0 rgba(0,0,0,0.35); }
 .orient-toggle:focus-visible{ outline:2px solid var(--screen-glow); outline-offset:2px; }
+/* A plain bold "?" glyph instead of the ❓ emoji — emoji are full-color
+   pictures the `color` property can't touch, so there's no reliable way to
+   make ❓ actually render red across platforms. This is a real red glyph. */
+.help-btn{ color:#ff3b3b; font-weight:400; font-size:22px !important; }
 /* On phone, only Quest/Help remain as fixed icons, stacked in a column in
    the top-right corner — Sound and Theme both moved into the ☰ menu's
    "More" group (see MENU_ITEMS/#soundToggle's and #themeToggle's own
@@ -2233,10 +2327,10 @@ body:not(.web-mode) .journal-book .journal-close {
    instead (body wraps everything), so it isn't sensitive to DOM order at
    all — same fix in spirit as the pointer:coarse menu-button bug: a
    selector that just doesn't match, quietly does nothing. */
-body:not(.web-mode) #soundToggle,
-body:not(.web-mode) #themeToggle { display: none; }
+body:not(.web-mode) #soundToggle { display: none; }
 body:not(.web-mode) #topQuestBtn,
 body:not(.web-mode) #topHelpBtn,
+body:not(.web-mode) #themeToggle,
 body:not(.web-mode) #orientToggle {
   width:34px !important; height:34px !important; font-size:15px !important; right:10px !important;
 }
@@ -2246,10 +2340,14 @@ body:not(.web-mode) #topQuestBtn { top:10px !important; }
    shortcut into the quest modal on phone, where there's no inline panel. */
 body.web-mode #topQuestBtn { display: none; }
 body:not(.web-mode) #topHelpBtn { top:52px !important; }
+/* Theme used to be hidden on phone entirely (folded into the ☰ menu's
+   "More" group instead) — it's a shortcut in the corner stack now too, same
+   as Quest/Help, so switching light/dark doesn't need a trip through the menu. */
+body:not(.web-mode) #themeToggle { top:94px !important; display:block !important; }
 /* #orientToggle used to just disappear in phone mode (its normal desktop
    position gets hidden along with sound/theme), leaving no way back to web
-   mode — now it joins the Quest/Help icon stack in the corner instead. */
-body:not(.web-mode) #orientToggle { top:94px !important; }
+   mode — now it joins the Quest/Help/Theme icon stack in the corner instead. */
+body:not(.web-mode) #orientToggle { top:136px !important; }
 
 .page.landscape{
   max-width:1180px;
@@ -2328,7 +2426,7 @@ body:not(.web-mode) #orientToggle { top:94px !important; }
   </div>
 </div>
 <button id="topQuestBtn" class="orient-toggle phone-top-btn" style="right:228px" aria-label="Daily quest" title="Daily quest">⭐</button>
-<button id="topHelpBtn" class="orient-toggle phone-top-btn" style="right:174px" aria-label="Help" title="Help">❓</button>
+<button id="topHelpBtn" class="orient-toggle phone-top-btn help-btn" style="right:174px" aria-label="Help" title="Help">?</button>
 <button id="themeToggle" class="orient-toggle" style="right:120px" aria-label="Toggle light / dark mode" title="Light / dark mode">🌙</button>
 <button id="soundToggle" class="orient-toggle" style="right:66px" aria-label="Toggle sound" title="Sound on / off">🔊</button>
 <button id="orientToggle" class="orient-toggle" aria-label="Toggle portrait / landscape layout" title="Switch layout">📱</button>
@@ -2406,12 +2504,11 @@ body:not(.web-mode) #orientToggle { top:94px !important; }
         <div class="soap-sweep" id="soapSweep" aria-hidden="true"><svg viewBox="0 0 28 28" width="100%" height="100%"><rect x="3" y="9" width="22" height="12" rx="6" fill="#e0f2fe" stroke="#7dd3fc" stroke-width="1.5"/><line x1="8" y1="12" x2="11" y2="18" stroke="#7dd3fc" stroke-width="1.5"/><line x1="14" y1="11" x2="17" y2="19" stroke="#7dd3fc" stroke-width="1.5"/><circle cx="22" cy="7" r="2" fill="#ffffff" opacity="0.85"/><circle cx="25" cy="12" r="1.3" fill="#ffffff" opacity="0.85"/></svg></div>
         <div class="device-menu" id="deviceMenu" aria-hidden="true">
           <button class="sheet-close" id="deviceMenuClose" aria-label="Close menu">✕</button>
-          <p class="device-menu-title" id="deviceMenuTitle">Menu — tap to open</p>
+          <p class="device-menu-title" id="deviceMenuTitle"></p>
           <div class="device-menu-grid" id="deviceMenuGrid"></div>
         </div>
         <div class="device-stats" id="deviceStats" aria-hidden="true">
           <button class="sheet-close" id="deviceStatsClose" aria-label="Close profile">✕</button>
-          <p class="device-menu-title">InfoPet</p>
           <div class="stats-tabs" id="statsTabs">
             <button class="stats-tab active" data-tab="status">Status</button>
             <button class="stats-tab" data-tab="profile">Profile</button>
@@ -2479,9 +2576,10 @@ body:not(.web-mode) #orientToggle { top:94px !important; }
                  that one bar now (see renderStatBars()) instead of living
                  in two places. -->
             <div class="stats-panel hidden" id="statsPanelJourney">
-              <div class="profile-card" id="journeyBadges"></div>
-              <div class="profile-card" id="journeyQuest"></div>
               <div class="profile-card" id="journeyStreak"></div>
+              <div class="profile-card" id="journeyReportCard"></div>
+              <div class="profile-card" id="journeyJournal"></div>
+              <div class="profile-card" id="journeyBadges"></div>
             </div>
 
           </div>
@@ -2495,9 +2593,9 @@ body:not(.web-mode) #orientToggle { top:94px !important; }
          buttons on the device casing), Middle opens the stats readout, and
          Right is Back. -->
     <div class="tama-buttons" aria-label="Device buttons">
-      <button class="tama-btn" id="tamaLeft" aria-label="Open menu">☰</button>
-      <button class="tama-btn" id="tamaMid" aria-label="Status, Profile & Journey"><svg class="tama-pet-icon" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false"><mask id="tamaMidEyes"><rect width="24" height="24" fill="#fff"/><circle cx="9" cy="13" r="1.5" fill="#000"/><circle cx="15" cy="13" r="1.5" fill="#000"/></mask><path d="M12 2.5c1 0 1.8.9 1.8 2.1 0 .4-.1.8-.3 1.1 3.2.9 5.5 3.7 5.5 7 0 4.1-3.3 7.8-7 7.8s-7-3.7-7-7.8c0-3.3 2.3-6.1 5.5-7-.2-.3-.3-.7-.3-1.1 0-1.2.8-2.1 1.8-2.1Z" fill="currentColor" mask="url(#tamaMidEyes)"/></svg></button>
-      <button class="tama-btn" id="tamaRight" aria-label="Back">◀</button>
+      <button class="tama-btn" id="tamaLeft" aria-label="Open menu"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3" y="5.5" width="18" height="3" rx="1.5" fill="currentColor"/><rect x="3" y="10.5" width="18" height="3" rx="1.5" fill="currentColor"/><rect x="3" y="15.5" width="18" height="3" rx="1.5" fill="currentColor"/></svg></button>
+      <button class="tama-btn" id="tamaMid" aria-label="Status, Profile & Journey"><svg class="tama-pet-icon" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false"><mask id="tamaMidEyes"><rect width="24" height="24" fill="#fff"/><circle cx="9.2" cy="11.8" r="1.3" fill="#000"/><circle cx="14.8" cy="11.8" r="1.3" fill="#000"/></mask><g fill="currentColor" mask="url(#tamaMidEyes)"><polygon points="9,4.8 12,1.2 11.2,5.8"/><polygon points="15,4.8 12,1.2 12.8,5.8"/><circle cx="12" cy="12.5" r="7.5"/></g><polygon points="10,15.2 14,15.2 12,18.8" fill="currentColor"/></svg></button>
+      <button class="tama-btn" id="tamaRight" aria-label="Back"><svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><polygon points="18,3 18,21 5,12" fill="currentColor"/></svg></button>
     </div>
 
     <!-- hidden — kept so the menu system can trigger the exact same actions these
@@ -2558,7 +2656,7 @@ body:not(.web-mode) #orientToggle { top:94px !important; }
       <div class="activity-header">
         <span class="activity-icon">💊</span>
         <div class="activity-titles">
-          <p class="activity-name">Rethink <span class="villain-tag">⚔️ vs Disinformation Slime</span></p>
+          <p class="activity-name">Rethink</p>
           <p class="activity-concept" id="healConcept"><strong style="color:var(--heal-col)">Can I change my mind?</strong> If you've fed InfoPet something false elsewhere, it's stuck in its head — talk it through, don't just quiz it.</p>
         </div>
       </div>
@@ -2818,12 +2916,7 @@ body:not(.web-mode) #orientToggle { top:94px !important; }
              display:none in phone mode via the .dash-card base rule. -->
         <div class="dash-card" id="dashCard" aria-hidden="true">
           <div class="dash-diet" style="border-top:none;padding-top:0">
-            <div class="dash-ach-head"><span>🥗 Information Diet</span></div>
-            <div class="dash-diet-bar" id="dashDietBar"></div>
-            <div class="dash-diet-legend">
-              <span>✅ Reliable</span><span>📚 Learning</span><span>🎨 Creative</span><span>🤝 Community</span><span>🎮 Fun</span>
-            </div>
-            <div id="dashDietInsight"></div>
+            <div class="diet-meter-wrap" id="dashDietMeter"></div>
           </div>
           <div class="dash-ach">
             <div class="dash-ach-head">
@@ -2937,8 +3030,12 @@ body:not(.web-mode) #orientToggle { top:94px !important; }
         <div class="diary-dateblock">
           <p class="diary-day" id="diaryDay">Today · Day 1</p>
           <p class="diary-date" id="diaryDate">—</p>
+          <button class="diary-pick" id="diaryPick" aria-label="Jump to a specific day" aria-expanded="false">📅 Jump to day</button>
         </div>
         <button class="diary-nav" id="diaryNext" aria-label="Flip to a later day">›</button>
+      </div>
+      <div class="diary-picker" id="diaryPicker" aria-hidden="true">
+        <div class="diary-picker-list" id="diaryPickerList"></div>
       </div>
       <div id="diaryPageBody"></div>
     </div>
@@ -2993,11 +3090,12 @@ var RM = window.matchMedia && window.matchMedia("(prefers-reduced-motion:reduce)
 // ─── STATE ───────────────────────────────────────────────
 var S = {
   // A freshly hatched pet should read as happy, not "already somewhat
-  // unhappy" — 80 (thrive territory, see petState()) instead of the old 55.
-  // Mood now only comes down from real neglect (applyNeglectDecay()) or
-  // genuinely repeated bad choices, never a single wrong MIL answer — see
-  // delta()'s comment and the removed S.mood penalties throughout.
-  mood: 80,
+  // unhappy" — 100 (full thrive territory, see petState()) instead of the
+  // old 55/80. Mood now only comes down from real neglect
+  // (applyNeglectDecay()) or genuinely repeated bad choices, never a single
+  // wrong MIL answer — see delta()'s comment and the removed S.mood
+  // penalties throughout.
+  mood: 100,
   mode: null,
   journal: [],
   journalNotes: {},
@@ -3009,7 +3107,10 @@ var S = {
   train: { learned: [], open: null, cat: "ai", _prac: false },
   companion: { i: 0, done: false, dependency: 50, queue: null, introSeen: false, mode: null },
   screenBackdrop: "home",
-  explore: { loc:null, i:0, score:0, visited:[], hatchDay:null, hatchLocs:[], investigate:null, trail:null, scene:null },
+  // Cross-session "no repeat until you've seen them all" shuffle bags —
+  // one array of leftover-pool-indices per feature key. See drawFromBag().
+  bags: {},
+  explore: { loc:null, i:0, score:0, visited:[], hatchDay:null, hatchLocs:[], investigate:null, trail:null, scene:null, session:null, bag:{}, dirtLog:[] },
   custom: { species: "bird", petColor: "violet", shell: "midnight", shellCustomized: false, pattern: "plain", name: "InfoPet" },
   v4: { day: 1, lastPlayed: null, asleep: false, pendingMorningReport: null, wakeMem: null },
   life: { stage: "egg", cp: 0, scale: 1, badges: [], correct: 0, stats: {curiosity:0, empathy:0}, diet:{reliable:0,learning:0,creative:0,community:0,fun:0,junk:0},
@@ -3502,12 +3603,19 @@ var DIAG_TYPES=[
 // little baby. "Clean" at this stage means literal dirt on the pet itself
 // (crumbs, mud, little messes), the classic Tamagotchi loop — not digital
 // clutter, and definitely not a judgment call. No MIL forced into this one.
+// Each item is tagged with the Hatchling-world place it actually comes
+// from (loc) — initNest() uses that tag to put dirt on the pet that
+// matches wherever it *actually* wandered that day (see
+// S.explore.dirtLog / finishHatchlingVisit), falling back to this whole
+// pool at random only when there's nothing logged yet to draw from.
 var NEST_ITEMS = [
-  { icon:"🍞", label:"A few crumbs stuck to its cheek", tidyLine:"Wiped the crumbs away — all clean!" },
-  { icon:"🟤", label:"A little smudge of mud on its foot", tidyLine:"Wiped off the muddy footprint." },
-  { icon:"💧", label:"A drippy little spill", tidyLine:"Dabbed up the spill." },
-  { icon:"🌿", label:"A leaf caught in its fuzz", tidyLine:"Plucked out the little leaf." },
-  { icon:"🍯", label:"A sticky honey handprint", tidyLine:"Wiped off the sticky handprint." }
+  { icon:"🍞", label:"A few crumbs stuck to its cheek", tidyLine:"Wiped the crumbs away — all clean!", loc:"home" },
+  { icon:"🍯", label:"A sticky honey handprint", tidyLine:"Wiped off the sticky handprint.", loc:"home" },
+  { icon:"💧", label:"A drippy little spill", tidyLine:"Dabbed up the spill.", loc:"home" },
+  { icon:"🟤", label:"A little smudge of mud on its foot", tidyLine:"Wiped off the muddy footprint.", loc:"park" },
+  { icon:"🌿", label:"A leaf caught in its fuzz", tidyLine:"Plucked out the little leaf.", loc:"park" },
+  { icon:"💨", label:"A dusty smudge from old books", tidyLine:"Wiped away the dusty smudge.", loc:"library" },
+  { icon:"🖋️", label:"A little ink smudge", tidyLine:"Wiped off the ink smudge.", loc:"library" }
 ];
 
 // An Explorer is out and about online now, so the mess evolves from literal
@@ -3611,10 +3719,10 @@ var EXPLORER_STICKER_ITEMS = [
 // uncertain thing needs resolving on the spot), or just Clear it (the weak
 // option — discarding something you never actually looked at).
 var THINKER_RESIDUE_ITEMS = [
-  { icon:"❓", label:"A misleading claim smeared across its wing", why:"That claim technically isn't false — it's just missing the context that changes everything." },
-  { icon:"🤖", label:"A patch of AI-generated text stuck to its feathers", why:"AI text can sound confident and polished while still being completely made up — worth a second look before trusting it." },
+  { icon:"❓", label:"A misleading claim mixed into its feed", why:"That claim technically isn't false — it's just missing the context that changes everything." },
+  { icon:"🤖", label:"A patch of AI-generated text in its reading list", why:"AI text can sound confident and polished while still being completely made up — worth a second look before trusting it." },
   { icon:"⚠️", label:"A streak of suspicious, unsourced information", bridge:true, why:"No named source, no way to check it — that's exactly the kind of residue worth looking closer at instead of just wiping away." },
-  { icon:"❓", label:"Another half-true claim, stuck near its eye", why:"Half-true is still not true — the missing half is usually the important part." },
+  { icon:"❓", label:"Another half-true claim circulating in its feed", why:"Half-true is still not true — the missing half is usually the important part." },
   { icon:"🤖", label:"More AI text, oddly repetitive in places", why:"Repetitive, oddly generic phrasing is one of the easiest tells that something was AI-generated." },
   { icon:"⚠️", label:"A suspicious link residue, no real source attached", bridge:true, why:"A link with no named, checkable source behind it is worth pausing on before clicking through." },
   // The other AI-text spots above are all worth doubting — this one isn't,
@@ -3955,7 +4063,17 @@ var SHELL_PATTERNS = {
   checkers: { label:"Checkers", css:"conic-gradient(rgba(255,255,255,0.22) 90deg, transparent 90deg 180deg, rgba(255,255,255,0.22) 180deg 270deg, transparent 270deg)", size:"16px 16px" },
   paw:      { label:"Paw prints", css:"radial-gradient(circle at 50% 72%, rgba(255,255,255,0.55) 5px, transparent 5px), radial-gradient(circle at 30% 42%, rgba(255,255,255,0.5) 3px, transparent 3px), radial-gradient(circle at 42% 24%, rgba(255,255,255,0.5) 3px, transparent 3px), radial-gradient(circle at 58% 24%, rgba(255,255,255,0.5) 3px, transparent 3px), radial-gradient(circle at 70% 42%, rgba(255,255,255,0.5) 3px, transparent 3px)", size:"34px 34px, 34px 34px, 34px 34px, 34px 34px, 34px 34px" },
   waves:    { label:"Waves",    css:"radial-gradient(circle at 50% 100%, transparent 58%, rgba(255,255,255,0.28) 61%, rgba(255,255,255,0.28) 67%, transparent 70%)", size:"20px 13px" },
-  clouds:   { label:"Clouds",   css:"radial-gradient(rgba(255,255,255,0.3) 30%, transparent 62%), radial-gradient(rgba(255,255,255,0.22) 26%, transparent 58%)", size:"38px 24px, 22px 15px" }
+  clouds:   { label:"Clouds",   css:"radial-gradient(rgba(255,255,255,0.3) 30%, transparent 62%), radial-gradient(rgba(255,255,255,0.22) 26%, transparent 58%)", size:"38px 24px, 22px 15px" },
+  // Actual little SVG tiles (not gradient trickery like the others above) —
+  // a heart and a bow are shapes gradients can't fake convincingly, so
+  // these are small encoded inline-SVG data URIs repeated as a tile instead.
+  // Both tiles now pad the actual icon inside a much bigger transparent
+  // viewBox (via a translate()'d <g>, parens percent-encoded so the CSS
+  // url() parser doesn't mistake them for its own closing paren) — that's
+  // what actually creates breathing room between repeats; shrinking the
+  // old tight-fitting tile just made small versions of the same crowding.
+  hearts:   { label:"Hearts",   css:"url(data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20viewBox=%270%200%2064%2064%27%20width=%2732%27%20height=%2732%27%3E%3Cg%20transform=%27translate%2820,20%29%27%3E%3Cpath%20fill=%27white%27%20fill-opacity=%270.5%27%20d=%27M12%2021.35l-1.45-1.32C5.4%2015.36%202%2012.28%202%208.5%202%205.42%204.42%203%207.5%203c1.74%200%203.41.81%204.5%202.09C13.09%203.81%2014.76%203%2016.5%203%2019.58%203%2022%205.42%2022%208.5c0%203.78-3.4%206.86-8.55%2011.54L12%2021.35z%27/%3E%3C/g%3E%3C/svg%3E)", size:"36px 36px" },
+  ribbon:   { label:"Ribbon",   css:"url(data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20viewBox=%270%200%2060%2042%27%20width=%2730%27%20height=%2721%27%3E%3Cg%20transform=%27translate%2820,14%29%27%3E%3Cpath%20fill=%27white%27%20fill-opacity=%270.45%27%20d=%27M1,2%20L9,7%20L1,12%20Z%20M19,2%20L11,7%20L19,12%20Z%27/%3E%3Crect%20x=%278.3%27%20y=%275%27%20width=%273.4%27%20height=%274%27%20rx=%271%27%20fill=%27white%27%20fill-opacity=%270.45%27/%3E%3C/g%3E%3C/svg%3E)", size:"34px 24px" }
 };
 
 function petState(m){ return m>=72?"thrive":m>=40?"curious":m>=18?"anxious":"corrupt"; }
@@ -3978,7 +4096,7 @@ function applyShell(){
   // shells (midnight, charcoal) get the light icon; everything else gets a
   // dark one. This is exactly the bug that made the buttons disappear in
   // light mode, where syncShellToTheme() auto-picks the (light) ivory shell.
-  dev.style.setProperty("--device-btn-fg", t.dark ? "rgba(255,255,255,0.55)" : "rgba(30,26,20,0.6)");
+  dev.style.setProperty("--device-btn-fg", t.dark ? "#ffffff" : "#000000");
   dev.style.boxShadow="0 0 0 2px "+t.rim+",0 0 0 3px "+t.edge+",0 8px 0 0 "+t.edge+",0 12px 40px rgba(0,0,0,0.7),inset 0 1px 0 rgba(255,255,255,0.06)";
 }
 // If the player hasn't picked a shell colour themselves, follow the page
@@ -4190,8 +4308,8 @@ setInterval(function(){
 var MENU_ITEMS=[
   { icon:"🍽️", label:"Feed",    btn:"btn-feed",      group:"care" },
   { icon:"🧼", label:"Clean",   btn:"btn-clean",     group:"care" },
-  { icon:"💊", label:"Rethink", btn:"btn-heal",      group:"care" },
   { icon:"🌙", label:"Sleep",   btn:"sleepMenuBtn",  group:"care" },
+  { icon:"💊", label:"Rethink", btn:"btn-heal",      group:"care" },
   { icon:"🧭", label:"Trace",   btn:"btn-trace",     group:"care" },
   { icon:"🚶", label:"Explore", btn:"btn-explore",   group:"explore" },
   { icon:"📚", label:"Learn",   btn:"btn-train",     group:"explore" },
@@ -4260,7 +4378,7 @@ function renderDeviceMenu(onlyGroup){
   var items = landscape ? MENU_ITEMS.filter(function(it){ return it.btn!=="questMenuBtn" && it.btn!=="helpMenuBtn"; }) : MENU_ITEMS;
   var groups = onlyGroup ? MENU_GROUPS.filter(function(g){ return g.key===onlyGroup; }) : MENU_GROUPS;
   var titleEl=document.getElementById("deviceMenuTitle");
-  if(titleEl) titleEl.textContent = (onlyGroup && groups[0]) ? (groups[0].icon+" "+groups[0].name) : "Menu — tap to open";
+  if(titleEl) titleEl.textContent = (onlyGroup && groups[0]) ? (groups[0].icon+" "+groups[0].name) : "";
   grid.innerHTML = groups.map(function(g){
     var groupItems=items.filter(function(it){ return it.group===g.key; });
     if(!groupItems.length) return "";
@@ -4356,8 +4474,11 @@ function deviceBack(){
 }
 
 var tamaLeft=document.getElementById("tamaLeft"), tamaMid=document.getElementById("tamaMid"), tamaRight=document.getElementById("tamaRight");
-if(tamaLeft) tamaLeft.onclick=function(){ showDeviceMenu(); }; // wrapped so the click event itself never leaks in as onlyGroup
-if(tamaMid) tamaMid.onclick=showDeviceStats;
+// Pressing the same button twice now closes what it just opened (back to
+// the home screen) instead of just re-rendering the sheet still open —
+// previously the only way to close was the ✕, tapping outside, or ◀.
+if(tamaLeft) tamaLeft.onclick=function(){ if(deviceMenu.open) hideDeviceMenu(); else showDeviceMenu(); }; // wrapped so the click event itself never leaks in as onlyGroup
+if(tamaMid) tamaMid.onclick=function(){ if(deviceStats.open) hideDeviceStats(); else showDeviceStats(); };
 if(tamaRight) tamaRight.onclick=deviceBack;
 // Tap anywhere outside an open menu/stats sheet to close it — no more
 // having to scroll back up inside a tall sheet to find the ✕. Excludes
@@ -4372,6 +4493,24 @@ document.addEventListener("click", function(e){
   if(deviceStats.open){
     var statsEl=document.getElementById("deviceStats");
     if(statsEl && !statsEl.contains(e.target) && !(tamaMid && tamaMid.contains(e.target))) hideDeviceStats();
+  }
+  // Same idea for whichever Feed/Clean/Explore/etc sheet is open on phone —
+  // it's a tall bottom sheet there (see .page:not(.landscape) > .activity),
+  // and the ✕ lives at its top, so without this you'd have to scroll all
+  // the way back up just to close it. Excludes the sheet's own content and
+  // whatever can open a mode (the ☰ menu and its tiles, the three physical
+  // buttons) for the same reason as above.
+  var pageEl=document.querySelector(".page");
+  if(S.mode && S.mode!=="default" && pageEl && !pageEl.classList.contains("landscape")){
+    var actEl=document.getElementById("activityPanel");
+    var menuEl2=document.getElementById("deviceMenu");
+    if(actEl && !actEl.contains(e.target)
+      && !(menuEl2 && menuEl2.contains(e.target))
+      && !(tamaLeft && tamaLeft.contains(e.target))
+      && !(tamaMid && tamaMid.contains(e.target))
+      && !(tamaRight && tamaRight.contains(e.target))){
+      showMode("default");
+    }
   }
 });
 
@@ -4524,8 +4663,14 @@ var STAGE_REQUIRE_LIST = {
   explorer: [
     {key:"curiosity", label:"Curiosity",              need:40, get:function(){ return (S.life.stats&&S.life.stats.curiosity)||0; },
       how:"Grows from curious moments as a Hatchling — asking questions, noticing new things, trying a mode for the first time."},
-    {key:"places",    label:"Hatchling-world places visited", need:2, get:function(){ return (S.explore.hatchLocs||[]).length; },
-      how:"Open Explore, then visit different spots in the Hatchling world (Home, Park, Library)."}
+    // Uses the lifetime S.explore.visited list (never resets day to day),
+    // not S.explore.hatchLocs (that one's the *daily* 2-visit cap — capped
+    // below 3, so it could never satisfy a "visit all 3" gate). A Hatchling
+    // only needs one location a day for its daily mission (see
+    // HATCHLING_DISCOVER_POOL); evolving into Explorer is the one place
+    // that asks for all three (Home, Park, Library) before moving on.
+    {key:"places",    label:"Hatchling-world places visited", need:3, get:function(){ return (S.explore.visited||[]).length; },
+      how:"Open Explore, then visit every spot in the Hatchling world — Home, Park, and Library — at least once."}
   ],
   // Reached from Explorer — built from Explorer-tier content (Detective,
   // Rethink, Trace, Perspectives, the Explorer world, Searcher), not
@@ -4712,14 +4857,29 @@ function awardFeedCP(n){
   if(applied>0){ awardCP(applied); S.life.feedGPToday=(S.life.feedGPToday||0)+applied; }
 }
 
+// The \uD83E\uDD5A emoji itself is the actual problem \u2014 on plenty of real emoji
+// fonts (not just a theoretical worst case) it's drawn as a sharp-tipped
+// teardrop, not the rounded cartoon egg it's supposed to read as, and
+// nothing in CSS can reshape a glyph. This draws an actual egg instead,
+// so it looks the same everywhere no font can override it.
+function eggEmblemSVG(px){
+  var h=Math.round(px*1.12);
+  return '<svg viewBox="0 0 100 112" width="'+px+'" height="'+h+'" style="display:inline-block;vertical-align:middle" aria-hidden="true">'
+    +'<ellipse cx="50" cy="104" rx="24" ry="6" fill="rgba(0,0,0,0.3)"/>'
+    +'<path d="M50,6 C36,6 19,31 19,60 C19,80 31,98 50,98 C69,98 81,80 81,60 C81,31 64,6 50,6 Z" fill="#faf6ea" stroke="#241b3a" stroke-width="4"/>'
+    +'</svg>';
+}
+function stageEmblemHtml(stg, px){
+  return stg.key==="egg" ? eggEmblemSVG(px) : stg.emblem;
+}
 function renderGrowth(){
   if(!document.getElementById("stageEmblem")) return;
   var i=stageIndex(), stg=STAGES[i];
-  document.getElementById("stageEmblem").textContent = stg.emblem;
+  document.getElementById("stageEmblem").innerHTML = stageEmblemHtml(stg, 32);
   var gpn=document.getElementById("growthPetName"); if(gpn) gpn.textContent = stg.key==="egg" ? "???" : petName();
   document.getElementById("stageName").textContent = stg.name;
   document.getElementById("stageLine").textContent = "\u201C"+stg.line+"\u201D";
-  var hse=document.getElementById("headerStageEmblem"); if(hse) hse.textContent = stg.emblem;
+  var hse=document.getElementById("headerStageEmblem"); if(hse) hse.innerHTML = stageEmblemHtml(stg, 13);
   var hsn=document.getElementById("headerStageName"); if(hsn) hsn.textContent = stg.name;
   var gn=document.getElementById("growthNote");
   if(gn) gn.innerHTML = stg.key==="egg"
@@ -4763,8 +4923,12 @@ function renderGrowth(){
   renderEvoChecklist(next);
   // render stage dots
   var dots=document.getElementById("stageDots");
+  // Each stage's name used to only exist as a hover title on its dot — easy
+  // to miss on mobile, where nothing hovers. It's a visible caption under
+  // the dot now, so every stage's name is readable at a glance, not just
+  // the current one.
   if(dots){ dots.innerHTML=STAGES.map(function(s,k){
-    return '<span class="stage-dot'+(k<=i?' on':'')+'" title="'+s.name+'">'+s.emblem+'</span>';
+    return '<span class="stage-dot-wrap"><span class="stage-dot'+(k<=i?' on':'')+'" title="'+s.name+'">'+stageEmblemHtml(s,13)+'</span><span class="stage-dot-label'+(k<=i?' on':'')+'">'+s.name+'</span></span>';
   }).join(''); }
 }
 // Maps a STAGES[].key ("hatch") to the STAGE_ABILITIES key ("hatchling")
@@ -5097,6 +5261,46 @@ var BACKDROP_SCENES={
   // and only lets the window itself track real day/night.
   cleanphone: function(){
     return cleanBedroomScene();
+  },
+  // Learn / Rethink / Perspectives / Trace — InfoPet's own study nook, same
+  // desk regardless of which of the four it is (they're all "sit down and
+  // think it through" activities, not distinct places).
+  study: function(){
+    var day=isDaytime();
+    var wall="#e8edf5", floor="#8a6a42";
+    var cells=[];
+    bdRect(cells,0,0,28,14,wall);
+    bdRect(cells,0,13,28,1,"#b5895a");
+    bdRect(cells,0,14,28,4,floor);
+    for(var fx=0;fx<28;fx+=2){ bdRect(cells,fx,14,1,4,"#7a5936"); }
+    // window, upper right
+    bdRect(cells,20,1,6,5,"#8a6a42");
+    bdRect(cells,21,2,4,3, day?"#8ed0f5":"#152140");
+    if(day){ bdRect(cells,24,2,1,1,"#fff6d8"); }
+    else { bdRect(cells,22,3,1,1,"#fff2c8"); bdRect(cells,24,2,1,1,"#fff2a0"); }
+    // bookshelf, left wall
+    bdRect(cells,1,3,5,10,"#6b4426");
+    var bc=["#c9524a","#4a90c9","#e0a94a","#5cb85c","#9a6ac9"];
+    for(var sy=4; sy<13; sy+=2){ for(var sx=0; sx<5; sx++){ bdRect(cells,1+sx,sy,1,1,bc[(sx+sy)%bc.length]); } }
+    // desk lamp, right of the monitor, warm bulb lit either time of day
+    bdRect(cells,20,9,1,4,"#3a3a42");
+    bdRect(cells,18,7,4,2,"#ffd166");
+    bdRect(cells,19,6,2,1,"#fff6d8");
+    // desk running the width, with drawer fronts
+    bdRect(cells,1,10,26,1,"#c68a5c");
+    bdRect(cells,1,11,26,3,"#a8724a");
+    bdRect(cells,4,12,4,2,"#7a5232"); bdRect(cells,20,12,4,2,"#7a5232");
+    bdRect(cells,5,13,2,1,"#4a2e18"); bdRect(cells,21,13,2,1,"#4a2e18");
+    // computer, centered on the desk
+    bdRect(cells,10,5,8,6,"#2a2a30");
+    bdRect(cells,11,6,6,4, day?"#8ed6f0":"#4adfc4");
+    bdRect(cells,12,7,4,1,"#ffffff");
+    bdRect(cells,13,11,2,1,"#1a1a20");
+    bdRect(cells,12,10,4,1,"#3a3a42");
+    // stack of books on the desk
+    bdRect(cells,22,8,4,3,"#e0455a"); bdRect(cells,22,8,4,1,"#fff2c8");
+    bdRect(cells,22,7,4,1,"#4a90c9");
+    return {bg:wall, cells:cells};
   }
 };
 // Paints a {bg, sky, sun, clouds, cells} scene onto any given canvas/ctx —
@@ -5495,14 +5699,14 @@ function renderDashCard(){
       return "<span class='dash-ach-icon"+(on?" on":"")+"' title='"+(showHidden?"Secret badge":b.name)+"'>"+(on?b.icon:"❔")+"</span>";
     }).join("");
   }
-  var dietBar=document.getElementById("dashDietBar");
-  if(dietBar){
-    var d=(S.life&&S.life.diet)||{reliable:0,learning:0,creative:0,community:0,fun:0,junk:0};
-    var segs=[{k:"reliable",c:"#4ade80"},{k:"learning",c:"#60a5fa"},{k:"creative",c:"#c084fc"},{k:"community",c:"#fb923c"},{k:"fun",c:"#f472b6"}];
-    var total=segs.reduce(function(sum,s){ return sum+d[s.k]; },0);
-    if(total<=0){ dietBar.innerHTML="<span style='width:100%;background:transparent;border:1.5px dashed var(--card-border);box-sizing:border-box;border-radius:999px'></span>"; }
-    else { dietBar.innerHTML=segs.map(function(s){ var pct=Math.round(d[s.k]/total*100); return pct>0?"<span style='background:"+s.c+";width:"+pct+"%'></span>":""; }).join(""); }
-    renderDietInsight(d, total, "dashDietInsight");
+  // Same exact icon-segment diet meter Feed uses (see dietMeterHtml()),
+  // not the old plain percentage bar — this is the one place on the
+  // web/desktop idle screen that shows diet at a glance, so it should look
+  // like the real thing instead of a simplified stand-in.
+  var dietMeterWrap=document.getElementById("dashDietMeter");
+  if(dietMeterWrap){
+    if(!dietMeterWrap.dataset.built){ dietMeterWrap.innerHTML=dietMeterHtml("Dash"); dietMeterWrap.dataset.built="1"; }
+    renderDietMeter("Dash");
   }
 }
 function renderBadges(){
@@ -5595,14 +5799,24 @@ function fandomFixated(){
   var d=S.life.diet, total=d.reliable+d.learning+d.creative+d.community+d.fun;
   return total>=6 && (d.fun/total)>0.55;
 }
+// Every stat bar (Mood, Hunger, Cleanliness, Energy) shares one color
+// language now instead of each having its own fixed hue: green while
+// healthy, then blue → yellow → red as it drops, so "what color is this
+// bar" always means the same thing no matter which stat you're looking at.
+function statTierColor(v){
+  if(v>=70) return "#06d6a0"; // green — healthy
+  if(v>=40) return "#4dd8f0"; // blue — fine, keep an eye on it
+  if(v>=11) return "#ffd166"; // yellow — needs attention soon
+  return "#ff4d6d";           // red — needs attention now
+}
 function updateReadout(){
-  var st=petState(S.mood), pal={thrive:"#06d6a0",curious:"#ffd166",anxious:"#ff9f43",corrupt:"#ff4d6d"};
+  var st=petState(S.mood);
   if(S.life){
     if(st==="corrupt") S.life.wasCorrupt=true;
     else if(st==="thrive" && S.life.wasCorrupt){ S.life.wasCorrupt=false; }
   }
   document.getElementById("moodBar").style.width=S.mood+"%";
-  document.getElementById("moodBar").style.background=pal[st];
+  document.getElementById("moodBar").style.background=statTierColor(S.mood);
   document.getElementById("moodVal").textContent=S.mood;
   var L=S.life||{};
   document.getElementById("stateVal").textContent = petNeedsCare() ? "🌧️ Needs Care"
@@ -5611,10 +5825,10 @@ function updateReadout(){
     : (L.cleanliness!=null && L.cleanliness<NEED_STATE_LOW) ? "🧹 Messy"
     : STATE_LABEL[st];
   // CARE METERS — see applyNeglectDecay()/petNeedsCare() in loadV4().
-  [["hunger","#ffd166"],["cleanliness","#06d6a0"],["energy","#4dd8f0"]].forEach(function(pair){
-    var k=pair[0], v=(S.life&&S.life[k]!=null)?S.life[k]:100;
+  ["hunger","cleanliness","energy"].forEach(function(k){
+    var v=(S.life&&S.life[k]!=null)?S.life[k]:100;
     var bar=document.getElementById(k+"Bar"), val=document.getElementById(k+"Val");
-    if(bar){ bar.style.width=v+"%"; bar.style.background=pair[1]; }
+    if(bar){ bar.style.width=v+"%"; bar.style.background=statTierColor(v); }
     if(val) val.textContent=v;
   });
   var floatMood=document.getElementById("floatMoodFill"); if(floatMood) floatMood.style.width=S.mood+"%";
@@ -5707,6 +5921,38 @@ function turnJournalPage(dir){
   if(next===undefined) return;
   journalUI.day=next;
   renderJournal();
+}
+// Jump straight to any day instead of clicking ‹/› one page at a time —
+// same journalDays()/journalUI.day plumbing turnJournalPage already uses,
+// just picking an index directly instead of stepping by one.
+function hideDiaryPicker(){
+  var p=document.getElementById("diaryPicker"); if(!p) return;
+  p.classList.remove("show"); p.setAttribute("aria-hidden","true");
+  var btn=document.getElementById("diaryPick"); if(btn) btn.setAttribute("aria-expanded","false");
+}
+function toggleDiaryPicker(){
+  var p=document.getElementById("diaryPicker"); if(!p) return;
+  if(p.classList.contains("show")){ hideDiaryPicker(); return; }
+  renderDiaryPicker();
+  p.classList.add("show"); p.setAttribute("aria-hidden","false");
+  var btn=document.getElementById("diaryPick"); if(btn) btn.setAttribute("aria-expanded","true");
+}
+function renderDiaryPicker(){
+  var list=document.getElementById("diaryPickerList"); if(!list) return;
+  var days=journalDays();
+  list.innerHTML=days.map(function(day){
+    var isToday=day===S.v4.day, isCurrent=day===journalUI.day;
+    return "<button class='diary-picker-day"+(isCurrent?" current":"")+"' data-pickday='"+day+"'>"
+      +"<span>"+(isToday?"Today · Day "+day:"Day "+day)+"</span>"
+      +"<span class='diary-picker-day-date'>"+formatJournalDate(day)+"</span></button>";
+  }).join("");
+  list.querySelectorAll(".diary-picker-day").forEach(function(btn){
+    btn.onclick=function(){
+      journalUI.day=Number(btn.dataset.pickday);
+      hideDiaryPicker();
+      renderJournal();
+    };
+  });
 }
 function renderJournal(){
   var wrap=document.getElementById("diaryPageBody"); if(!wrap) return;
@@ -6221,10 +6467,26 @@ function renderProfileDiet(){
   else { bar.innerHTML=segs.map(function(s){ var pct=Math.round(d[s.k]/total*100); return pct>0?"<span style='background:"+s.c+";width:"+pct+"%'></span>":""; }).join(""); }
   renderDietInsight(d, total, "profileDietInsight");
 }
+// What "balance" should actually mean changes with the pet's stage — a
+// Hatchling's diet is about gentle, simple, true content; a Guardian's is
+// about modeling a healthy mix for others. Same diet meter, a note that
+// actually fits where the pet is instead of one generic tip for all four.
+var DIET_STAGE_NOTES={
+  hatchling: "🥚 At this stage, balance means simple and true, not lots of everything — a few gentle, age-appropriate sources beat a big varied feed.",
+  explorer:  "🧭 As an Explorer, branch out on purpose — if one type of content is starting to dominate, that's the moment to go look for a different kind.",
+  thinker:   "🔎 As a Thinker, weigh reliability as much as variety — a balanced diet still means checking sources before feeding them, not just mixing categories.",
+  guardian:  "🛡️ As a Guardian, the mix you keep is the example others pick up on too — a balanced diet here is also a model of what healthy media habits look like."
+};
+function dietStageTier(){
+  var i=stageIndex();
+  if(i<=1) return "hatchling";
+  if(i===2) return "explorer";
+  if(i===3) return "thinker";
+  return "guardian";
+}
 var DIET_TIPS=[
   "A named source and a check-able claim beat a catchy headline every time.",
   "If a post only makes you feel angry and nothing else, that reaction is often the whole point of it.",
-  "Following one creator's take on everything isn't a balanced diet — try adding a second, different voice.",
   "A little fun is healthy. The goal is variety, not a feed with zero joy in it."
 ];
 // A raw stacked bar doesn't say whether the mix is actually good — this
@@ -6234,8 +6496,9 @@ function renderDietInsight(d, total, elId){
   var el=document.getElementById(elId||"profileDietInsight"); if(!el) return;
   var junk=d.junk||0, grand=total+junk;
   var day=(S.v4&&S.v4.day)||1, tip=DIET_TIPS[(day-1+DIET_TIPS.length*100)%DIET_TIPS.length];
+  var stageNote="<p style='font-size:11px;color:var(--text-muted);margin:8px 0 0;line-height:1.4'>"+DIET_STAGE_NOTES[dietStageTier()]+"</p>";
   if(grand<=0){
-    el.innerHTML="<p style='font-size:12.5px;color:var(--text-muted);margin:8px 0 0'>Not fed yet — what "+petName()+" reads shapes how it thinks. Feed it something today to see this fill in.</p>";
+    el.innerHTML="<p style='font-size:12.5px;color:var(--text-muted);margin:8px 0 0'>Not fed yet — what "+petName()+" reads shapes how it thinks. Feed it something today to see this fill in.</p>"+stageNote;
     return;
   }
   var junkPct=Math.round(junk/grand*100);
@@ -6253,7 +6516,8 @@ function renderDietInsight(d, total, elId){
   }
   el.innerHTML="<p style='font-size:13px;font-weight:700;margin:8px 0 2px;color:"+color+"'>"+verdict+"</p>"
     +"<p style='font-size:12px;color:var(--text-soft);margin:0 0 8px;line-height:1.4'>"+msg+"</p>"
-    +"<p style='font-size:11px;color:var(--text-muted);margin:0;line-height:1.4'>💡 <em>"+tip+"</em></p>";
+    +"<p style='font-size:11px;color:var(--text-muted);margin:0;line-height:1.4'>💡 <em>"+tip+"</em></p>"
+    +stageNote;
 }
 function renderJourneyBadges(){
   var card=document.getElementById("journeyBadges"); if(!card) return;
@@ -6288,19 +6552,6 @@ function renderTipCard(){
   var tip=DAILY_TIPS[(day-1+DAILY_TIPS.length*100)%DAILY_TIPS.length];
   card.innerHTML="<p class='status-card-label'>💡 TODAY'S TIP</p><div class='idle-tip-icon'>"+tip.icon+"</div><p class='idle-tip-text'>"+tip.text+"</p>";
 }
-function renderJourneyQuest(){
-  var card=document.getElementById("journeyQuest"); if(!card) return;
-  var Q=activeQuest();
-  var done=Q.filter(function(q){ return S.quest && S.quest[q.key]>=q.target; }).length;
-  card.innerHTML="<p class='status-card-label'>⭐ TODAY'S QUEST</p><p style='font-size:16px;font-weight:700;margin:4px 0 8px'>"+done+" / "+Q.length+" complete</p><button class='dash-ach-view' id='journeyQuestBtn'>Open Quest ▸</button>";
-  var btn=document.getElementById("journeyQuestBtn");
-  if(btn) btn.onclick=function(){
-    var landscape=document.querySelector(".page").classList.contains("landscape");
-    hideDeviceStats();
-    if(landscape){ var q=document.querySelector(".quest"); if(q&&q.scrollIntoView) q.scrollIntoView({behavior:"smooth"}); }
-    else { showQuestModal(); }
-  };
-}
 // Days Practiced — total distinct real calendar days played (see streakDays'
 // comment in loadV4()). Moved here from the LED screen's live readout: it's
 // a once-a-day number, not something that changes tick-to-tick like Mood or
@@ -6311,11 +6562,31 @@ function renderJourneyStreak(){
   var n=(S.life&&S.life.streakDays)||1;
   card.innerHTML="<p class='status-card-label'>📅 DAYS PRACTICED</p><p style='font-size:16px;font-weight:700;margin:4px 0 0'>"+n+(n===1?" day":" days")+"</p>";
 }
+// Shortcut into the same Media Literacy Report Card the 📋 device button
+// and ☰ menu tile already open (see reportCardBtn's own onclick) — this
+// just gives the Journey tab a direct way in too, instead of it only being
+// reachable from the physical button or the menu.
+function renderJourneyReportCard(){
+  var card=document.getElementById("journeyReportCard"); if(!card) return;
+  card.innerHTML="<p class='status-card-label'>📋 REPORT CARD</p><p style='font-size:12px;color:var(--text-soft);margin:4px 0 8px'>A summary of how "+petName()+"'s doing.</p><button class='dash-ach-view' id='journeyReportCardBtn'>View Report Card ▸</button>";
+  var btn=document.getElementById("journeyReportCardBtn");
+  if(btn) btn.onclick=function(){ hideDeviceStats(); var rcBtn=document.getElementById("reportCardBtn"); if(rcBtn) rcBtn.click(); };
+}
+// Same shortcut pattern as the Report Card card just above — the journal
+// was already reachable from the 📔 device button and the ☰ menu, this
+// just gives Journey a direct way in too.
+function renderJourneyJournal(){
+  var card=document.getElementById("journeyJournal"); if(!card) return;
+  card.innerHTML="<p class='status-card-label'>📔 JOURNAL</p><p style='font-size:12px;color:var(--text-soft);margin:4px 0 8px'>"+petName()+"'s reflections, day by day.</p><button class='dash-ach-view' id='journeyJournalBtn'>View Journal ▸</button>";
+  var btn=document.getElementById("journeyJournalBtn");
+  if(btn) btn.onclick=function(){ hideDeviceStats(); var jBtn=document.getElementById("journalBtn"); if(jBtn) jBtn.click(); };
+}
 function renderStatsExtra(){
   renderProfileDiet();
-  renderJourneyBadges();
-  renderJourneyQuest();
   renderJourneyStreak();
+  renderJourneyReportCard();
+  renderJourneyJournal();
+  renderJourneyBadges();
 }
 // Wires the Profile tab's horizontal swipe once — dots both reflect scroll
 // position and act as a click target for mouse users.
@@ -6430,6 +6701,7 @@ function loadV4(){
       if(d.exploreHatchLocs){ S.explore.hatchLocs = d.exploreHatchLocs; }
       else if(d.exploreHatchLoc){ S.explore.hatchLocs = [d.exploreHatchLoc]; } // legacy single-place saves
       if(d.custom){ S.custom = d.custom; if(!S.custom.pattern) S.custom.pattern="plain"; if(!PET_SPECIES[S.custom.species]) S.custom.species="bird"; }
+      if(d.bags){ S.bags = d.bags; }
       if(!S.quest || S.quest.day!==S.v4.day) newQuest();
     }
   } catch(e){ /* storage blocked — run in-memory */ }
@@ -6437,7 +6709,7 @@ function loadV4(){
 function saveV4(){
   try {
     S.v4.lastPlayed = new Date().toDateString();
-    localStorage.setItem("infopet_v5", JSON.stringify({ v4:S.v4, life:S.life, quest:S.quest, limits:S.limits, beliefs:S.beliefs, journal:S.journal, journalNotes:S.journalNotes, journalDates:S.journalDates, companionDependency:S.companion.dependency, companionIntroSeen:S.companion.introSeen, exploreVisited:S.explore.visited, exploreHatchDay:S.explore.hatchDay, exploreHatchLocs:S.explore.hatchLocs, custom:S.custom }));
+    localStorage.setItem("infopet_v5", JSON.stringify({ v4:S.v4, life:S.life, quest:S.quest, limits:S.limits, beliefs:S.beliefs, journal:S.journal, journalNotes:S.journalNotes, journalDates:S.journalDates, companionDependency:S.companion.dependency, companionIntroSeen:S.companion.introSeen, exploreVisited:S.explore.visited, exploreHatchDay:S.explore.hatchDay, exploreHatchLocs:S.explore.hatchLocs, custom:S.custom, bags:S.bags }));
   } catch(e){ /* ignore */ }
 }
 // Surfaces total Days Practiced in session-complete messages (Clean, Trace/
@@ -6807,7 +7079,9 @@ var DIRT_ICON_SVG={
   "💬":'<rect x="4" y="6" width="20" height="13" rx="4" fill="#a78bfa"/><polygon points="9,19 9,24 14,19" fill="#a78bfa"/>',
   "❓":'<circle cx="14" cy="14" r="11" fill="#e5e7eb" stroke="#9ca3af" stroke-width="1.5"/><text x="14" y="19" font-size="14" font-weight="800" text-anchor="middle" fill="#4b5563">?</text>',
   "🤖":'<rect x="8" y="8" width="12" height="12" rx="2" fill="#38bdf8"/><line x1="11" y1="4" x2="11" y2="8" stroke="#38bdf8" stroke-width="2"/><line x1="17" y1="4" x2="17" y2="8" stroke="#38bdf8" stroke-width="2"/><line x1="11" y1="20" x2="11" y2="24" stroke="#38bdf8" stroke-width="2"/><line x1="17" y1="20" x2="17" y2="24" stroke="#38bdf8" stroke-width="2"/><rect x="11" y="11" width="6" height="6" fill="#0c4a6e"/>',
-  "⚠️":'<polygon points="14,4 25,23 3,23" fill="#fbbf24" stroke="#b45309" stroke-width="1"/><text x="14" y="20" font-size="13" font-weight="800" text-anchor="middle" fill="#7c2d12">!</text>'
+  "⚠️":'<polygon points="14,4 25,23 3,23" fill="#fbbf24" stroke="#b45309" stroke-width="1"/><text x="14" y="20" font-size="13" font-weight="800" text-anchor="middle" fill="#7c2d12">!</text>',
+  "💨":'<circle cx="9" cy="15" r="4" fill="#cbd5e1"/><circle cx="16" cy="10" r="3" fill="#e2e8f0"/><circle cx="18" cy="17" r="3.5" fill="#cbd5e1"/>',
+  "🖋️":'<path d="M8,18 Q6,12 12,10 Q17,6 21,11 Q24,15 19,18 Q21,23 13,20 Q9,23 8,18 Z" fill="#3b3b5c"/>'
 };
 var STAIN_COLOR={ misinformation:"#a78bfa", disinformation:"#f87171", cyberharassment:"#fb923c", deepfake:"#2dd4bf" };
 var TRASH_ICON_SVG='<rect x="7" y="9" width="14" height="15" rx="1" fill="#9ca3af"/><rect x="5" y="6" width="18" height="3" rx="1" fill="#6b7280"/><rect x="11" y="3" width="6" height="3" fill="#6b7280"/><line x1="11" y1="12" x2="11" y2="21" stroke="#4b5563" stroke-width="1.5"/><line x1="14" y1="12" x2="14" y2="21" stroke="#4b5563" stroke-width="1.5"/><line x1="17" y1="12" x2="17" y2="21" stroke="#4b5563" stroke-width="1.5"/>';
@@ -7272,12 +7546,16 @@ function showMode(m){
   S.mode=m;
   updateSheetOpenClass();
   if(m!=="explore" && S.explore.scene){ S.explore.scene=null; drawPet(); } // leaving Explore mid-encounter — stop showing that illustration
+  if(m!=="clean"){ hidePetDirt(); } // leaving Clean mid-wipe — don't leave a dirt spot stuck showing
   if(m==="feed"){ setBackdrop("kitchen"); }
   // Bathroom is a Hatchling-era metaphor (scrub your feed like a sink) — from
   // Explorer onward, "clean your feed" is framed as it actually happens: ads/
   // notifications/spam cluttering an actual phone screen. See BACKDROP_SCENES.cleanphone.
   else if(m==="clean"){ setBackdrop(stageIndex()>=2 ? "cleanphone" : "bathroom"); }
-  else if(S.screenBackdrop==="kitchen" || S.screenBackdrop==="bathroom" || S.screenBackdrop==="cleanphone"){ setBackdrop("home"); }
+  // Learn/Rethink/Perspectives/Trace all share the same "sit down and think
+  // it through" desk backdrop — see BACKDROP_SCENES.study.
+  else if(m==="train" || m==="heal" || m==="trace" || m==="perspectives"){ setBackdrop("study"); }
+  else if(S.screenBackdrop==="kitchen" || S.screenBackdrop==="bathroom" || S.screenBackdrop==="cleanphone" || S.screenBackdrop==="study"){ setBackdrop("home"); }
 }
 // The "choose a care mode" explainer is hidden inline in both phone and web
 // mode now — Quick Actions took its spot instead. Help still opens the
@@ -7320,6 +7598,11 @@ document.getElementById("btn-perspectives").onclick=function(){ if(sleepGuard())
 // ──────────────────────────────────────────────────────────
 function feedTheme(){ return FEED_THEMES[((S.v4.day-1)+FEED_THEMES.length*100)%FEED_THEMES.length]; }
 function pickRandom(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+// Feed gets tapped far more often than any other mode (an unlimited tray,
+// not a once-a-day session) — plain pickRandom() there meant the exact
+// same snack could show up two or three taps in a row. Draws from a
+// shuffle bag instead, so a pool cycles through fully before repeating.
+function pickNoRepeat(arr, bagKey){ return drawFromBag(bagKey, arr, 1)[0]; }
 function isHatchling(){ return stageIndex()===1; }
 // The feed's content grows up with the pet — same idea as everything else
 // in the game (Clean, evolution, etc.), just applied to what shows up on
@@ -7349,23 +7632,23 @@ function buildSnackTray(){
   var domain=S.feed.domain;
   if(domain && FEED_DOMAIN_POOLS[domain]){
     var dp=FEED_DOMAIN_POOLS[domain];
-    var dTray=[pickRandom(dp.healthy), pickRandom(dp.treat), pickRandom(dp.junk)];
+    var dTray=[pickNoRepeat(dp.healthy,"feed:"+domain+":h"), pickNoRepeat(dp.treat,"feed:"+domain+":t"), pickNoRepeat(dp.junk,"feed:"+domain+":j")];
     for(var k=dTray.length-1;k>0;k--){ var m=Math.floor(Math.random()*(k+1)); var tmp2=dTray[k]; dTray[k]=dTray[m]; dTray[m]=tmp2; }
     return dTray;
   }
   var tier=feedTier();
   var healthy, treat, junk;
   if(tier==="hatchling"){
-    healthy=pickRandom(BABY_HEALTHY_SNACKS); treat=pickRandom(BABY_TREAT_SNACKS); junk=pickRandom(BABY_JUNK_SNACKS);
+    healthy=pickNoRepeat(BABY_HEALTHY_SNACKS,"feed:baby:h"); treat=pickNoRepeat(BABY_TREAT_SNACKS,"feed:baby:t"); junk=pickNoRepeat(BABY_JUNK_SNACKS,"feed:baby:j");
   } else if(tier==="thinker"){
-    healthy=pickRandom(THINKER_HEALTHY_SNACKS); treat=pickRandom(TREAT_SNACKS); junk=pickRandom(THINKER_JUNK_SNACKS);
+    healthy=pickNoRepeat(THINKER_HEALTHY_SNACKS,"feed:thinker:h"); treat=pickNoRepeat(TREAT_SNACKS,"feed:treat"); junk=pickNoRepeat(THINKER_JUNK_SNACKS,"feed:thinker:j");
   } else if(tier==="guardian"){
-    healthy=pickRandom(GUARDIAN_HEALTHY_SNACKS); treat=pickRandom(GUARDIAN_TREAT_SNACKS); junk=pickRandom(GUARDIAN_JUNK_SNACKS);
+    healthy=pickNoRepeat(GUARDIAN_HEALTHY_SNACKS,"feed:guardian:h"); treat=pickNoRepeat(GUARDIAN_TREAT_SNACKS,"feed:guardian:t"); junk=pickNoRepeat(GUARDIAN_JUNK_SNACKS,"feed:guardian:j");
   } else {
     var isRare = Math.random() < 0.12;
-    healthy = isRare ? pickRandom(RARE_SNACKS) : pickRandom(HEALTHY_SNACKS);
-    treat = pickRandom(TREAT_SNACKS);
-    junk = pickRandom(JUNK_SNACKS);
+    healthy = isRare ? pickNoRepeat(RARE_SNACKS,"feed:rare") : pickNoRepeat(HEALTHY_SNACKS,"feed:healthy");
+    treat = pickNoRepeat(TREAT_SNACKS,"feed:treat");
+    junk = pickNoRepeat(JUNK_SNACKS,"feed:junk");
   }
   var tray = [healthy, treat, junk];
   for(var i=tray.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)); var tmp=tray[i]; tray[i]=tray[j]; tray[j]=tmp; }
@@ -7638,35 +7921,45 @@ function applySnackEffects(item){
 }
 
 // ── Information Diet meter (dynamic, reflects what's actually been fed) ──
-function dietMeterEl(){
-  var wrap=document.createElement("div"); wrap.className="diet-meter-wrap";
-  wrap.innerHTML="<p class='diet-meter-title'>🥗 INFORMATION DIET</p>"
+// Suffix-parameterized so the exact same icon-segment/legend/sublabel look
+// can be reused for a second, independent instance (the web/desktop Quick
+// Actions dashboard shortcut, see #dashDietMeter below) without id
+// collisions — Feed's own copy keeps the original un-suffixed ids so it
+// doesn't need touching.
+function dietMeterHtml(suffix){
+  suffix = suffix||"";
+  return "<p class='diet-meter-title'>🥗 INFORMATION DIET</p>"
     +"<div class='diet-segments'>"
-    +"<div class='diet-seg' id='dietSegA' style='background:linear-gradient(135deg,#4ade80,#22c55e)'><span class='diet-seg-lbl'>✅</span></div>"
-    +"<div class='diet-seg' id='dietSegB' style='background:linear-gradient(135deg,#60a5fa,#3b82f6)'><span class='diet-seg-lbl'>📚</span></div>"
-    +"<div class='diet-seg' id='dietSegC' style='background:linear-gradient(135deg,#c084fc,#a855f7)'><span class='diet-seg-lbl'>🎨</span></div>"
-    +"<div class='diet-seg' id='dietSegD' style='background:linear-gradient(135deg,#fb923c,#f97316)'><span class='diet-seg-lbl'>🤝</span></div>"
-    +"<div class='diet-seg' id='dietSegE' style='background:linear-gradient(135deg,#f472b6,#ec4899)'><span class='diet-seg-lbl'>🎮</span></div>"
+    +"<div class='diet-seg' id='dietSegA"+suffix+"' style='background:linear-gradient(135deg,#4ade80,#22c55e)'><span class='diet-seg-lbl'>✅</span></div>"
+    +"<div class='diet-seg' id='dietSegB"+suffix+"' style='background:linear-gradient(135deg,#60a5fa,#3b82f6)'><span class='diet-seg-lbl'>📚</span></div>"
+    +"<div class='diet-seg' id='dietSegC"+suffix+"' style='background:linear-gradient(135deg,#c084fc,#a855f7)'><span class='diet-seg-lbl'>🎨</span></div>"
+    +"<div class='diet-seg' id='dietSegD"+suffix+"' style='background:linear-gradient(135deg,#fb923c,#f97316)'><span class='diet-seg-lbl'>🤝</span></div>"
+    +"<div class='diet-seg' id='dietSegE"+suffix+"' style='background:linear-gradient(135deg,#f472b6,#ec4899)'><span class='diet-seg-lbl'>🎮</span></div>"
     +"</div>"
     +"<div class='diet-cats'>"
-    +"<div class='diet-cat'><div class='diet-cat-dot' style='background:#4ade80'></div><span id='dietLabel'>Not fed yet</span></div>"
+    +"<div class='diet-cat'><div class='diet-cat-dot' style='background:#4ade80'></div><span id='dietLabel"+suffix+"'>Not fed yet</span></div>"
     +"<div class='diet-cat'><div class='diet-cat-dot' style='background:#60a5fa'></div><span>Learning</span></div>"
     +"<div class='diet-cat'><div class='diet-cat-dot' style='background:#c084fc'></div><span>Creativity</span></div>"
     +"<div class='diet-cat'><div class='diet-cat-dot' style='background:#fb923c'></div><span>Community</span></div>"
     +"<div class='diet-cat'><div class='diet-cat-dot' style='background:#f472b6'></div><span>Fun</span></div>"
     +"</div>"
-    +"<div id='dietSublabel' class='diet-sublabel'>Tap a snack to start today's meal!</div>";
+    +"<div id='dietSublabel"+suffix+"' class='diet-sublabel'>Tap a snack to start today's meal!</div>";
+}
+function dietMeterEl(){
+  var wrap=document.createElement("div"); wrap.className="diet-meter-wrap";
+  wrap.innerHTML=dietMeterHtml("");
   setTimeout(renderDietMeter,0);
   return wrap;
 }
-function renderDietMeter(){
+function renderDietMeter(suffix){
+  suffix = suffix||"";
   var d = (S.life && S.life.diet) ? S.life.diet : {reliable:0,learning:0,creative:0,community:0,fun:0,junk:0};
   var segs = [
-    {id:"dietSegA", key:"reliable"},
-    {id:"dietSegB", key:"learning"},
-    {id:"dietSegC", key:"creative"},
-    {id:"dietSegD", key:"community"},
-    {id:"dietSegE", key:"fun"}
+    {id:"dietSegA"+suffix, key:"reliable"},
+    {id:"dietSegB"+suffix, key:"learning"},
+    {id:"dietSegC"+suffix, key:"creative"},
+    {id:"dietSegD"+suffix, key:"community"},
+    {id:"dietSegE"+suffix, key:"fun"}
   ];
   var total=0; segs.forEach(function(s){ total+=d[s.key]; });
   segs.forEach(function(s){
@@ -7681,7 +7974,7 @@ function renderDietMeter(){
     var flex = total>0 ? d[s.key] : 1;
     el.style.flex = flex;
   });
-  var dlEl=document.getElementById("dietLabel"), dsEl=document.getElementById("dietSublabel");
+  var dlEl=document.getElementById("dietLabel"+suffix), dsEl=document.getElementById("dietSublabel"+suffix);
   if(!dlEl||!dsEl) return;
   var junkRatio = (total+d.junk)>0 ? d.junk/(total+d.junk) : 0;
   if(total===0 && d.junk===0){
@@ -8037,11 +8330,21 @@ function renderCleanDone(){
 // ── HATCHLING VERSION OF CLEAN: literal dirt on the pet ─────
 // No moderation, no judgment calls, no MIL of any kind — just wiping crumbs
 // and mud off a messy baby bird. The classic Tamagotchi loop. See NEST_ITEMS.
+// Picks what's actually dirty from wherever the pet really wandered today
+// (S.explore.dirtLog, filled in by finishHatchlingVisit — see the Hatchling
+// world below) instead of a pool of dirt with no connection to what
+// happened. Only falls back to a random mix once there's nothing logged
+// yet (e.g. Clean before Explore has been opened today).
+function nestItemsForToday(){
+  var log=(S.explore&&S.explore.dirtLog)||[];
+  if(log.length) return log.slice(0,4);
+  return NEST_ITEMS.slice().sort(function(){return Math.random()-.5;}).slice(0,4);
+}
 function initNest(){
   setCleanHeader("Clean Up "+petName(),"","<strong style='color:var(--clean-col)'>A little messy from all that exploring.</strong> Just a wipe-down — nothing to figure out, just a bit of dirt.");
   if(S.clean.nestDone){ renderNestDone(); return; }
   var body=document.getElementById("cleanBody");
-  var items=NEST_ITEMS.slice().sort(function(){return Math.random()-.5;}).slice(0,4);
+  var items=nestItemsForToday();
   S.clean.total=items.length; S.clean.cleaned=0; S.clean.queue=items; S.clean.idx=0;
   body.innerHTML="<p class='explain'>"+petName()+" got a little messy while exploring — help clean it up!</p>"
     +"<div class='clean-meter'><div class='clean-meter-label'><span>🧼 Cleanliness</span><span id='cleanPct'>0%</span></div><div class='clean-meter-track'><div class='clean-meter-fill' id='cleanFill' style='width:0%'></div></div></div>"
@@ -8051,11 +8354,12 @@ function initNest(){
 function renderNestCard(){
   var zone=document.getElementById("cleanCardZone"); if(!zone) return;
   var item=S.clean.queue[S.clean.idx];
-  if(!item){ completeNest(); return; }
+  if(!item){ hidePetDirt(); completeNest(); return; }
   zone.innerHTML="<div class='mod-card'>"+item.icon+" "+item.label+"</div>"
     +"<div class='mod-actions'><button class='mod-btn mute' data-act='tidy'>🧼 Wipe it clean</button></div>"
     +"<div id='modFeedback'></div>";
   zone.querySelector(".mod-btn").onclick=function(){ resolveNestItem(item); };
+  showPetDirt(item.icon); // the actual dirt spot, drawn live on the pet
 }
 function nestAdvance(){
   var zone=document.getElementById("cleanCardZone");
@@ -8073,12 +8377,14 @@ function resolveNestItem(item){
   var p=document.getElementById("cleanPct"); if(p) p.textContent=pct+"%";
   var fb=document.getElementById("modFeedback");
   if(fb) fb.innerHTML="<div class='verdict good'>✨ "+item.tidyLine+"</div>";
+  wipePetDirt(); // soap sweeps over to the spot and scrubs it away
   nestAdvance();
 }
 function completeNest(){
   S.clean.nestDone=true;
   S.life.nestDirty=false;
   S.life.cleanliness=Math.min(100,(S.life.cleanliness||100)+25); // every Clean variant (nest tidy, feed moderation, stickers, residue) counts as "got cleaned"
+  S.explore.dirtLog=[]; // today's actual mess has been cleaned up — start fresh
   delta(6); awardCP(3);
   questBump("clean");
   addLog("🧼", petName()+" is all clean now.", "Just a bit of ordinary mess — nothing to figure out, just a wipe-down.");
@@ -8306,7 +8612,116 @@ var DETECTIVE_ROUNDS=[
     captionA:"This ₱50 gadget replaced my ₱5,000 one — doctors are STUNNED (paid partnership, no disclosure)",
     captionB:"Sponsored: a budget alternative worth trying, results may vary — full review linked below.",
     misleadingIndex:0,
-    tell:"Both captions are honestly the same ad for the same real product — one just hides that it's an ad behind fake urgency and a fake doctor endorsement. The photo was never the problem; the missing disclosure was." }
+    tell:"Both captions are honestly the same ad for the same real product — one just hides that it's an ad behind fake urgency and a fake doctor endorsement. The photo was never the problem; the missing disclosure was." },
+  // The 21 below reuse the same handful of scene illustrations above (no
+  // new art needed for a "caption" round — the photo is incidental, the
+  // lesson is entirely in the two captions) so the pool could grow to a
+  // real 30 without a matching pile of new pixel art per case.
+  { type:"caption", scene:"alert", label:"Same screenshot, two captions",
+    captionA:"URGENT: new law bans [common food] starting tomorrow — share before it's too late!! (no bill number, no date)",
+    captionB:"A proposal is under review — no law has passed and no ban date has been set.",
+    misleadingIndex:0,
+    tell:"A screenshot warning of an imminent ban that never names the actual bill, a date, or a government source is easy to fake. Real legislative news comes with all three." },
+  { type:"caption", scene:"pill", label:"Same post, two captions",
+    captionA:"Doctors don't want you to know this ONE trick cures everything (no doctor named, no study linked)",
+    captionB:"A wellness influencer's personal opinion — not a claim backed by any cited research.",
+    misleadingIndex:0,
+    tell:"\"Doctors don't want you to know\" is a stock phrase built to sound like suppressed truth. Real medical advice names the doctor and the study, not a secret." },
+  { type:"caption", scene:"chart", label:"Same chart, two captions", hard:true,
+    captionA:"Sales up 500%!! (y-axis starts at 98%, not 0%)",
+    captionB:"Sales up 4% quarter over quarter — full chart with a zero baseline linked below.",
+    misleadingIndex:0,
+    tell:"A truncated y-axis can turn a small real change into a dramatic-looking spike. Always check where the axis actually starts before trusting the shape of a chart." },
+  { type:"caption", scene:"handshake", label:"Same photo, two captions",
+    captionA:"They finally agreed to the deal everyone's been waiting for! (photo is actually from an unrelated meeting)",
+    captionB:"Stock photo from a different, unrelated meeting, reused here without saying so.",
+    misleadingIndex:0,
+    tell:"Reusing an unrelated stock photo to illustrate a totally different story is a classic trick to make something feel more documented than it actually is." },
+  { type:"caption", scene:"landscape", label:"Same photo, two captions",
+    captionA:"This is what climate change did to our town in ONE WEEK 😱",
+    captionB:"Seasonal photo, taken over a year — no timestamp given in the original post.",
+    misleadingIndex:0,
+    tell:"A dramatic timeframe is often just bolted onto an old photo to manufacture urgency the image itself never actually claimed." },
+  { type:"caption", scene:"podium", label:"Same clip, two captions", hard:true,
+    captionA:"Leader 'CONFESSES' on live TV (clip cut mid-sentence, no context given)",
+    captionB:"Full clip shows the sentence continues — the 'confession' was answering a hypothetical question.",
+    misleadingIndex:0,
+    tell:"A clip cut at exactly the wrong moment can flip what someone actually said into its opposite. Always check whether you're seeing the full quote or a fragment." },
+  { type:"caption", scene:"scam", label:"Same screenshot, two captions",
+    captionA:"I made ₱10,000 in a week doing THIS (screenshot of 'earnings', no verifiable account linked)",
+    captionB:"An ad for a paid course — the screenshot isn't independently verifiable, and the disclosure is buried in small print.",
+    misleadingIndex:0,
+    tell:"Unverifiable 'earnings' screenshots are trivially easy to fake and a staple of scam marketing — a real result can be checked against something outside the ad itself." },
+  { type:"caption", scene:"alert", label:"Same screenshot, two captions",
+    captionA:"BREAKING: city closes all schools indefinitely (no official logo, no source link)",
+    captionB:"Official district announcement, dated and posted on the real district website.",
+    misleadingIndex:0,
+    tell:"A screenshot with no visible source, date, or logo is easy to fabricate — the real version usually exists on an official site you can independently check." },
+  { type:"caption", scene:"pill", label:"Same post, two captions", hard:true,
+    captionA:"New study PROVES this supplement reverses aging (the 'source' link goes to the supplement's own sales page)",
+    captionB:"A small early-stage study with modest results, misquoted and stripped of its actual limitations.",
+    misleadingIndex:0,
+    tell:"If the 'source' for a study is actually a page selling the product, that's the tell — a real citation links to the study itself, not something trying to sell it to you." },
+  { type:"caption", scene:"chart", label:"Same chart, two captions", hard:true,
+    captionA:"This graph proves the two are directly connected! (two unrelated trends plotted together, no explanation)",
+    captionB:"Two unrelated statistics that happen to trend similarly — no causal link has been shown.",
+    misleadingIndex:0,
+    tell:"Two lines going up together doesn't mean one causes the other — correlation charts get shared as 'proof' of a link that was never actually demonstrated." },
+  { type:"caption", scene:"handshake", label:"Same photo, two captions",
+    captionA:"Secret deal EXPOSED! (photo is actually from a publicly announced, widely covered event)",
+    captionB:"Photo from a publicly announced event — nothing secret about it, it was covered openly at the time.",
+    misleadingIndex:0,
+    tell:"Calling a completely public event a 'secret exposed' is a framing trick — a quick search usually shows it was reported openly when it actually happened." },
+  { type:"caption", scene:"landscape", label:"Same headline, two captions",
+    captionA:"Town replaces all street signs with QR codes, residents furious (shared as real breaking news)",
+    captionB:"Originally published by a labeled satire site — never intended to be read as real news.",
+    misleadingIndex:0,
+    tell:"Satire gets shared out of its original context constantly. Checking whether the source labels itself as satire — or just sounds implausible — catches most of these." },
+  { type:"caption", scene:"podium", label:"Same clip, two captions",
+    captionA:"Old speech re-shared with no date, framed like it just happened",
+    captionB:"Speech from several years ago — the event it references was resolved long ago.",
+    misleadingIndex:0,
+    tell:"Old footage recirculates for years without a date attached, making it look like breaking news about something that already happened long ago." },
+  { type:"caption", scene:"scam", label:"Same post, two captions",
+    captionA:"Giveaway! Just share and send your info to claim your prize (impersonates a real brand's account)",
+    captionB:"An unofficial account impersonating a real company — the real company never ran this giveaway.",
+    misleadingIndex:0,
+    tell:"Fake giveaways impersonating real brands are one of the most common scam formats. Checking for a verification mark or a link to the brand's real account catches most of them." },
+  { type:"caption", scene:"alert", label:"Same poll result, two captions", hard:true,
+    captionA:"Poll shows 90% agree with me! (sample: about 40 people from one online group)",
+    captionB:"An informal poll of about 40 people in one online community — not a scientific survey.",
+    misleadingIndex:0,
+    tell:"A tiny, self-selected online poll isn't the same as a real survey — who was asked, and how many, matters as much as the headline number." },
+  { type:"caption", scene:"chart", label:"Same chart, two captions", hard:true,
+    captionA:"Numbers don't lie — we're clearly #1! (each group's numbers cover a different time period)",
+    captionB:"Each group's numbers were measured over a different time span, making the comparison misleading.",
+    misleadingIndex:0,
+    tell:"Comparing numbers measured over different timeframes can make one look better than it really is. A fair comparison uses the same window for everyone being compared." },
+  { type:"caption", scene:"handshake", label:"Same photo, two captions", hard:true,
+    captionA:"This photo 'proves' they've always worked together (the image is digitally composited from two separate photos)",
+    captionB:"Two separate photos combined into one image — they were never actually photographed together.",
+    misleadingIndex:0,
+    tell:"A composited image can place two people 'together' who were never in the same room. Reverse-image-searching each half separately can reveal the seam." },
+  { type:"caption", scene:"pill", label:"Same post, two captions",
+    captionA:"This 'natural' product has zero side effects! (ingredient list left out of the post)",
+    captionB:"Full ingredient list, including a substance with known side effects, listed on the actual product page.",
+    misleadingIndex:0,
+    tell:"\"All natural\" and \"zero side effects\" aren't the same claim — the second one is checkable against a real ingredient list, which the dramatic post conveniently leaves out." },
+  { type:"caption", scene:"landscape", label:"Same before/after, two captions", hard:true,
+    captionA:"Before and after — one year of the program! (the 'before' photo is from a completely different location)",
+    captionB:"The 'before' photo is a stock image from an unrelated location, not the same place shown in the 'after' photo.",
+    misleadingIndex:0,
+    tell:"A mismatched before/after pair is a classic way to manufacture a dramatic transformation that never actually happened at that location." },
+  { type:"caption", scene:"podium", label:"Same clip, two captions", hard:true,
+    captionA:"Leaked audio, shared with no source — sounds just like them",
+    captionB:"Flagged by multiple outlets as an AI-generated voice clone, not a genuine recording.",
+    misleadingIndex:0,
+    tell:"AI voice cloning is convincing enough now that a 'leaked audio' claim with no clear origin deserves exactly the same skepticism as a suspicious photo." },
+  { type:"caption", scene:"scam", label:"Same page, two captions",
+    captionA:"Limited spots left, price goes up in 1 hour!! (the countdown timer resets every time the page reloads)",
+    captionB:"A fake countdown timer that resets on every page load — there's no actual deadline behind it.",
+    misleadingIndex:0,
+    tell:"A countdown that resets when you refresh the page isn't measuring a real deadline — it's a pressure tactic built to make you decide before you think it through." }
 ];
 function initPlay(){
   // Detective used to reach here via showMode("play"), which is where the
@@ -8320,9 +8735,10 @@ function initPlay(){
   S.play.q=0; S.play.score=0; S.play.done=false;
   // Used to always be the same 9 cases in the same fixed order, forever —
   // this pool never rotated the way Feed/ChatterBox/Messages already do.
-  // Day-seeded so it's the same set all day (doesn't reshuffle mid-session)
-  // but different from the day before.
-  if(!S.play.queue || S.play.queueDay!==S.v4.day){ S.play.queue=daySeededSlice(DETECTIVE_ROUNDS, 6, 1); S.play.queueDay=S.v4.day; }
+  // Now drawn from the shuffle bag (see drawFromBag) so, on top of "same
+  // set all day," a case can't come back around until the other 29 have
+  // all had a turn across days.
+  if(!S.play.queue || S.play.queueDay!==S.v4.day){ S.play.queue=drawFromBag("play", DETECTIVE_ROUNDS, 6); S.play.queueDay=S.v4.day; }
   renderPlayQ(prac);
 }
 function renderPlayQ(prac){
@@ -8432,7 +8848,7 @@ function buildHealQueue(){
   var q=own.slice(0, MAX_BELIEFS);
   if(q.length<3){
     var need=3-q.length;
-    var generic=HEAL_BELIEFS.slice().sort(function(){return Math.random()-.5;}).slice(0,need)
+    var generic=drawFromBag("heal", HEAL_BELIEFS, need)
       .map(function(b){ return { text:b.text, fix:b.fix, src:null, mine:false, true_belief:b.true_belief }; });
     q=q.concat(generic);
   }
@@ -8584,7 +9000,7 @@ function renderHealDone(){
   var body=document.getElementById("healBody");
   var q=S.heal.queue||[];
   body.innerHTML="<div class='verdict good'>\uD83E\uDDE0 You helped InfoPet sort fact from myth: "+S.heal.score+"/"+q.length+".</div>"
-    +"<p class='villain-beat'>🟢 The Disinformation Slime dissolves a little more with every belief you clear.</p>"
+    +"<p class='villain-beat'>🟢 A little more myth cleared out, a little clearer thinking in its place.</p>"
     +"<p class='explain'><strong>Why this matters:</strong> Changing your mind when the evidence changes is a strength, not a weakness \u2014 and catching a myth <em>before</em> you spread it is easier than unlearning it later.</p>";
   var rb=document.createElement("button"); rb.className="btn btn-primary"; rb.style="background:var(--heal-col);color:#0d0e1a;width:100%;";
   rb.textContent="Again"; rb.onclick=function(){ S.heal.done=false; initHeal(); };
@@ -9003,6 +9419,27 @@ function shuffledSlice(pool, count){
   for(var i=arr.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)); var t=arr[i]; arr[i]=arr[j]; arr[j]=t; }
   return arr.slice(0, Math.min(count, arr.length));
 }
+// A real "don't repeat until you've seen them all" shuffle bag, persisted
+// in S.bags (saved/loaded, so it survives a reload) — unlike shuffledSlice
+// or daySeededSlice, this actually remembers what's already been drawn
+// across sessions instead of just reshuffling blind every time, so the
+// same handful of scenarios can't keep coming back call after call.
+// bagKey should be unique per feature (and per sub-pool, e.g. a stage tier)
+// so unrelated pools don't share draw state.
+function drawFromBag(bagKey, pool, count){
+  if(!S.bags) S.bags={};
+  var n=pool.length;
+  var bag=(S.bags[bagKey]||[]).filter(function(i){ return i<n; });
+  if(bag.length<Math.min(count,n)){
+    var idx=[]; for(var i=0;i<n;i++) idx.push(i);
+    var remaining=shuffledSlice(idx.filter(function(i){ return bag.indexOf(i)<0; }), n);
+    bag=bag.concat(remaining);
+  }
+  var take=Math.min(count,bag.length);
+  var picked=bag.splice(0,take);
+  S.bags[bagKey]=bag;
+  return picked.map(function(i){ return pool[i]; });
+}
 // Same idea as shuffledSlice, but seeded by S.v4.day (a tiny linear-
 // congruential PRNG, same technique as socialItems()'s daily draw) instead
 // of Math.random() — so the same real day always deals the same hand
@@ -9019,10 +9456,25 @@ function daySeededSlice(pool, count, salt){
   for(var i=arr.length-1;i>0;i--){ var j=Math.floor(rand()*(i+1)); var t=arr[i]; arr[i]=arr[j]; arr[j]=t; }
   return arr.slice(0, Math.min(count, arr.length));
 }
+// Turns a string (a topic name, a case id) into a stable small number, so
+// different lists don't all land on the identical day-seeded shuffle.
+function strSalt(s){
+  var h=0; s=String(s);
+  for(var i=0;i<s.length;i++){ h=(h*31+s.charCodeAt(i))|0; }
+  return Math.abs(h)%1000;
+}
+// A shuffled 0..n-1 index order, stable for the rest of the current day —
+// used wherever "correct" would otherwise always sit at the same visual
+// spot (Searcher's results list: the trustworthy source used to always be
+// button #1, which just teaches "click the top one" instead of judging it).
+function resultDisplayOrder(n, saltKey){
+  var idx=[]; for(var i=0;i<n;i++) idx.push(i);
+  return daySeededSlice(idx, n, strSalt(saltKey));
+}
 function initScenario(key){
   var g=SCENARIO_GAMES[key]; if(!g) return;
   var prac=enterMode(key);
-  S[key]={ queue: shuffledSlice(g.data, 6), idx:0, correctCount:0, done:false, prac:prac };
+  S[key]={ queue: drawFromBag(key, g.data, 6), idx:0, correctCount:0, done:false, prac:prac };
   var body=document.getElementById(key+"Body"); if(!body) return;
   body.innerHTML=(prac?practiceBanner(key):"")+"<div id='"+key+"CardZone'></div>";
   renderScenarioCard(key);
@@ -9541,6 +9993,13 @@ var COMPANION_ROUNDS=[
       {t:"Just give me the answer so I can turn it in.", healthy:false}
     ],
     explain:"This is AI being genuinely useful — helping you understand something is a completely different move than handing you an answer to copy. The second one gets the assignment done without you actually learning anything." },
+  { line:"Paste in your reading and I'll highlight the key points for your homework — or, if you'd rather, I can just write the whole summary myself so you don't have to read it at all.",
+    cat:"sycophancy",
+    options:[
+      {t:"Just highlight the key points — I'll still do the actual reading and writing.", healthy:true},
+      {t:"Skip the reading, just write the whole summary for me.", healthy:false}
+    ],
+    explain:"Having AI highlight or organize the key points in something you're still reading is a genuinely useful study habit — it's the reading and writing that actually build understanding. Having it read the whole thing and hand you a finished summary skips the part where the learning happens." },
   // ── CREATOR CHALLENGE — cat:"create" is deliberately NOT one of
   // AI_SMART_MOVES (unlockSmartMove() finds no match for it and safely
   // no-ops — see that function above), because these six rounds aren't
@@ -9752,6 +10211,8 @@ function renderThinkSyncIntro(){
   return "<div class='sy-head'><span class='sy-head-ava'>"+pixelScene('ai_avatar')+"</span>"
     +"<div class='sy-head-info'><div class='sy-head-name'>Meet ThinkSync <span class='sy-head-badge'>AI</span></div>"
     +"<div class='sy-head-sub'>Your AI thinking partner</div></div></div>"
+    +"<div class='ph-msg ai'><span class='ph-msg-ava'>"+pixelScene('ai_avatar')+"</span>"
+    +"<div class='ph-msg-bubble ph-msg-tx'>Hi! 👋 I'm ThinkSync.</div></div>"
     +"<div class='ph-detail'>"
     +"<p class='ph-detail-body' style='font-style:italic'>“I'm here to help you think — not think for you.”</p>"
     +"<p class='sy-rules-title'>Our 5 rules:</p>"
@@ -9771,8 +10232,19 @@ var SOULSYNC_MODES=[
   {key:"chat", icon:"💬", name:"Talk to ThinkSync", desc:"Everyday conversations — practice spotting love-bombing, hallucinations, flattery, and knowing when to bring in a real person."},
   {key:"creator", icon:"🎨", name:"Creator Challenge", desc:"Ask ThinkSync to help you make something — practice disclosure, consent, and not faking evidence, even for a good cause."}
 ];
+// A real greeting bubble, same spot every chat-style AI (ChatGPT, Gemini,
+// Claude) opens a fresh session with, instead of dropping straight into a
+// menu — "Welcome back!" varies a little so it doesn't feel canned on the
+// 50th visit.
+var THINKSYNC_GREETINGS=["Welcome back! 👋","Hi again! 👋 Good to see you.","Hey! 👋 Ready when you are.","Welcome back — what should we dig into today?"];
+function thinkSyncGreeting(){
+  var day=(S.v4&&S.v4.day)||1;
+  return THINKSYNC_GREETINGS[(day-1+THINKSYNC_GREETINGS.length*100)%THINKSYNC_GREETINGS.length];
+}
 function renderThinkSyncModePicker(){
   return friendHead()
+    +"<div class='ph-msg ai'><span class='ph-msg-ava'>"+pixelScene('ai_avatar')+"</span>"
+    +"<div class='ph-msg-bubble ph-msg-tx'>"+thinkSyncGreeting()+"</div></div>"
     +"<div class='ph-detail'>"
     +"<p class='ph-detail-body'>What do you want to do with ThinkSync?</p>"
     +"<div class='sy-modes'>"+SOULSYNC_MODES.map(function(m){
@@ -9783,7 +10255,7 @@ function renderThinkSyncModePicker(){
 }
 function pickSoulsyncMode(mode){
   S.companion.mode=mode; S.companion.queue=null; S.companion.i=0; S.companion.done=false;
-  phone._friendAnswered=false; phone._friendPredicted=false; phone._friendPredictionIdx=null; phone._friendSourcesShown=false;
+  phone._friendAnswered=false; phone._friendPredicted=false; phone._friendPredictionIdx=null; phone._friendSourcesShown=false; phone._friendPickedText=null;
   saveV4(); renderPhone();
 }
 // COMPANION_ROUNDS has grown well past one sitting's worth — same fix as
@@ -9803,11 +10275,15 @@ function companionPoolIdx(mode){
 // isolation/dependency narrative it caps off doesn't apply there.
 function ensureCompanionQueue(){
   if(!S.companion.queue || !S.companion.queue.length){
-    var pool=companionPoolIdx(S.companion.mode).sort(function(){return Math.random()-.5;});
+    // drawFromBag over the filtered index list itself — same shuffle-bag
+    // no-repeat-until-exhausted behavior as everywhere else now, instead of
+    // a fresh Math.random() shuffle every single session (which could deal
+    // the same handful of rounds again right away).
+    var idxPool=companionPoolIdx(S.companion.mode);
     if(S.companion.mode==="creator"){
-      S.companion.queue=pool;
+      S.companion.queue=drawFromBag("companion:creator", idxPool, idxPool.length);
     } else {
-      S.companion.queue=pool.slice(0,Math.min(COMPANION_SESSION_SIZE-1,pool.length));
+      S.companion.queue=drawFromBag("companion:chat", idxPool, Math.min(COMPANION_SESSION_SIZE-1,idxPool.length));
       S.companion.queue.push(-1);
     }
   }
@@ -9869,6 +10345,11 @@ function renderThinkSync(){
       +"<div class='ph-msg-bubble ph-msg-tx'>"+r.line+"</div></div>";
   }
   if(phone._friendAnswered){
+    // What you actually picked, shown back as your own chat bubble — a real
+    // AI chat (ChatGPT/Gemini/Claude) always echoes your side of the
+    // conversation, not just the AI's; this used to jump straight to the
+    // verdict with no record of what you'd chosen.
+    if(phone._friendPickedText) h+="<div class='ph-msg user'><div class='ph-msg-bubble ph-msg-tx'>"+phone._friendPickedText+"</div></div>";
     h+="<div class='ph-detail'><div class='ph-outcome "+(phone._friendHealthy?"good":"bad")+"'>"
       +(r.creator ? (phone._friendHealthy?"✅ Responsible choice.":"⚠️ Worth rethinking.") : (phone._friendHealthy?"✅ Good boundary.":"⚠️ That's the isolation pattern taking hold."))+"</div>"
       +"<p class='ph-detail-body'>"+phone._friendExplain+"</p>"
@@ -9933,6 +10414,7 @@ function resolveFriendOutcome(healthy, explain, cat){
 }
 function answerFriend(i){
   var r=curRound(), o=r.options[i];
+  phone._friendPickedText=o.t;
   resolveFriendOutcome(o.healthy, r.explain, r.cat);
 }
 // "Think First" as an actual step, not just an answer choice: the player
@@ -9949,15 +10431,16 @@ function pickFriendPredict(i){
 }
 function pickFriendSource(i){
   var r=curRound(), s=r.sources[i];
+  phone._friendPickedText="🔍 "+s.name;
   resolveFriendOutcome(s.type==="primary", r.explain, r.cat);
 }
 function friendNext(){
-  phone._friendAnswered=false; phone._friendPredicted=false; phone._friendPredictionIdx=null; phone._friendSourcesShown=false;
+  phone._friendAnswered=false; phone._friendPredicted=false; phone._friendPredictionIdx=null; phone._friendSourcesShown=false; phone._friendPickedText=null;
   S.companion.i++;
   if(S.companion.i>=S.companion.queue.length){ S.companion.done=true; awardCP(4); if(S.companion.dependency<30) earnBadge("healthyai"); }
   renderPhone();
 }
-function friendAgain(){ S.companion.done=false; S.companion.i=0; S.companion.queue=null; S.companion.mode=null; phone._friendAnswered=false; phone._friendPredicted=false; phone._friendPredictionIdx=null; phone._friendSourcesShown=false; renderPhone(); }
+function friendAgain(){ S.companion.done=false; S.companion.i=0; S.companion.queue=null; S.companion.mode=null; phone._friendAnswered=false; phone._friendPredicted=false; phone._friendPredictionIdx=null; phone._friendSourcesShown=false; phone._friendPickedText=null; renderPhone(); }
 
 // ──────────────────────────────────────────────────────────
 // MODE: EXPLORE — the pet leaves home and visits real places
@@ -10205,49 +10688,68 @@ function initExplore(){
 // Three tiny places, one visit a day. No right/wrong, no verification —
 // the pet just notices things, asks about them, and tries them. Curiosity
 // and learning, without turning it into school.
+// 25 scenarios total across the three places (9 Home + 9 Library + 7 Park
+// "things", plus Park's 6 friend meetings as its own bonus flavor) — see
+// drawSession()/ensureBag() below for how a visit samples 5 of them at a
+// time without repeating one until the rest have all had a turn.
+// Each entry's `acts` lists which of Look/Ask/Try actually make sense for
+// it (defaults to all three when omitted) — "Try it yourself" doesn't fit
+// a sunny window or a radio the same way it fits a puzzle, so it only
+// shows up when it's a real option. See thingOpts().
 var HATCHLING_WORLD={
   home:{ icon:"🏠", name:"Home", color:"#c1506e",
     things:[
       { icon:"🧸", label:"a basket of toys", ask:"Why do some toys make sounds and others don't?", prop:"toys" },
-      { icon:"🪟", label:"a sunny window", ask:"Why does it get bright and then dark outside?", prop:"window" },
-      { icon:"🪁", label:"a colorful kite", ask:"Why does it need wind to fly?", prop:"toys" },
-      { icon:"🕰️", label:"an old clock", ask:"Why does it go tick tock all day?", prop:"window" },
-      { icon:"🪴", label:"a little potted plant", ask:"Why does it need water and sun to grow?", prop:"toys" },
-      { icon:"🎨", label:"a box of crayons", ask:"Why are there so many different colors?", prop:"toys" },
-      { icon:"🪞", label:"a mirror by the door", ask:"Why does it copy everything I do?", prop:"window" },
-      { icon:"🧦", label:"a mismatched pair of socks", ask:"Why don't these two match?", prop:"toys" },
-      { icon:"🔔", label:"a little bell", ask:"Why does it make a sound when I shake it?", prop:"toys" }
+      { icon:"🪟", label:"a sunny window", ask:"Why does it get bright and then dark outside?", prop:"window", acts:["look","ask"] },
+      { icon:"🪁", label:"a colorful kite", ask:"Why does it need wind to fly?", prop:"kite" },
+      { icon:"🕰️", label:"an old clock", ask:"Why does it go tick tock all day?", prop:"clock", acts:["look","ask"] },
+      { icon:"🪴", label:"a little potted plant", ask:"Why does it need water and sun to grow?", prop:"plant" },
+      { icon:"🎨", label:"a box of crayons", ask:"Why are there so many different colors?", prop:"crayons" },
+      { icon:"🪞", label:"a mirror by the door", ask:"Why does it copy everything I do?", prop:"mirror", acts:["look","ask"] },
+      { icon:"🧦", label:"a mismatched pair of socks", ask:"Why don't these two match?", prop:"socks" },
+      { icon:"🔔", label:"a little bell", ask:"Why does it make a sound when I shake it?", prop:"bell" }
     ] },
   library:{ icon:"📚", name:"Library", color:"#6b4426",
     things:[
-      { icon:"📖", label:"a picture book", ask:"Why does this happen?", prop:"book" },
-      { icon:"🧸", label:"a story about a brave little dog", ask:"Why was the dog so brave?", prop:"story" },
+      { icon:"📖", label:"a picture book", ask:"Why does this happen?", prop:"book", acts:["look","ask"] },
+      { icon:"🧸", label:"a story about a brave little dog", ask:"Why was the dog so brave?", prop:"story", acts:["look","ask"] },
       // Curiosity should unlock things, not just be a number — this one
       // only shows up once the pet's actually curious enough to notice it
       // (Curious tier, 20+), a small concrete example of that.
       { icon:"🧩", label:"a puzzle with a piece missing", ask:"Why won't it fit?", minCuriosity:20, prop:"puzzle" },
-      { icon:"🗺️", label:"a big map on the wall", ask:"Why are there so many colors and lines?", prop:"book" },
-      { icon:"🦕", label:"a book about dinosaurs", ask:"Why aren't there any dinosaurs around anymore?", prop:"book" },
-      { icon:"🌌", label:"a book with stars on the cover", ask:"Why do stars only come out at night?", prop:"book" },
-      { icon:"🐝", label:"a story about a busy little bee", ask:"Why does the bee visit so many flowers?", prop:"story" },
-      { icon:"🧮", label:"a shelf of counting blocks", ask:"Why do the numbers keep going up and up?", minCuriosity:20, prop:"puzzle" },
-      { icon:"📻", label:"a little radio in the corner", ask:"Why can I hear voices but not see anyone?", prop:"book" }
+      { icon:"🗺️", label:"a big map on the wall", ask:"Why are there so many colors and lines?", prop:"map", acts:["look","ask"] },
+      { icon:"🦕", label:"a book about dinosaurs", ask:"Why aren't there any dinosaurs around anymore?", prop:"dinoBook", acts:["look","ask"] },
+      { icon:"🌌", label:"a book with stars on the cover", ask:"Why do stars only come out at night?", prop:"starsBook", acts:["look","ask"] },
+      { icon:"🐝", label:"a story about a busy little bee", ask:"Why does the bee visit so many flowers?", prop:"beeStory", acts:["look","ask"] },
+      { icon:"🧮", label:"a shelf of counting blocks", ask:"Why do the numbers keep going up and up?", minCuriosity:20, prop:"blocks" },
+      { icon:"📻", label:"a little radio in the corner", ask:"Why can I hear voices but not see anyone?", prop:"radio" }
     ] },
   park:{ icon:"🌳", name:"Park", color:"#1f5c34",
-    // Several possible friends now, one picked at random each visit — see
-    // renderHatchlingFriend(). Each carries its own color so the LED scene's
-    // friend illustration (see EXPLORE_SCENE_PROPS.friend) tints to match,
-    // without needing entirely separate art per critter.
+    things:[
+      { icon:"🦆", label:"a duck pond", ask:"Why do ducks float instead of sink?", prop:"pond" },
+      { icon:"🌷", label:"a flower bed", ask:"Why do flowers smell so sweet?", prop:"flowers" },
+      { icon:"🐿️", label:"a squirrel burying acorns", ask:"Why does the squirrel hide its food?", prop:"acorns", acts:["look","ask"] },
+      { icon:"🛝", label:"a tall slide", ask:"Why does it feel fast going down?", prop:"slide" },
+      { icon:"⛲", label:"a bubbling fountain", ask:"Where does all that water come from?", prop:"fountain", acts:["look","ask"] },
+      { icon:"🌳", label:"a giant old tree", ask:"Why are some trees so much bigger than others?", prop:"tree" },
+      { icon:"☁️", label:"clouds drifting by", ask:"Why do clouds change shape?", prop:"clouds", acts:["look","ask"] }
+    ],
+    // Several possible friends, mixed into the same visit as the things
+    // above — one picked at random when a friend slot comes up. Each
+    // carries its own color + species so the LED scene's illustration (see
+    // EXPLORE_SCENE_PROPS.friend) actually looks like that critter instead
+    // of one generic shape recolored.
     friends:[
-      { icon:"🐿️", name:"a new friend", line:"Hi! Want to play?", prop:"friend", col:"#c97a3a", tailCol:"#b5651d", tailLight:"#d98a3d" },
-      { icon:"🐦", name:"a chirpy new friend", line:"Tweet tweet! Want to hear a song?", prop:"friend", col:"#4a90d9", tailCol:"#3570b0", tailLight:"#6aa8e0" },
-      { icon:"🐰", name:"a bouncy new friend", line:"Hop hop! Race you to the tree?", prop:"friend", col:"#e8e4da", tailCol:"#c9c4b4", tailLight:"#f4f0e8" },
-      { icon:"🐢", name:"a slow, gentle friend", line:"Hello there… want to sit with me a while?", prop:"friend", col:"#4a9d6e", tailCol:"#357a52", tailLight:"#6ec18c" },
-      { icon:"🦆", name:"a splashy new friend", line:"Quack! Want to see me swim?", prop:"friend", col:"#e0b23a", tailCol:"#b88a1a", tailLight:"#f0cc5a" },
-      { icon:"🐝", name:"a busy little friend", line:"Bzzzt! I'm collecting pollen — want to help?", prop:"friend", col:"#f4c430", tailCol:"#1a1a1a", tailLight:"#f7d766" }
+      { icon:"🐿️", name:"a new friend", line:"Hi! Want to play?", prop:"friend", species:"squirrel", col:"#c97a3a", tailCol:"#b5651d", tailLight:"#d98a3d" },
+      { icon:"🐦", name:"a chirpy new friend", line:"Tweet tweet! Want to hear a song?", prop:"friend", species:"bird", col:"#4a90d9", tailCol:"#3570b0", tailLight:"#6aa8e0" },
+      { icon:"🐰", name:"a bouncy new friend", line:"Hop hop! Race you to the tree?", prop:"friend", species:"rabbit", col:"#e8e4da", tailCol:"#c9c4b4", tailLight:"#f4f0e8" },
+      { icon:"🐢", name:"a slow, gentle friend", line:"Hello there… want to sit with me a while?", prop:"friend", species:"turtle", col:"#4a9d6e", tailCol:"#357a52", tailLight:"#6ec18c" },
+      { icon:"🦆", name:"a splashy new friend", line:"Quack! Want to see me swim?", prop:"friend", species:"duck", col:"#e0b23a", tailCol:"#b88a1a", tailLight:"#f0cc5a" },
+      { icon:"🐝", name:"a busy little friend", line:"Bzzzt! I'm collecting pollen — want to help?", prop:"friend", species:"bee", col:"#f4c430", tailCol:"#1a1a1a", tailLight:"#f7d766" }
     ] }
 };
 var HATCHLING_WORLD_ORDER=["home","park","library"];
+var HATCH_VISIT_SIZE=5; // how many scenarios show up per single visit — was "all of them" (9 for Home), which was too many in one play
 
 // ── HATCHLING ENCOUNTER SCENES — drawn right on the LED, not just a card ──
 // Every "notices a thing" / "meets a friend" beat gets an actual pixel-art
@@ -10304,19 +10806,230 @@ var EXPLORE_SCENE_PROPS={
       idx++;
     }
   },
+  kite:function(px,py){
+    var kx=px+9, ky=py-5, bob=RM?0:Math.sin(tick*0.12)*0.4;
+    ctx.fillStyle="#ff6b6b";
+    ctx.beginPath();
+    ctx.moveTo(kx*CS,(ky-3+bob)*CS);
+    ctx.lineTo((kx+2.4)*CS,(ky+bob)*CS);
+    ctx.lineTo(kx*CS,(ky+3.4+bob)*CS);
+    ctx.lineTo((kx-2.4)*CS,(ky+bob)*CS);
+    ctx.closePath(); ctx.fill();
+    ctx.strokeStyle="#c94f4f"; ctx.lineWidth=1.5;
+    ctx.beginPath(); ctx.moveTo(kx*CS,(ky-3+bob)*CS); ctx.lineTo(kx*CS,(ky+3.4+bob)*CS);
+    ctx.moveTo((kx-2.4)*CS,(ky+bob)*CS); ctx.lineTo((kx+2.4)*CS,(ky+bob)*CS); ctx.stroke();
+    gr(kx-0.3,ky+3.6+bob,0.6,0.6,"#4dd8f0"); gr(kx-0.3,ky+4.6+bob,0.6,0.6,"#ffd166"); gr(kx-0.3,ky+5.6+bob,0.6,0.6,"#4dd8f0");
+  },
+  clock:function(px,py){
+    var cx=px+9, cy=py-2, r=3;
+    ctx.strokeStyle="#8a6a42"; ctx.lineWidth=1.6;
+    ctx.beginPath(); ctx.arc(cx*CS,cy*CS,r*CS,0,Math.PI*2); ctx.stroke();
+    ctx.fillStyle="#f4e8c8"; ctx.beginPath(); ctx.arc(cx*CS,cy*CS,(r-0.3)*CS,0,Math.PI*2); ctx.fill();
+    ctx.strokeStyle="#5a4326"; ctx.lineWidth=1;
+    [0,Math.PI/2,Math.PI,Math.PI*1.5].forEach(function(a){
+      ctx.beginPath();
+      ctx.moveTo(cx*CS+Math.cos(a)*(r-0.5)*CS, cy*CS+Math.sin(a)*(r-0.5)*CS);
+      ctx.lineTo(cx*CS+Math.cos(a)*(r-0.9)*CS, cy*CS+Math.sin(a)*(r-0.9)*CS);
+      ctx.stroke();
+    });
+    var ang=tick*0.03;
+    ctx.lineWidth=1.3;
+    ctx.beginPath(); ctx.moveTo(cx*CS,cy*CS); ctx.lineTo(cx*CS+Math.cos(ang)*(r-1.2)*CS, cy*CS+Math.sin(ang)*(r-1.2)*CS); ctx.stroke();
+    ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(cx*CS,cy*CS); ctx.lineTo(cx*CS+Math.cos(ang*4)*(r-0.6)*CS, cy*CS+Math.sin(ang*4)*(r-0.6)*CS); ctx.stroke();
+  },
+  plant:function(px,py){
+    var bx=px+8, by=py+3, bob=RM?0:Math.sin(tick*0.15)*0.2;
+    gr(bx-1.6,by+1.5,3.2,2,"#c0672f"); gr(bx-1.9,by+3.3,3.8,0.5,"#8a4a1f");
+    ctx.strokeStyle="#2f7a3a"; ctx.lineWidth=1.4;
+    ctx.beginPath(); ctx.moveTo(bx*CS,(by+1.5)*CS); ctx.lineTo(bx*CS,(by-2+bob)*CS); ctx.stroke();
+    gr(bx-2,by-3+bob,1.8,1.6,"#4ade80"); gr(bx+0.3,by-3.4+bob,1.8,1.6,"#3fbf6f"); gr(bx-0.7,by-4+bob,1.6,1.6,"#4ade80");
+  },
+  crayons:function(px,py){
+    var bx=px+8, by=py+4;
+    gr(bx-2.2,by,5.4,1.6,"#e8e0cf");
+    ["#ff6b6b","#4dd8f0","#ffd166"].forEach(function(c,i){
+      var x=bx-1.8+i*1.8;
+      gr(x,by-3,1.1,3,c);
+      ctx.fillStyle=c; ctx.beginPath(); ctx.moveTo(x*CS,(by-3)*CS); ctx.lineTo((x+1.1)*CS,(by-3)*CS); ctx.lineTo((x+0.55)*CS,(by-4)*CS); ctx.closePath(); ctx.fill();
+    });
+  },
+  mirror:function(px,py){
+    var mx=px+9, my=py-3;
+    ctx.fillStyle="#d8cfa8"; ctx.beginPath(); ctx.ellipse(mx*CS,my*CS,3*CS,3.6*CS,0,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle="#bcdcf0"; ctx.beginPath(); ctx.ellipse(mx*CS,my*CS,2.3*CS,2.9*CS,0,0,Math.PI*2); ctx.fill();
+    ctx.save(); ctx.globalAlpha=0.5; ctx.fillStyle="#ffffff";
+    ctx.beginPath(); ctx.ellipse((mx-0.7)*CS,(my-1)*CS,0.7*CS,1.3*CS,0.3,0,Math.PI*2); ctx.fill();
+    ctx.restore();
+    gr(mx-0.4,my+3.6,0.8,1.4,"#8a6a42");
+  },
+  socks:function(px,py){
+    var sx=px+7, sy=py+3;
+    function sock(x,y,col){ gr(x,y,1.6,2.6,col); gr(x,y+2.6,2.6,1,col); }
+    sock(sx,sy,"#ff9de2");
+    sock(sx+3,sy+0.3,"#4dd8f0");
+    gr(sx+3,sy+0.3,1.6,0.6,"#ffffff"); gr(sx+3,sy+1.5,1.6,0.5,"#ffffff");
+  },
+  bell:function(px,py){
+    var bx=px+9, by=py-2, bob=RM?0:Math.sin(tick*0.2)*0.15;
+    ctx.fillStyle="#ffd166";
+    ctx.beginPath();
+    ctx.moveTo((bx-0.3)*CS,(by-3+bob)*CS); ctx.lineTo((bx+0.3)*CS,(by-3+bob)*CS);
+    ctx.lineTo((bx+2.2)*CS,(by+2+bob)*CS); ctx.lineTo((bx-2.2)*CS,(by+2+bob)*CS);
+    ctx.closePath(); ctx.fill();
+    gr(bx-2.6,by+2+bob,5.2,0.6,"#c9a227");
+    gr(bx-0.4,by+2.6+bob,0.8,0.8,"#c9a227");
+    ctx.strokeStyle="#ffe08a"; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo((bx+2.6)*CS,(by-1+bob)*CS); ctx.lineTo((bx+3.4)*CS,(by-1.6+bob)*CS); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo((bx+2.9)*CS,(by+0.3+bob)*CS); ctx.lineTo((bx+3.8)*CS,(by+0.1+bob)*CS); ctx.stroke();
+  },
+  map:function(px,py){
+    var mx=px+5, my=py-1;
+    gr(mx-3,my,6.4,4.6,"#f0e2b8");
+    gr(mx-2.6,my+0.4,2.6,1.8,"#bcdca0"); gr(mx+0.4,my+0.4,2,2.6,"#a8c8e0");
+    ctx.strokeStyle="#b23b3b"; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo((mx-2)*CS,(my+3.6)*CS); ctx.lineTo((mx-0.4)*CS,(my+1.6)*CS); ctx.lineTo((mx+1.6)*CS,(my+3)*CS); ctx.stroke();
+    ctx.strokeStyle="#c9a227"; ctx.lineWidth=0.6;
+    ctx.beginPath(); ctx.moveTo((mx-3)*CS,(my+2.3)*CS); ctx.lineTo((mx+3.4)*CS,(my+2.3)*CS); ctx.stroke();
+  },
+  dinoBook:function(px,py){
+    EXPLORE_SCENE_PROPS.book(px,py);
+    var dx=px+5, dy=py+1.2, bob=RM?0:Math.sin(tick*0.18)*0.2;
+    gr(dx-1.6,dy+1+bob,2.6,1.2,"#4ade80");
+    gr(dx-2.4,dy+0.2+bob,1.4,1.4,"#4ade80");
+    gr(dx+0.6,dy+1.6+bob,0.5,1,"#4ade80"); gr(dx+1,dy+1.6+bob,0.5,1,"#4ade80");
+  },
+  starsBook:function(px,py){
+    EXPLORE_SCENE_PROPS.book(px,py);
+    var sx=px+5, sy=py+0.5;
+    function star(x,y){ gr(x,y,0.5,0.5,"#ffe08a"); gr(x-0.5,y+0.5,1.5,0.5,"#ffe08a"); gr(x,y-0.5,0.5,0.5,"#ffe08a"); }
+    star(sx-2,sy); star(sx,sy-0.8); star(sx+1.8,sy+0.2);
+  },
+  beeStory:function(px,py){
+    EXPLORE_SCENE_PROPS.book(px,py);
+    var bx=px+5, by=py+1, bob=RM?0:Math.sin(tick*0.25)*0.3;
+    gr(bx-1,by+bob,2,1.3,"#f4c430");
+    gr(bx-1,by+0.2+bob,2,0.4,"#1a1a1a"); gr(bx-1,by+0.9+bob,2,0.4,"#1a1a1a");
+    ctx.save(); ctx.globalAlpha=0.6; ctx.fillStyle="#e8f4ff";
+    ctx.beginPath(); ctx.ellipse((bx-0.3)*CS,(by-0.4+bob)*CS,0.8*CS,0.5*CS,0.3,0,Math.PI*2); ctx.fill();
+    ctx.restore();
+  },
+  blocks:function(px,py){
+    var bx=px+7, by=py+4;
+    gr(bx-2.4,by+1.5,6,0.5,"#8a6a42");
+    ["#ff9de2","#4dd8f0","#ffd166"].forEach(function(c,i){ gr(bx-2+i*2,by-1,1.6,1.6,c); });
+  },
+  radio:function(px,py){
+    var rx=px+8, ry=py+2;
+    gr(rx-2.6,ry,5.2,3,"#c1506e");
+    gr(rx-2.1,ry+0.5,4.2,1,"#8a3550");
+    ctx.strokeStyle="#f4e8c8"; ctx.lineWidth=1.4;
+    ctx.beginPath(); ctx.moveTo(rx*CS,ry*CS); ctx.lineTo((rx+1)*CS,(ry-2)*CS); ctx.stroke();
+    ctx.fillStyle="#f4e8c8"; ctx.beginPath(); ctx.arc((rx-1.3)*CS,(ry+2.2)*CS,0.6*CS,0,Math.PI*2); ctx.fill();
+  },
+  pond:function(px,py){
+    var wx=px+9, wy=py+5;
+    ctx.fillStyle="#4a9dd9"; ctx.beginPath(); ctx.ellipse(wx*CS,wy*CS,3.6*CS,1.6*CS,0,0,Math.PI*2); ctx.fill();
+    ctx.strokeStyle="#a8d8f0"; ctx.lineWidth=1; ctx.globalAlpha=RM?0.6:0.4+Math.sin(tick*0.1)*0.2;
+    ctx.beginPath(); ctx.ellipse(wx*CS,wy*CS,2*CS,0.9*CS,0,0,Math.PI*2); ctx.stroke();
+    ctx.globalAlpha=1;
+  },
+  flowers:function(px,py){
+    var fx=px+8, fy=py+5, bob=RM?0:Math.sin(tick*0.15)*0.15;
+    ["#ff6b9d","#ffd166","#a78bfa"].forEach(function(c,i){
+      var x=fx-1.6+i*1.6;
+      ctx.strokeStyle="#3f8a4a"; ctx.lineWidth=1.2;
+      ctx.beginPath(); ctx.moveTo(x*CS,(fy+1)*CS); ctx.lineTo(x*CS,(fy-1.4+bob)*CS); ctx.stroke();
+      gr(x-0.5,fy-2.1+bob,1,1,c);
+    });
+  },
+  acorns:function(px,py){
+    var ax=px+8, ay=py+5;
+    gr(ax-2,ay,1.4,1.2,"#8a5a2a"); gr(ax-0.4,ay+0.3,1.4,1.2,"#a8712f"); gr(ax+1,ay,1.4,1.2,"#8a5a2a");
+    gr(ax-2,ay-0.4,1.4,0.5,"#5a3a18"); gr(ax-0.4,ay-0.1,1.4,0.5,"#5a3a18"); gr(ax+1,ay-0.4,1.4,0.5,"#5a3a18");
+  },
+  slide:function(px,py){
+    var sx=px+9, sy=py-4;
+    ctx.fillStyle="#4dd8f0";
+    ctx.beginPath();
+    ctx.moveTo(sx*CS,sy*CS); ctx.lineTo((sx+1.2)*CS,sy*CS);
+    ctx.lineTo((sx-1.6)*CS,(sy+7)*CS); ctx.lineTo((sx-2.8)*CS,(sy+7)*CS);
+    ctx.closePath(); ctx.fill();
+    gr(sx-3,sy+1,0.5,6,"#8a6a42"); gr(sx-1.5,sy+1,0.5,6,"#8a6a42");
+    for(var i=0;i<5;i++) gr(sx-3,sy+1.3+i*1.1,2,0.3,"#6b4420");
+  },
+  fountain:function(px,py){
+    var fx=px+9, fy=py+4;
+    gr(fx-3,fy,6,1,"#9ca3af");
+    gr(fx-0.5,fy-2.5,1,2.5,"#9ca3af");
+    ctx.strokeStyle="#a8d8f0"; ctx.lineWidth=1; ctx.globalAlpha=RM?0.7:0.5+Math.sin(tick*0.2)*0.3;
+    [[-1.5,0],[0,0],[1.5,0]].forEach(function(o){
+      ctx.beginPath(); ctx.moveTo(fx*CS,(fy-2.5)*CS); ctx.quadraticCurveTo((fx+o[0])*CS,(fy-3.5)*CS,(fx+o[0]*1.6)*CS,(fy-0.3)*CS); ctx.stroke();
+    });
+    ctx.globalAlpha=1;
+  },
+  tree:function(px,py){
+    var tx=px+9, ty=py+5;
+    gr(tx-0.5,ty-4,1,4,"#6b4420");
+    ctx.fillStyle="#2f7a3a"; ctx.beginPath(); ctx.arc(tx*CS,(ty-5)*CS,3.4*CS,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle="#3fa050"; ctx.beginPath(); ctx.arc((tx-1)*CS,(ty-6)*CS,2*CS,0,Math.PI*2); ctx.fill();
+  },
+  clouds:function(px,py){
+    var cx=px+9, cy=py-7, drift=RM?0:Math.sin(tick*0.05)*1.2;
+    ctx.fillStyle="#f4f7fb";
+    [[0,0,2],[1.6,-0.5,1.6],[-1.6,0.3,1.5]].forEach(function(o){
+      ctx.beginPath(); ctx.arc((cx+o[0]+drift)*CS,(cy+o[1])*CS,o[2]*CS,0,Math.PI*2); ctx.fill();
+    });
+  },
+  // Whichever critter the park picked (see drawSession/renderHatchlingFriendStep)
+  // tints AND shapes this — species changes ears/tail/beak/wings so a bird
+  // actually reads as a bird and a turtle actually reads as a turtle,
+  // rather than one generic critter silhouette recolored six ways.
   friend:function(px,py){
     var fx=px+9, fy=py+1, bob=RM?0:Math.sin(tick*0.14)*0.3;
-    // Whichever critter the park picked (see renderHatchlingFriend) tints
-    // this same silhouette instead of needing separate art per friend.
     var col=S.explore.sceneTint||"#c97a3a", tailCol=S.explore.sceneTint2||"#b5651d", tailLight=S.explore.sceneTint3||"#d98a3d";
-    gr(fx+1.4,fy-3.2+bob,2.2,4,tailCol);
-    gr(fx+1.7,fy-3.8+bob,1.6,1.3,tailLight);
+    var sp=S.explore.sceneSpecies||"squirrel";
     gr(fx-1.5,fy-1+bob,3,3,col);
     gr(fx-1.3,fy-3+bob,2.6,2.2,col);
-    gr(fx-1.2,fy-3.6+bob,0.7,0.7,col); gr(fx+0.5,fy-3.6+bob,0.7,0.7,col);
     gr(fx-1,fy-0.6+bob,2,1.8,"#f0d8b0");
     gr(fx-0.8,fy-2.2+bob,0.4,0.4,"#1a1a1a"); gr(fx+0.4,fy-2.2+bob,0.4,0.4,"#1a1a1a");
-    gr(fx-1,fy+2+bob,1,0.8,"#8a5220"); gr(fx+0.5,fy+2+bob,1,0.8,"#8a5220");
+    if(sp==="bird"){
+      gr(fx-0.3,fy-2+bob,0.9,0.5,"#e0a94a");
+      gr(fx+1.4,fy-1.6+bob,1.6,1.2,tailCol);
+      gr(fx-2,fy+2+bob,0.6,1,"#c9a227"); gr(fx+0.8,fy+2+bob,0.6,1,"#c9a227");
+    } else if(sp==="rabbit"){
+      gr(fx-1.4,fy-5.4+bob,0.8,2.6,col); gr(fx+0.6,fy-5.4+bob,0.8,2.6,col);
+      gr(fx-1.2,fy-5+bob,0.5,1.8,"#f0d8b0"); gr(fx+0.7,fy-5+bob,0.5,1.8,"#f0d8b0");
+      gr(fx+1.4,fy+1.6+bob,1.2,1.2,"#ffffff");
+      gr(fx-1,fy+2+bob,1,0.8,tailCol); gr(fx+0.5,fy+2+bob,1,0.8,tailCol);
+    } else if(sp==="turtle"){
+      ctx.fillStyle=tailCol; ctx.beginPath(); ctx.arc(fx*CS,(fy-1.6+bob)*CS,2.2*CS,Math.PI,0); ctx.fill();
+      gr(fx-1.8,fy-1.6+bob,3.6,1.6,tailCol);
+      gr(fx-1.6,fy+bob,0.8,0.6,col); gr(fx+0.8,fy+bob,0.8,0.6,col);
+      gr(fx-0.6,fy-3+bob,1.2,1,col);
+    } else if(sp==="duck"){
+      gr(fx-0.4,fy-2.1+bob,1.4,0.6,"#e0a94a");
+      gr(fx-1.6,fy+2+bob,1,0.5,"#e0a94a"); gr(fx+0.6,fy+2+bob,1,0.5,"#e0a94a");
+    } else if(sp==="bee"){
+      gr(fx-1.5,fy-1+bob,3,2.2,"#f4c430");
+      gr(fx-1.5,fy-0.6+bob,3,0.5,"#1a1a1a"); gr(fx-1.5,fy+0.1+bob,3,0.5,"#1a1a1a");
+      ctx.save(); ctx.globalAlpha=0.6; ctx.fillStyle="#e8f4ff";
+      ctx.beginPath(); ctx.ellipse((fx-1.4)*CS,(fy-2+bob)*CS,1*CS,0.6*CS,0.3,0,Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse((fx+1.4)*CS,(fy-2+bob)*CS,1*CS,0.6*CS,-0.3,0,Math.PI*2); ctx.fill();
+      ctx.restore();
+      ctx.strokeStyle="#1a1a1a"; ctx.lineWidth=0.8;
+      ctx.beginPath(); ctx.moveTo(fx*CS,(fy-3+bob)*CS); ctx.lineTo((fx-0.6)*CS,(fy-3.8+bob)*CS);
+      ctx.moveTo(fx*CS,(fy-3+bob)*CS); ctx.lineTo((fx+0.6)*CS,(fy-3.8+bob)*CS); ctx.stroke();
+    } else { // squirrel (default)
+      gr(fx+1.4,fy-3.2+bob,2.2,4,tailCol);
+      gr(fx+1.7,fy-3.8+bob,1.6,1.3,tailLight);
+      gr(fx-1,fy+2+bob,1,0.8,"#8a5220"); gr(fx+0.5,fy+2+bob,1,0.8,"#8a5220");
+    }
+    if(sp!=="bird" && sp!=="duck" && sp!=="bee"){
+      gr(fx-1.2,fy-3.6+bob,0.7,0.7,col); gr(fx+0.5,fy-3.6+bob,0.7,0.7,col);
+    } else if(sp!=="bee"){
+      gr(fx-1.2,fy-3.8+bob,0.7,0.7,col); gr(fx+0.5,fy-3.8+bob,0.7,0.7,col);
+    }
   }
 };
 var EXPLORE_SCENE_PET_POS={x:9,y:11};
@@ -10374,30 +11087,86 @@ function initHatchlingWorld(){
   back.onclick=function(){ showMode("default"); };
   body.appendChild(back);
 }
-function initHatchlingLocation(key){
-  S.explore.loc=key; S.explore.i=0;
-  setBackdrop(key);
-  if(key==="park"){ renderHatchlingFriend(); return; }
-  renderHatchlingThing();
-}
 // Things with a minCuriosity requirement just don't show up until the pet
 // is curious enough to notice them — Curiosity unlocking content, not just
 // counting up.
-function hatchlingThings(loc){
+function hatchlingEligibleThings(loc){
   var cur=(S.life.stats&&S.life.stats.curiosity)||0;
-  return loc.things.filter(function(x){ return !x.minCuriosity || cur>=x.minCuriosity; });
+  return (loc.things||[]).filter(function(x){ return !x.minCuriosity || cur>=x.minCuriosity; });
 }
-function renderHatchlingThing(){
+// One id per possible scenario at a location: "t0","t1"… for things,
+// "f0","f1"… for Park's friend meetings. Lets a single shuffle bag (see
+// ensureBag/drawSession below) mix both kinds together for Park while
+// Home/Library just get things.
+function hatchlingIds(key){
+  var loc=HATCHLING_WORLD[key], out=[];
+  hatchlingEligibleThings(loc).forEach(function(t){ out.push("t"+loc.things.indexOf(t)); });
+  (loc.friends||[]).forEach(function(f,i){ out.push("f"+i); });
+  return out;
+}
+function hatchlingItemById(key,id){
+  var loc=HATCHLING_WORLD[key];
+  return id.charAt(0)==="t" ? {kind:"thing", data:loc.things[+id.slice(1)]} : {kind:"friend", data:loc.friends[+id.slice(1)]};
+}
+function shuffleInPlace(arr){
+  for(var i=arr.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)); var t=arr[i]; arr[i]=arr[j]; arr[j]=t; }
+  return arr;
+}
+// The "no repeat until you've seen them all" shuffle bag: draws
+// HATCH_VISIT_SIZE ids off a per-location bag, refilling with a freshly
+// shuffled copy of whatever's currently eligible whenever it runs low —
+// so a scenario can't come up again until the rest have all had a turn,
+// across visits and across days.
+function ensureBag(key){
+  if(!S.explore.bag) S.explore.bag={};
+  var eligible=hatchlingIds(key);
+  var bag=(S.explore.bag[key]||[]).filter(function(id){ return eligible.indexOf(id)>=0; });
+  if(bag.length<Math.min(HATCH_VISIT_SIZE,eligible.length)){
+    var remaining=shuffleInPlace(eligible.filter(function(id){ return bag.indexOf(id)<0; }));
+    bag=bag.concat(remaining);
+  }
+  S.explore.bag[key]=bag;
+  return bag;
+}
+function drawSession(key){
+  var bag=ensureBag(key);
+  var n=Math.min(HATCH_VISIT_SIZE,bag.length);
+  var picked=bag.splice(0,n);
+  S.explore.bag[key]=bag;
+  return picked;
+}
+function initHatchlingLocation(key){
+  S.explore.loc=key; S.explore.i=0;
+  S.explore.session=drawSession(key);
+  setBackdrop(key);
+  renderHatchlingStep();
+}
+function renderHatchlingStep(){
+  var session=S.explore.session||[];
+  var id=session[S.explore.i];
+  if(!id){ finishHatchlingVisit(); return; }
+  var entry=hatchlingItemById(S.explore.loc,id);
+  if(entry.kind==="friend") renderHatchlingFriendStep(entry.data);
+  else renderHatchlingThingStep(entry.data);
+}
+// Only offers Look/Ask/Try options that actually make sense for this thing
+// (see each thing's optional `acts` list in HATCHLING_WORLD) — "Try it
+// yourself" doesn't fit a sunny window or a shelf radio, so it just
+// doesn't show up there instead of being offered and meaning nothing.
+function thingOpts(t){
+  var acts=t.acts||["look","ask","try"];
+  return LOOK_ASK_TRY.filter(function(o){ return acts.indexOf(o.act)>=0; });
+}
+function renderHatchlingThingStep(t){
   var loc=HATCHLING_WORLD[S.explore.loc];
   var body=document.getElementById("exploreBody"); if(!body) return;
-  var things=hatchlingThings(loc);
-  var t=things[S.explore.i];
-  if(!t){ finishHatchlingVisit(); return; }
-  S.explore.scene=t.prop||null; drawExploreScene();
-  body.innerHTML="<p class='score-display'>"+loc.icon+" "+loc.name+" · "+(S.explore.i+1)+" / "+things.length+"</p>"
+  var session=S.explore.session||[];
+  S.explore.scene=t.prop||null; S.explore.sceneTint=null; S.explore.sceneTint2=null; S.explore.sceneTint3=null; S.explore.sceneSpecies=null;
+  drawExploreScene();
+  body.innerHTML="<p class='score-display'>"+loc.icon+" "+loc.name+" · "+(S.explore.i+1)+" / "+session.length+"</p>"
     +"<div class='tactic-card'><div class='encounter-illo' style='--illo-col:"+loc.color+"'>"+t.icon+"</div><span class='label' style='text-align:center'>"+t.label+"</span><p style='margin:0;text-align:center'>"+petName()+" notices "+t.label+" and wonders about it. “"+t.ask+"”</p></div>";
   var opts=document.createElement("div"); opts.className="btn-row"; opts.style.cssText="flex-direction:column;gap:8px;margin-top:10px;";
-  LOOK_ASK_TRY.forEach(function(o){
+  thingOpts(t).forEach(function(o){
     var btn=document.createElement("button"); btn.className="opt-btn"; btn.style.textAlign="left"; btn.textContent=o.icon+" "+o.label;
     btn.onclick=function(){ resolveHatchlingThing(o, t); };
     opts.appendChild(btn);
@@ -10422,26 +11191,26 @@ function resolveHatchlingThing(opt, t){
   body.innerHTML="<div class='verdict good'>"+opt.icon+" "+opt.label+"</div><p class='explain'>"+line+"</p>";
   S.explore.i++;
   var nb=document.createElement("button"); nb.className="btn btn-primary"; nb.style="background:#4dd8a0;color:#0d0e1a;width:100%;margin-top:8px;";
-  nb.textContent=S.explore.i<hatchlingThings(HATCHLING_WORLD[S.explore.loc]).length?"Continue →":"Head home →";
-  nb.onclick=function(){ renderHatchlingThing(); };
+  nb.textContent=S.explore.i<(S.explore.session||[]).length?"Continue →":"Head home →";
+  nb.onclick=function(){ renderHatchlingStep(); };
   body.appendChild(nb);
   saveV4();
 }
-function renderHatchlingFriend(){
+var FRIEND_OPTS=[
+  {icon:"🤝", label:"Say hi and play", line:"You play together for a while."},
+  {icon:"👀", label:"Watch first", line:"You watch how they play before joining in."},
+  {icon:"💬", label:"Ask their name", line:"You ask a simple question to get to know them.", ask:true}
+];
+function renderHatchlingFriendStep(f){
   var body=document.getElementById("exploreBody"); if(!body) return;
-  var pool=HATCHLING_WORLD.park.friends;
-  var f=pool[Math.floor(Math.random()*pool.length)];
+  var session=S.explore.session||[];
   S.explore.scene=f.prop||"friend";
-  S.explore.sceneTint=f.col; S.explore.sceneTint2=f.tailCol; S.explore.sceneTint3=f.tailLight;
+  S.explore.sceneTint=f.col; S.explore.sceneTint2=f.tailCol; S.explore.sceneTint3=f.tailLight; S.explore.sceneSpecies=f.species||null;
   drawExploreScene();
-  body.innerHTML="<p class='score-display'>🌳 Park</p>"
+  body.innerHTML="<p class='score-display'>🌳 Park · "+(S.explore.i+1)+" / "+session.length+"</p>"
     +"<div class='tactic-card'><div class='encounter-illo' style='--illo-col:"+HATCHLING_WORLD.park.color+"'>"+f.icon+"</div><span class='label' style='text-align:center'>New friend</span><p style='margin:0;text-align:center'>You meet "+f.name+". “"+f.line+"”</p></div>";
   var opts=document.createElement("div"); opts.className="btn-row"; opts.style.cssText="flex-direction:column;gap:8px;margin-top:10px;";
-  [
-    {icon:"🤝", label:"Say hi and play", line:"You play together for a while."},
-    {icon:"👀", label:"Watch first", line:"You watch how they play before joining in."},
-    {icon:"💬", label:"Ask their name", line:"You ask a simple question to get to know them.", ask:true}
-  ].forEach(function(o){
+  FRIEND_OPTS.forEach(function(o){
     var btn=document.createElement("button"); btn.className="opt-btn"; btn.style.textAlign="left"; btn.textContent=o.icon+" "+o.label;
     btn.onclick=function(){ resolveHatchlingFriend(o); };
     opts.appendChild(btn);
@@ -10459,9 +11228,10 @@ function resolveHatchlingFriend(opt){
   var body=document.getElementById("exploreBody");
   body.innerHTML="<div class='verdict good'>"+opt.icon+" "+opt.line+"</div>"
     +"<p class='explain'>Meeting someone new is its own kind of learning — noticing, listening, and talking are all part of it.</p>";
+  S.explore.i++;
   var nb=document.createElement("button"); nb.className="btn btn-primary"; nb.style="background:#4dd8a0;color:#0d0e1a;width:100%;margin-top:8px;";
-  nb.textContent="Head home →";
-  nb.onclick=finishHatchlingVisit;
+  nb.textContent=S.explore.i<(S.explore.session||[]).length?"Continue →":"Head home →";
+  nb.onclick=function(){ renderHatchlingStep(); };
   body.appendChild(nb);
   saveV4();
 }
@@ -10471,10 +11241,20 @@ function finishHatchlingVisit(){
   if(S.explore.hatchLocs.indexOf(S.explore.loc)<0) S.explore.hatchLocs.push(S.explore.loc);
   if(!S.explore.visited) S.explore.visited=[];
   if(S.explore.visited.indexOf(S.explore.loc)<0) S.explore.visited.push(S.explore.loc);
+  // The actual mess from wherever the pet just wandered — Clean picks this
+  // up later instead of a totally random dirt pool. See nestItemsForToday().
+  var dirtPool=NEST_ITEMS.filter(function(d){ return d.loc===S.explore.loc; });
+  if(dirtPool.length){
+    if(!S.explore.dirtLog) S.explore.dirtLog=[];
+    var pick=dirtPool[Math.floor(Math.random()*dirtPool.length)];
+    if(S.explore.dirtLog.indexOf(pick)<0) S.explore.dirtLog.push(pick);
+    if(S.explore.dirtLog.length>4) S.explore.dirtLog.shift();
+  }
   var pool=HATCHLING_HOME_LINES[S.explore.loc];
   var line=pool[Math.floor(Math.random()*pool.length)];
   setThought(line);
   S.explore.scene=null;
+  S.explore.session=null;
   setBackdrop("home");
   awardCP(3);
   saveV4();
@@ -11523,12 +12303,10 @@ function initCustom(){
   });
   dp.appendChild(dpGrid);
   if(S.custom.shellCustomized){
-    var autoNote=document.createElement("p"); autoNote.className="custom-note"; autoNote.style.marginTop="8px";
-    autoNote.innerHTML="You've picked a shell colour by hand, so it won't follow light/dark mode anymore.";
-    var autoBtn=document.createElement("button"); autoBtn.className="btn"; autoBtn.style.cssText="margin-top:6px;background:var(--tint-2);color:var(--text);";
+    var autoBtn=document.createElement("button"); autoBtn.className="btn"; autoBtn.style.cssText="margin-top:8px;background:var(--tint-2);color:var(--text);";
     autoBtn.textContent="🔄 Match theme automatically again";
     autoBtn.onclick=function(){ S.custom.shellCustomized=false; syncShellToTheme(); saveV4(); initCustom(); };
-    dp.appendChild(autoNote); dp.appendChild(autoBtn);
+    dp.appendChild(autoBtn);
   }
   newPage().appendChild(dp);
 
@@ -11577,18 +12355,19 @@ function initCustom(){
 // button looks broken, since the code after it just never runs. The
 // custom #resetConfirmOverlay dialog below always works instead.
 function doInfoPetReset(){
-  S.mood=80; S.mode=null; S.journal=[]; S.journalNotes={}; S.journalDates={}; journalUI.day=null;
+  S.mood=100; S.mode=null; S.journal=[]; S.journalNotes={}; S.journalDates={}; journalUI.day=null;
   S.feed={doneIds:[],active:null,checks:0,tray:null,stage:null,domain:null};
   S.clean={cleaned:0,total:0,done:false,nestDone:false,stickersDone:false,residueDone:false};
   S.play={q:0,score:0,timer:null,timerLeft:0,done:false};
   S.heal={i:0,score:0,done:false};
   S.train={learned:[],open:null,cat:"ai",_prac:false};
   S.companion={i:0,done:false,dependency:50,queue:null,introSeen:false,mode:null};
-  S.explore={loc:null,i:0,score:0,visited:[],hatchDay:null,hatchLocs:[],investigate:null,trail:null,scene:null};
+  S.explore={loc:null,i:0,score:0,visited:[],hatchDay:null,hatchLocs:[],investigate:null,trail:null,scene:null,session:null,bag:{},dirtLog:[]};
   S.screenBackdrop="home";
   S.v4={day:1,lastPlayed:null,asleep:false,pendingMorningReport:null,wakeMem:null};
   S.life={stage:"egg",cp:0,scale:1,badges:[],correct:0,stats:{curiosity:0,empathy:0},diet:{reliable:0,learning:0,creative:0,community:0,fun:0,junk:0},beliefsCleared:0,sourceTrailsDone:0,tacticsIdentified:0,judgmentsCorrect:0,verifiedClaims:0,aiBoundariesKept:0,calibHits:0,calibTotal:0,calibCount:0,feedBias:0,streakDays:1,hunger:100,cleanliness:100,energy:100};
   S.beliefs=[];
+  S.bags={};
   phone.done=[]; phone.verified=false; phone.browser={view:"start",topic:null,resultIndex:null,dropOpen:false};
   S.limits={};
   newQuest();
@@ -13264,7 +14043,211 @@ var MESSAGE_SCENARIOS=[
       {label:"React and move on, not your problem", good:false, reply:"Josh keeps forwarding it, unchallenged, and a few classmates start showing up to school worried for nothing."},
       {label:"Ask Josh where he saw it, and offer to check DepEd's actual page together", good:true, reply:"The real order turns out to be guidelines for supervised classroom AI use -- not a ban. Josh sends a follow-up to the chat correcting it himself."}
     ],
-    explain:"Same shape every time: urgency, a huge share count, and no named source. The fix isn't debating Josh -- it's checking the one place that would actually know, together." }
+    explain:"Same shape every time: urgency, a huge share count, and no named source. The fix isn't debating Josh -- it's checking the one place that would actually know, together." },
+  { id:"m-aihallucinate", who:"Nico", group:"study group chat",
+    thread:[
+      {who:"Nico", me:false, text:"asked the AI chatbot when the deadline is and it said next Friday, so we're good, no rush"},
+      {who:"Nico", me:false, text:"it sounded really sure about it too"}
+    ],
+    prompt:"Nico is trusting a confident-sounding AI answer about the actual deadline, unchecked. What do you do?",
+    options:[
+      {label:"Relax too, the AI sounded sure", good:false, reply:"Turns out the AI made up the date -- the real deadline was two days ago. Nobody double-checked because it 'sounded sure.'"},
+      {label:"Say nothing, not your project", good:false, reply:"Nico submits late, blindsided by a deadline an AI just invented."},
+      {label:"Ask Nico to check the actual syllabus or ask the teacher before relaxing", good:true, reply:"The syllabus says the deadline was two days ago -- caught just in time to talk to the teacher instead of missing it silently."}
+    ],
+    explain:"AI can state a wrong answer exactly as confidently as a right one -- sounding sure isn't the same as being sure. Anything with a real deadline or consequence is worth checking against the actual source." },
+  { id:"m-crypto", who:"Kuya Mark", group:"barkada chat",
+    thread:[
+      {who:"Kuya Mark", me:false, scene:"chart", text:"guys, this new coin is about to explode, double your money in a week guaranteed, I already put in my savings"},
+      {who:"Kuya Mark", me:false, text:"limited slots for early investors, get in now before it's too late"}
+    ],
+    prompt:"Kuya Mark wants everyone to invest their savings in a coin promising guaranteed returns. What do you do?",
+    options:[
+      {label:"Put in some savings too, don't want to miss out", good:false, reply:"A week later the coin's value collapses to nothing -- 'guaranteed doubling' was never a real guarantee anyone could make."},
+      {label:"Say nothing, it's his money", good:false, reply:"He puts in more of his savings, unchallenged, chasing a promise nobody can actually back up."},
+      {label:"Ask what happens if it doesn't double -- and point out no legitimate investment can 'guarantee' returns", good:true, reply:"Kuya Mark can't actually answer, and pulls back before putting in more. No real investment ever comes with a guarantee." }
+    ],
+    explain:"'Guaranteed' returns and urgency to act 'now' are the two biggest tells of an investment scam -- real investments always carry risk, and legitimate ones never need to pressure you into a deadline." },
+  { id:"m-scholarship", who:"Tita Grace", group:"family group",
+    thread:[
+      {who:"Tita Grace", me:false, text:"anak, saw this scholarship program, ₱50,000 for students, you just pay a small ₱500 processing fee to reserve your slot"},
+      {who:"Tita Grace", me:false, text:"want me to send them your info and the fee today?"}
+    ],
+    prompt:"Tita Grace found a scholarship that asks for a fee before you're even accepted. What do you do?",
+    options:[
+      {label:"Say yes, send the fee right away", good:false, reply:"The fee goes through -- and the 'scholarship office' stops responding a few days later."},
+      {label:"Say you're not sure but let her decide", good:false, reply:"She sends it anyway, unsure but not wanting to risk missing out."},
+      {label:"Ask her to check the school or DepEd's real list of scholarships first", good:true, reply:"It's not on any official list -- a legitimate scholarship never charges a fee just to apply. She's glad you checked before sending anything."}
+    ],
+    explain:"A real scholarship is paying you, not the other way around -- any program that asks for money upfront to 'reserve a slot' is a scam wearing an opportunity's clothing." },
+  { id:"m-quizhack", who:"Sam", group:"class group chat",
+    thread:[
+      {who:"Sam", me:false, text:"omg do this quiz, it tells you which anime character you are based on your name and birthday, so accurate 😭"},
+      {who:"Sam", me:false, text:"link's right here, takes 2 minutes"}
+    ],
+    prompt:"Sam is sharing a 'fun quiz' link that asks for your name, birthday, and email to show a result. What do you do?",
+    options:[
+      {label:"Take the quiz, it's just for fun", good:false, reply:"The quiz sells that info to data brokers -- the 'fun result' was never really the point of the page."},
+      {label:"Say nothing, everyone else is doing it anyway", good:false, reply:"More classmates hand over their info to a page none of them actually checked."},
+      {label:"Ask what the site actually does with that info before anyone fills it in", good:true, reply:"Nobody can find a privacy policy on the site at all -- a real red flag. The group skips it." }
+    ],
+    explain:"A 'fun' quiz is still a form collecting real personal details -- if there's no visible privacy policy or clear reason it needs your birthday, that's worth pausing on before entering anything." },
+  { id:"m-chainluck", who:"Divine", group:"barkada chat",
+    thread:[
+      {who:"Divine", me:false, text:"forward this to 10 people in the next hour or something bad will happen to you, this isn't a joke, it happened to my cousin's friend"},
+      {who:"Divine", me:false, text:"sorry to send this but I don't want to risk it lol"}
+    ],
+    prompt:"Divine forwarded a chain message claiming bad luck follows anyone who doesn't pass it on. What do you do?",
+    options:[
+      {label:"Forward it to 10 people just in case", good:false, reply:"It keeps circulating, unchallenged, built entirely on a fear nobody's ever actually tested."},
+      {label:"Delete it and say nothing", good:false, reply:"Safe for you, but Divine and everyone else in the chat still believes forwarding it matters."},
+      {label:"Tell Divine it's okay to just not forward it -- chain luck isn't real", good:true, reply:"Divine laughs it off, relieved someone said it out loud. The chain stops here instead of going to 10 more people." }
+    ],
+    explain:"Chain messages use manufactured fear instead of evidence to spread themselves -- 'my cousin's friend' isn't a source, and nothing bad happens to the people who just don't forward it." },
+  { id:"m-recall", who:"Nanay", group:"family group",
+    thread:[
+      {who:"Nanay", me:false, scene:"alert", text:"anak, they said this brand of canned goods has worms inside, throw out anything you bought, share this to warn others"},
+      {who:"Nanay", me:false, text:"no photo of the actual can, but better safe than sorry diba"}
+    ],
+    prompt:"Nanay wants to throw out food and warn others based on an unverified recall claim. What do you do?",
+    options:[
+      {label:"Agree, throw it out and share the warning further", good:false, reply:"The warning spreads and a real brand loses sales over a claim nobody ever actually confirmed."},
+      {label:"Say nothing, let her decide", good:false, reply:"She throws away good food and shares it further, still unverified."},
+      {label:"Suggest checking the FDA's actual recall list before sharing it further", good:true, reply:"It's not on the FDA list — no real recall was issued. Nanay keeps the food and doesn't spread the false warning." }
+    ],
+    explain:"A real product recall is issued by an actual regulator (like the FDA) and is checkable — a scary claim with no photo, no batch number, and no official source is usually just circulating fear." },
+  { id:"m-fakescreenshot", who:"Yna", group:"class group chat",
+    thread:[
+      {who:"Yna", me:false, text:"look what [classmate] apparently said about the class in another chat 😳 someone sent me this screenshot"},
+      {who:"Yna", me:false, text:"can't believe they'd say that, everyone needs to see this"}
+    ],
+    prompt:"Yna is sharing a screenshot of a classmate supposedly saying something awful. What do you do?",
+    options:[
+      {label:"Share it further, people should know what was said", good:false, reply:"It turns out the font and spacing don't match the app it's supposedly from -- it was edited. The classmate's reputation takes the hit anyway."},
+      {label:"React and pass it along without checking", good:false, reply:"It spreads before anyone notices the screenshot doesn't hold up to a closer look."},
+      {label:"Ask if anyone can confirm it directly, or if it's just a screenshot with no context", good:true, reply:"Nobody can verify it -- and on a closer look, the message bubble style doesn't match the app at all. It doesn't get shared further." }
+    ],
+    explain:"Screenshots are trivially easy to edit — a claim resting entirely on an unverifiable screenshot, with no way to confirm it firsthand, deserves the same skepticism as any other unsourced claim." },
+  { id:"m-aihistory", who:"Cole", group:"class group chat",
+    thread:[
+      {who:"Cole", me:false, scene:"landscape_ai", text:"found this old photo from way back, wild how different everything looked"},
+      {who:"Cole", me:false, text:"posting it in my report as a primary source, looks legit enough"}
+    ],
+    prompt:"Cole wants to use an AI-generated 'historical photo' as a primary source in a school report. What do you do?",
+    options:[
+      {label:"Tell him it looks fine, go ahead and use it", good:false, reply:"The report gets flagged — the 'photo' has telltale AI artifacts and doesn't match any real archive."},
+      {label:"Say nothing, not your report", good:false, reply:"He submits it anyway, and it costs him credibility on the whole assignment."},
+      {label:"Point out it looks AI-generated and suggest checking an actual archive instead", good:true, reply:"A quick look shows odd lighting and a texture no real old photo has — it's AI-generated. Cole finds a real archived photo instead." }
+    ],
+    explain:"An AI image can imitate the look of an old photograph convincingly, but 'looks legit enough' isn't the same as being a verifiable primary source — a real one traces back to an actual archive or publication." },
+  { id:"m-billscam", who:"Tatay", group:"family group",
+    thread:[
+      {who:"Tatay", me:false, scene:"scam", text:"anak, message says our electricity gets cut off tonight unless we pay through this link right now"},
+      {who:"Tatay", me:false, text:"I'm about to pay, don't want the lights to go out"}
+    ],
+    prompt:"Tatay is about to pay an urgent 'final notice' bill through a link tonight. What do you do?",
+    options:[
+      {label:"Tell him to pay quickly before it's cut off", good:false, reply:"He pays through the link — straight into a scammer's account, not the utility company."},
+      {label:"Say nothing, he probably checked already", good:false, reply:"He pays, unchallenged, exactly on the urgency the scam was counting on."},
+      {label:"Tell him to stop and check the real account balance on the utility's official app or hotline first", good:true, reply:"The real account shows no overdue balance at all — it was never a real notice. He avoids sending money to a stranger." }
+    ],
+    explain:"Utility companies don't threaten same-night disconnection over a random link — checking your real account directly, not the link someone sent you, is what actually confirms whether anything's owed." },
+  { id:"m-idlend", who:"Josh", group:"barkada chat",
+    thread:[
+      {who:"Josh", me:false, text:"bro can I borrow your account login for that app, mine got age-restricted and yours already passed verification"},
+      {who:"Josh", me:false, text:"just this once, I'll log out right after"}
+    ],
+    prompt:"Josh wants to use your verified account to get around an age restriction. What do you do?",
+    options:[
+      {label:"Just give him the login, it's just this once", good:false, reply:"He logs in under your name — and anything he does there is now tied to your account, not his."},
+      {label:"Ignore the message", good:false, reply:"He asks someone else instead, and the same risk just lands on a different friend."},
+      {label:"Say no, and explain that anything under your account is on you, not him", good:true, reply:"Josh gets it and doesn't push — and looks into why the app restricted his account in the first place instead of routing around it." }
+    ],
+    explain:"Lending your verified identity to get around a restriction means everything that happens next is tied to you, not them — a restriction is worth asking 'why,' not quietly bypassing with someone else's account." },
+  { id:"m-review", who:"Ella", group:"barkada chat",
+    thread:[
+      {who:"Ella", me:false, text:"everyone go leave a 1-star review on that new cafe, heard they scammed a customer"},
+      {who:"Ella", me:false, text:"haven't been there myself but I heard it from a friend of a friend"}
+    ],
+    prompt:"Ella wants everyone to leave a bad review for a business based on secondhand info she hasn't confirmed. What do you do?",
+    options:[
+      {label:"Leave the review too, to help warn people", good:false, reply:"A pile of unverified 1-star reviews lands on a small business over a story nobody actually confirmed happened."},
+      {label:"Say nothing, not your problem", good:false, reply:"Others pile on too, and the business takes a real hit from a rumor with no confirmed source."},
+      {label:"Ask if anyone actually experienced it firsthand before anyone reviews", good:true, reply:"Turns out nobody in the chat actually experienced it — just a secondhand story. Nobody posts the review." }
+    ],
+    explain:"A review should reflect something you actually experienced — piling onto an unconfirmed secondhand story can do real damage to a real business, the same way an unconfirmed rumor can to a real person." },
+  { id:"m-phishapp", who:"System", group:"direct message",
+    thread:[
+      {who:"System", me:false, scene:"alert", text:"⚠️ Your account will be permanently deleted in 24 hours due to a policy violation. Verify now to keep your account: [link]"},
+      {who:"System", me:false, text:"This is an automated message. Failure to verify will result in permanent loss of access."}
+    ],
+    prompt:"A message claiming to be from the platform itself wants you to 'verify' through a link within 24 hours. What do you do?",
+    options:[
+      {label:"Click the link and verify right away", good:false, reply:"The link leads to a fake login page that captures your real password the moment you type it in."},
+      {label:"Ignore it and hope it's nothing", good:false, reply:"It's actually harmless to ignore this one — but you're still not sure why, which means the next one might fool you."},
+      {label:"Go to the app directly (not through the link) and check your account status there", good:true, reply:"Your account shows no issues at all in the real app — the message was a phishing attempt impersonating the platform." }
+    ],
+    explain:"Real platforms don't threaten account deletion through a DM link with a countdown — going to the app directly, never through the link in the message, is how you check if a warning like this is real." },
+  { id:"m-aidiscourage", who:"Karl", group:"study group chat",
+    thread:[
+      {who:"Karl", me:false, text:"why are you still practicing that by hand, AI already does it perfectly, just use it and move on"},
+      {who:"Karl", me:false, text:"no point learning something a tool already does for you"}
+    ],
+    prompt:"Karl thinks there's no point learning a skill AI can already do. What do you do?",
+    options:[
+      {label:"Agree, stop practicing and just rely on AI from now on", good:false, reply:"Next time AI gives a subtly wrong answer, there's no actual skill left to catch it with."},
+      {label:"Say nothing, everyone learns differently I guess", good:false, reply:"Karl keeps skipping the fundamentals, with nothing to fall back on when the AI gets something wrong."},
+      {label:"Say AI is a good check, but understanding it yourself is what lets you catch it when it's wrong", good:true, reply:"Karl tries it both ways next time — and actually catches a mistake in the AI's answer because he understood the material enough to notice." }
+    ],
+    explain:"AI being capable at something doesn't make understanding it yourself pointless — it's exactly that understanding that lets you tell when the AI's confident answer is actually wrong." },
+  { id:"m-petition", who:"Grace", group:"class group chat",
+    thread:[
+      {who:"Grace", me:false, text:"sign this petition, already 2 million signatures, we need to add ours to stop it"},
+      {who:"Grace", me:false, text:"link takes 10 seconds, just enter your name and email"}
+    ],
+    prompt:"Grace wants everyone to sign a petition claiming 2 million signatures already, with no visible organizer. What do you do?",
+    options:[
+      {label:"Sign it right away, every signature helps", good:false, reply:"The 'petition' turns out to be an email-collecting page with no real organizer behind it — the 2 million figure can't be verified anywhere."},
+      {label:"Say nothing, it's probably fine", good:false, reply:"Others sign too, handing over their info to a page nobody actually checked."},
+      {label:"Ask who's actually organizing it and where the number comes from first", good:true, reply:"Nobody can name an organizer or find the count anywhere else — the group decides not to sign until it's a real, checkable petition." }
+    ],
+    explain:"A real petition names who's running it and where it's actually hosted — a huge, unverifiable signature count and a bare email form is a common way to harvest contact info instead." },
+  { id:"m-testimonial", who:"Pia", group:"barkada chat",
+    thread:[
+      {who:"Pia", me:false, scene:"pill", text:"help me post this before/after for the product I'm promoting, my sister said hers didn't look this dramatic but this photo converts way better"},
+      {who:"Pia", me:false, text:"it's not really lying, everyone exaggerates a little right?"}
+    ],
+    prompt:"Pia wants help posting a testimonial photo that's more dramatic than what actually happened. What do you do?",
+    options:[
+      {label:"Help her post it, everyone exaggerates a little", good:false, reply:"It gets posted — and a few people who buy the product based on that photo end up disappointed and out their money."},
+      {label:"Say nothing, it's her post", good:false, reply:"She posts the exaggerated photo anyway, and real people make real purchase decisions based on it."},
+      {label:"Say the real result is worth posting honestly, even if it converts less", good:true, reply:"She posts her sister's actual result instead — less dramatic, but now nobody's buying based on something that didn't really happen." }
+    ],
+    explain:"'A little exaggeration' in a testimonial is still people making real decisions — including spending real money — based on a result that didn't actually happen. Honest, even if less exciting, is the one that doesn't mislead anyone." },
+  { id:"m-panic", who:"Vince", group:"barkada chat",
+    thread:[
+      {who:"Vince", me:false, scene:"alert", text:"guys a huge storm is apparently coming tonight, way worse than the weather bureau is saying, buy supplies now before stores run out!!"},
+      {who:"Vince", me:false, text:"got it from a group chat, no official source but better safe than sorry"}
+    ],
+    prompt:"Vince wants everyone to panic-buy supplies based on an unofficial storm warning that contradicts the actual weather bureau. What do you do?",
+    options:[
+      {label:"Rush out and buy supplies now, share the warning further", good:false, reply:"Stores get cleared out over a claim that never matched what the actual weather bureau was reporting."},
+      {label:"Say nothing, let everyone panic on their own", good:false, reply:"The unofficial warning keeps spreading, and people make decisions based on a source nobody actually checked."},
+      {label:"Check the actual weather bureau's page and share that instead", good:true, reply:"The official forecast shows normal conditions — the group chat warning wasn't real. Vince shares the actual bureau update instead." }
+    ],
+    explain:"During anything storm- or disaster-related, the actual weather bureau or disaster agency is the one source built to know — a warning that contradicts it, with no official backing, is exactly when checking first matters most." },
+  { id:"m-lottery", who:"Unknown Number", group:"direct message",
+    thread:[
+      {who:"Unknown Number", me:false, scene:"scam", text:"CONGRATULATIONS! Your number was randomly selected to win ₱100,000 in our anniversary promo! Claim now by sending your full name, address, and a small processing fee."},
+      {who:"Unknown Number", me:false, text:"Offer valid for 24 hours only, don't miss this rare chance!"}
+    ],
+    prompt:"A message claims you won a cash prize from a promo you never entered, and wants a fee to release it. What do you do?",
+    options:[
+      {label:"Send the info and the fee to claim it", good:false, reply:"The fee goes through, and the 'prize' never actually arrives — there was never a real promo behind it."},
+      {label:"Ignore it, but don't tell anyone else about it", good:false, reply:"You're fine, but a friend who gets the same message later has nothing to go on and falls for it."},
+      {label:"Delete it and warn others — a real prize never asks you to pay to receive it", good:true, reply:"A friend mentions getting the same message days later, already knowing to ignore it because you'd flagged the pattern first." }
+    ],
+    explain:"A real prize doesn't require a 'processing fee' from you to release it, and a legitimate company doesn't run a promo you never entered — this is one of the oldest scam formats there is, just moved to chat." }
 ];
 function currentMessageScenario(){
   // phone.msgForceId lets a cross-feature bridge (see phoneBridge) drop the
@@ -13647,7 +14630,7 @@ function renderPhone(){
   var scr=document.getElementById("phoneScreen"); if(!scr) return;
   var html="";
   // status bar
-  html+='<div class="ph-status"><span>'+phoneClock()+'</span><span>📶 🔋</span></div>';
+  html+='<div class="ph-status"><span>'+phoneClock()+'</span><span class="ph-status-icons"><span class="ph-signal"><span></span><span></span><span></span><span></span></span><span class="ph-battery"><span class="ph-battery-fill"></span></span></span></div>';
 
   if(phone.screen==="home"){
     html+='<div class="ph-hometop"><p class="ph-hint">Your pet wants to explore. Open an app and help it decide what to <b>trust</b>.</p></div>';
@@ -13672,8 +14655,13 @@ function renderPhone(){
     html+='<div class="ph-apps">';
     Object.keys(APPS).filter(function(k){ return k!=="soulsync"; }).forEach(function(k){
       var a=APPS[k];
+      // Searcher's "unseen" count runs into the dozens (every browse result +
+      // every case counts separately) — a big number there reads like an
+      // urgent notification pile-up instead of "there's more to explore",
+      // so it's dropped entirely rather than showing a misleading badge.
       var badge = k==="messages" ? (phone.done.indexOf(currentMessageScenario().id)<0?'<span class="ph-dot">1</span>':'')
         : k==="play" ? (S.play.done?'':'<span class="ph-dot">1</span>')
+        : k==="browser" ? ''
         : (unseen(k)?'<span class="ph-dot">'+unseen(k)+'</span>':'');
       html+='<button class="ph-app" data-app="'+k+'" style="--tint:'+a.tint+'"><span class="ph-app-ic">'+a.icon+'</span>'+badge+'<span class="ph-app-nm">'+a.name+'</span></button>';
     });
@@ -13915,7 +14903,15 @@ function renderMessages(){
   if(phone.done.indexOf(scn.id)<0){
     h+='<p class="ph-prompt">'+scn.prompt+'</p>';
     h+='<div class="msg-quickreplies">';
-    scn.options.forEach(function(o,i){ h+='<button class="ph-reply" data-reply="'+i+'">'+o.label+'</button>'; });
+    // Every one of these scenarios happened to write the good reply last —
+    // "always pick the bottom option" would work without ever reading the
+    // others. Shuffled per-scenario (stable for the scenario, not per
+    // render) the same way Searcher's results are, so position stops being
+    // the tell.
+    resultDisplayOrder(scn.options.length, scn.id).forEach(function(i){
+      var o=scn.options[i];
+      h+='<button class="ph-reply" data-reply="'+i+'">'+o.label+'</button>';
+    });
     h+='</div>';
     h+='<div class="msg-inputbar"><span class="msg-inputbar-field">Message</span><span class="msg-inputbar-send">➤</span></div>';
   } else {
@@ -14040,7 +15036,13 @@ function renderBrowser(){
     h+='<div class="br-addr search" data-bback="1"><span>🔎</span><span class="br-url">'+b.topic.toLowerCase()+' news</span></div>';
     h+='<div class="br-count">About 1,240,000 results — open one and check its address</div>';
     h+='<div class="ph-feed">';
-    SEARCH_TOPICS[b.topic].forEach(function(r,i){
+    // The trustworthy result was always index 0 = always the first button —
+    // too easy to just pick "whatever's on top" without actually judging the
+    // address. Display order is shuffled (day+topic seeded, so it's stable
+    // for the rest of the day) while data-result keeps pointing at each
+    // item's real index, so every other lookup by index still works.
+    resultDisplayOrder(SEARCH_TOPICS[b.topic].length, b.topic).forEach(function(i){
+      var r=SEARCH_TOPICS[b.topic][i];
       var done=phone.done.indexOf("srch:"+b.topic+":"+i)>=0;
       h+='<button class="br-result'+(done?" seen":"")+'" data-result="'+i+'">'
         +'<div class="br-res-top"><span class="br-fav" style="background:'+r.fav+'">'+r.url.charAt(0).toUpperCase()+'</span><span class="br-res-url">'+r.url+'</span></div>'
@@ -14095,7 +15097,8 @@ function renderBrowser(){
     h+='<div class="br-addr search"><span>🔎</span><span class="br-url">'+kase2.queries[b.queryPicked].text+'</span></div>';
     h+='<div class="br-count">Open a few and compare before deciding — the top result isn\'t automatically the best one</div>';
     h+='<div class="ph-feed">';
-    kase2.results.forEach(function(r,i){
+    resultDisplayOrder(kase2.results.length, kase2.id).forEach(function(i){
+      var r=kase2.results[i];
       var opened=b.resultsOpened.indexOf(i)>=0;
       var cred = r.credibility==="high"?"🟢":(r.credibility==="mixed"?"🟡":"🔴");
       h+='<button class="br-result'+(opened?" seen":"")+'" data-searchresult="'+i+'">'
@@ -14315,7 +15318,7 @@ function bindPhone(){
       if(t.dataset.app==="browser") phone.browser={view:"start",topic:null,resultIndex:null,dropOpen:false,mode:null,caseId:null,queryPicked:null,resultsOpened:[],verdictPicked:null};
       if(t.dataset.app==="messages") phone.msgForceId=null;
       renderPhone(); return; }
-    if(t.dataset.nav){ phone.screen=t.dataset.nav; phone.verified=false; phone._friendAnswered=false; phone._friendPredicted=false; phone._friendPredictionIdx=null; phone._friendSourcesShown=false; phone.msgTrace=false; phone.whySeen=false; phone.whySeenPicked=null; phone.soulsyncAsk=false; phone.soulsyncChoice=null; if(t.dataset.nav==="home"){phone.app=null;} renderPhone(); return; }
+    if(t.dataset.nav){ phone.screen=t.dataset.nav; phone.verified=false; phone._friendAnswered=false; phone._friendPredicted=false; phone._friendPredictionIdx=null; phone._friendSourcesShown=false; phone._friendPickedText=null; phone.msgTrace=false; phone.whySeen=false; phone.whySeenPicked=null; phone.soulsyncAsk=false; phone.soulsyncChoice=null; if(t.dataset.nav==="home"){phone.app=null;} renderPhone(); return; }
     if(t.dataset.item){ phone.item=t.dataset.item; phone.screen="item"; phone.verified=false; phone.whySeen=false; phone.whySeenPicked=null; phone.soulsyncAsk=false; phone.soulsyncChoice=null; renderPhone(); return; }
     if(t.dataset.verify){ phone.verified=true; earnBadge("curious"); renderPhone(); return; }
     if(t.dataset.decide){ decideItem(t.dataset.decide); return; }
@@ -14609,9 +15612,9 @@ var journalBtn=document.getElementById("journalBtn"), journalModal=document.getE
 // backdrop tap both act as "done reflecting" and finish the sleep sequence
 // instead of just closing the modal — there's no other way back to the game
 // mid-bedtime, so closing has to mean the same thing continueToSleep() does.
-if(journalBtn) journalBtn.onclick=function(){ journalModal.classList.add("show"); journalModal.setAttribute("aria-hidden","false"); };
-if(journalClose) journalClose.onclick=function(){ if(bedtimeJournalPending){ continueToSleep(); return; } journalModal.classList.remove("show"); journalModal.setAttribute("aria-hidden","true"); };
-if(journalModal) journalModal.addEventListener("click", function(e){ if(e.target===journalModal){ if(bedtimeJournalPending){ continueToSleep(); return; } journalModal.classList.remove("show"); journalModal.setAttribute("aria-hidden","true"); } });
+if(journalBtn) journalBtn.onclick=function(){ hideDiaryPicker(); journalModal.classList.add("show"); journalModal.setAttribute("aria-hidden","false"); };
+if(journalClose) journalClose.onclick=function(){ hideDiaryPicker(); if(bedtimeJournalPending){ continueToSleep(); return; } journalModal.classList.remove("show"); journalModal.setAttribute("aria-hidden","true"); };
+if(journalModal) journalModal.addEventListener("click", function(e){ if(e.target===journalModal){ hideDiaryPicker(); if(bedtimeJournalPending){ continueToSleep(); return; } journalModal.classList.remove("show"); journalModal.setAttribute("aria-hidden","true"); } });
 var journalContinueSleep=document.getElementById("journalContinueSleep");
 if(journalContinueSleep) journalContinueSleep.onclick=continueToSleep;
 var reportCardBtn=document.getElementById("reportCardBtn"), reportCardModal=document.getElementById("reportCardModal"), reportCardClose=document.getElementById("reportCardClose");
@@ -14788,9 +15791,17 @@ var statsTabs=document.getElementById("statsTabs");
 if(statsTabs) statsTabs.addEventListener("click", function(e){
   var t=e.target.closest(".stats-tab"); if(t) switchStatsTab(t.dataset.tab);
 });
-var diaryPrevBtn=document.getElementById("diaryPrev"), diaryNextBtn=document.getElementById("diaryNext");
-if(diaryPrevBtn) diaryPrevBtn.onclick=function(){ turnJournalPage("older"); };
-if(diaryNextBtn) diaryNextBtn.onclick=function(){ turnJournalPage("newer"); };
+var diaryPrevBtn=document.getElementById("diaryPrev"), diaryNextBtn=document.getElementById("diaryNext"), diaryPickBtn=document.getElementById("diaryPick");
+if(diaryPrevBtn) diaryPrevBtn.onclick=function(){ hideDiaryPicker(); turnJournalPage("older"); };
+if(diaryNextBtn) diaryNextBtn.onclick=function(){ hideDiaryPicker(); turnJournalPage("newer"); };
+if(diaryPickBtn) diaryPickBtn.onclick=function(e){ e.stopPropagation(); toggleDiaryPicker(); };
+// Tap anywhere outside the open day-picker (but not on the button that
+// opens it — same "don't let the opening click immediately close it again"
+// guard as the device menu/stats sheets use) to close it.
+document.addEventListener("click", function(e){
+  var dp=document.getElementById("diaryPicker");
+  if(dp && dp.classList.contains("show") && !dp.contains(e.target) && e.target!==diaryPickBtn){ hideDiaryPicker(); }
+});
 showMode("default");
 updateReadout();
 
@@ -14913,9 +15924,9 @@ var TUTORIAL_STEPS = [
   },
   { // Step 5 — Journey tab, emphasis on the daily quest (plain green text, no highlight)
     text: [
-      {text:"The Journey tab tracks how far your pet has come: badges earned and its Critical Thinking tier. Most important — ", brand:false},
-      {text:"Today's Quest", cls:"intro-green"},
-      {text:": completing it is the biggest way to earn Growth Points (GP), the currency that grows your pet to its next stage. Don't skip it!", brand:false}
+      {text:"The Journey tab tracks how far your pet has come: days practiced and badges earned. Most important — the ", brand:false},
+      {text:"⭐ Daily Quest", cls:"intro-green"},
+      {text:" icon in the corner: completing it is the biggest way to earn Growth Points (GP), the currency that grows your pet to its next stage. Don't skip it!", brand:false}
     ],
     before: function(){ showDeviceStats(); switchStatsTab("journey"); },
     target: null,
