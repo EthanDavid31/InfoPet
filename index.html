@@ -5242,19 +5242,40 @@ var BACKDROP_SCENES={
     });
     return {bg: day?"#5c3650":"#4a2a3a", cells:cells};
   },
+  // COMPUTER LAB — a plain, legible room (rows of desks, monitors, chairs)
+  // instead of the old abstract neon-screens-on-pedestals treatment, which
+  // read as murky rather than "somewhere real." Shared by Explorer's own
+  // Internet card and Guardian's Digital Community map tile (both route
+  // here via GUARDIAN_LOC_BACKDROP.digital="internet"), so it has to read
+  // as "a room with computers in it" for either context.
   internet: function(){
     var day=isDaytime();
+    var wall = day?"#dbe4ea":"#232c34";
     var cells=[];
-    bdRect(cells,0,0,28,14, day?"#164658":"#0a2a3a"); bdRect(cells,0,14,28,4,"#04141c");
-    for(var ty2=14;ty2<18;ty2++){ for(var tx2=0;tx2<28;tx2++){ if((tx2+ty2)%2===0) bdRect(cells,tx2,ty2,1,1,"#0a1c26"); } }
-    if(day){ bdRect(cells,24,2,3,3,"#8ec4ea"); }
-    bdRect(cells,10,1,8,2,"#0d0e1a"); bdRect(cells,11,1,6,1, day?"#0aa080":"#06d6a0"); bdRect(cells,11,2,2,1,"#ff2d78"); bdRect(cells,15,2,2,1,"#ff2d78");
-    [3,12,21].forEach(function(dx){
-      bdRect(cells,dx,10,6,1,"#2a3a44"); bdRect(cells,dx+1,10,1,3,"#1a2a34"); bdRect(cells,dx+4,10,1,3,"#1a2a34");
-      bdRect(cells,dx+1,5,4,5,"#0d1418"); bdRect(cells,dx+2,6,2,3, day?"#0aa080":"#06d6a0"); bdRect(cells,dx+2,6,2,1, day?"#0acaa0":"#0affc0");
-      bdRect(cells,dx+1,10,4,1,"#12222a"); bdRect(cells,dx+5,9,1,1,"#8a5a2a");
+    bdRect(cells,0,0,28,14,wall);
+    bdRect(cells,0,13,28,1,"#c3ced4");
+    bdRect(cells,0,14,28,4,"#c7ced2");
+    for(var fx=0;fx<28;fx+=2){ for(var fy=14;fy<18;fy+=2){ if(((fx/2)+(fy/2))%2===0) bdRect(cells,fx,fy,2,2,"#b3bcc2"); } }
+    // ceiling light panel
+    bdRect(cells,12,0,4,1,"#fff6d8");
+    // side window — day sky / night stars, same language as the other rooms
+    bdRect(cells,2,1,5,5,"#8a6a42");
+    bdRect(cells,3,2,3,3, day?"#8ed0f5":"#152140");
+    if(!day){ bdRect(cells,4,3,1,1,"#fff2c8"); }
+    // front whiteboard/projector screen
+    bdRect(cells,19,1,7,4,"#f5f4ee"); bdRect(cells,19,1,7,1,"#8a8f96");
+    bdRect(cells,20,2,2,1,"#4a90c9"); bdRect(cells,23,2,2,1,"#5cb85c"); bdRect(cells,21,3,3,1,"#4a90c9");
+    // three desks in a row: monitor + stand, keyboard, chair
+    [2,11,20].forEach(function(dx){
+      bdRect(cells,dx,11,6,1,"#8a5a34"); // desktop
+      bdRect(cells,dx,12,1,2,"#5c3a20"); bdRect(cells,dx+5,12,1,2,"#5c3a20"); // legs
+      bdRect(cells,dx+1,6,4,5,"#2a2f36"); // monitor bezel
+      bdRect(cells,dx+2,7,2,3, day?"#0aa080":"#06d6a0"); // screen glow
+      bdRect(cells,dx+2,7,2,1, day?"#0acaa0":"#7cf4d4"); // screen top highlight
+      bdRect(cells,dx+1,11,4,1,"#4a5157"); // keyboard, sitting on the desktop
+      bdRect(cells,dx+2,13,2,1,"#3a4046"); // chair seat
     });
-    return {bg: day?"#164658":"#0a2a3a", cells:cells};
+    return {bg: wall, cells:cells};
   },
   // News Stand — matches the "news" Explore card (EXPLORE_LOCATIONS.news).
   news: function(){
@@ -10765,17 +10786,28 @@ function exploreTier(){
 // Perspective/Question AI, Protect/Report/Create Responsibly) used to also
 // render as a growing row of chips under the Explore header, but that chip
 // strip has been removed.
+// verb is deliberately Discover → Experience → Investigate → Act across the
+// four stages — Explore itself never gets renamed (the button/title stay
+// "🚶 Explore" always, see #mode-explore's static header), only what
+// Explore MEANS at each stage does. That's what keeps a stage transition
+// reading as "my pet got better at exploring" instead of "Explore turned
+// into a different feature" — see the mentor conversation that settled on
+// this table for the full reasoning.
+// question: the one-line "what is this stage actually asking" framing,
+// shown under the verb line — What's that? → What's happening? →
+// How do I know? → What should I do?
 var STAGE_ABILITIES={
-  hatchling:{ icon:"👀", name:"Observe", line:"Notice before judging.", verb:"Discover", verbLine:"that the world contains things it hasn't seen yet." },
-  explorer:{ icon:"🔍", name:"Verify", line:"Check before believing.", verb:"Seek", verbLine:"out what's beyond what already showed up on its own." },
-  thinker:{ icon:"🧭", name:"Trace", line:"Find where information came from.", verb:"Investigate", verbLine:"where a claim actually came from, and who else agrees." },
-  guardian:{ icon:"🤝", name:"Protect", line:"Use literacy to help others.", verb:"Participate & Help", verbLine:"the community, not just protect itself." }
+  hatchling:{ icon:"👀", name:"Observe", line:"Notice before judging.", verb:"Discover", verbLine:"that the world contains things it hasn't seen yet.", question:"What's that?" },
+  explorer:{ icon:"🔍", name:"Verify", line:"Check before believing.", verb:"Experience", verbLine:"different situations out in the world, not just whatever already showed up on its own.", question:"What's happening?" },
+  thinker:{ icon:"🧭", name:"Trace", line:"Find where information came from.", verb:"Investigate", verbLine:"where a claim actually came from, and who else agrees.", question:"How do I know?" },
+  guardian:{ icon:"🤝", name:"Protect", line:"Use literacy to help others.", verb:"Act", verbLine:"on what it finds — helping the people around it, not just protecting itself.", question:"What should I do?" }
 };
 function setExploreHeader(){
   var tier=exploreTier();
   var a=STAGE_ABILITIES[tier];
   var c=document.getElementById("exploreConcept");
-  if(c) c.innerHTML="<strong style='color:#4dd8a0'>🌎 Explore = "+a.verb+".</strong> "+petName()+" wants to "+a.verb.toLowerCase()+" "+a.verbLine+" <strong style='color:#4dd8a0'>"+a.icon+" "+a.name+"</strong> — “"+a.line+"”";
+  if(c) c.innerHTML="<strong style='color:#4dd8a0'>🌎 Explore = "+a.verb+".</strong> "+petName()+" wants to "+a.verb.toLowerCase()+" "+a.verbLine+" <strong style='color:#4dd8a0'>"+a.icon+" "+a.name+"</strong> — “"+a.line+"”"
+    +"<br><span style='opacity:.7;font-style:italic'>"+a.question+"</span>";
 }
 function initExplore(){
   setExploreHeader();
@@ -11371,7 +11403,8 @@ function finishHatchlingVisit(){
 function initExplorerWorld(){
   var body=document.getElementById("exploreBody"); if(!body) return;
   var visited=S.explore.visited||[];
-  body.innerHTML="<p class='explain'>Different places have different kinds of information. Where should "+petName()+" go?</p>"
+  body.innerHTML="<p class='explain' style='color:var(--text-muted)'>You've learned to notice what's around you — now go see how it actually plays out somewhere real.</p>"
+    +"<p class='explain'>Different places have different kinds of information. Where should "+petName()+" go?</p>"
     +"<p class='home-tally' style='text-align:center'>"+EXPLORER_WORLD_ORDER.filter(function(k){return visited.indexOf(k)>=0;}).length+"/"+EXPLORER_WORLD_ORDER.length+" places explored</p>"
     +"<div class='explore-map' id='exploreGrid'></div>";
   var grid=document.getElementById("exploreGrid");
@@ -11717,7 +11750,9 @@ var INVESTIGATE_CLAIMS=[
 function initThinkerWorld(){
   var body=document.getElementById("exploreBody"); if(!body) return;
   setBackdrop("study"); // show the desk the instant Explore opens at Thinker tier — not just once Investigate/Source Trail is actually picked, see initInvestigate()/initSourceTrail()
-  body.innerHTML="<p class='explain'>"+petName()+" is old enough now to check the same story from more than one place.</p>"
+  body.innerHTML="<p class='score-display' style='margin-bottom:2px'>🔎 Investigation Grounds</p>"
+    +"<p class='explain' style='color:var(--text-muted);margin-top:0'>You already know how to notice things. Now learn how to find out what's true.</p>"
+    +"<p class='explain'>"+petName()+" is old enough now to check the same story from more than one place.</p>"
     +"<div class='btn-row' style='flex-direction:column;gap:8px;margin-top:8px'>"
     +"<button class='opt-btn' id='btnInvestigate' style='text-align:left'>🔎 Investigate a claim</button>"
     +"<button class='opt-btn' id='btnTrail' style='text-align:left'>🧵 Follow a Source Trail</button>"
@@ -12228,7 +12263,9 @@ var GUARDIAN_NPCS={
 function initGuardianWorld(){
   var body=document.getElementById("exploreBody"); if(!body) return;
   var visited=S.explore.visited||[];
-  body.innerHTML="<p class='explain'>"+petName()+" doesn't just explore for itself anymore — it explores to help.</p>"
+  body.innerHTML="<p class='score-display' style='margin-bottom:2px'>🛡️ Act</p>"
+    +"<p class='explain' style='color:var(--text-muted);margin-top:0'>You know how to check what's true. Now put it to use — for someone else.</p>"
+    +"<p class='explain'>"+petName()+" doesn't just explore for itself anymore — it explores to help.</p>"
     +"<p class='explain' style='margin-top:4px;color:var(--text-muted)'>🛡️ <strong>Guardian:</strong> the wider community — neighbors and strangers InfoPet doesn't already know, not the people in its own chats.</p>"
     +"<div class='explore-map' id='exploreGrid'></div>";
   var grid=document.getElementById("exploreGrid");
