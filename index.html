@@ -1605,11 +1605,12 @@ body:not(.web-mode) .journal-book .journal-close {
 .stage-dot.on { filter: none; transform: scale(1.12); }
 .stage-dot-label { font-size: 8.5px; line-height: 1.15; text-align: center; color: var(--text-muted); max-width: 100%; overflow-wrap: break-word; }
 .stage-dot-label.on { color: var(--text-soft); font-weight: 600; }
-/* STAGE RESPONSIBILITIES — the stage-dots row above only ever named each
-   stage, never said what the pet is actually responsible for once it's
-   there. This spells that out for all five stages at once (not just the
-   current one), so the whole growth arc reads at a glance instead of only
-   ever showing the next single step. */
+/* STAGE RESPONSIBILITIES — what the pet is actually responsible for once it
+   reaches each stage. Shown for all five stages at once (not just the
+   current one) so the whole growth arc reads at a glance — but that's a lot
+   of rows for the Journey tab itself, so it lives behind the "View All
+   Stages" popup (#growthStagesModal) instead of always being expanded
+   inline, the same "teaser card + popup" pattern as Report Card/Badges. */
 .stage-responsibilities { display: flex; flex-direction: column; gap: 6px; margin: 2px 0 12px; }
 .stage-resp-row { display: flex; align-items: flex-start; gap: 8px; padding: 7px 10px; border-radius: 10px; background: var(--tint); border: 1px solid var(--card-border); opacity: 0.55; }
 .stage-resp-row.done { opacity: 0.85; }
@@ -3119,6 +3120,21 @@ body:not(.web-mode) #orientToggle { top:136px !important; }
       <p class="dash-title" style="margin-bottom:4px">📋 Practice Report</p>
       <p style="font-size:13px;color:var(--text-soft);margin:0 0 14px">A record of what you've practiced with <span id="reportCardPetName">InfoPet</span> so far — not a certified skill assessment, just an honest log of the habits you've been rehearsing.</p>
       <div id="reportCardBody"></div>
+    </div>
+  </div>
+</div>
+
+<!-- GROWTH STAGES — the full five-stage responsibility breakdown (see
+     STAGE_RESPONSIBILITY/renderJourneyStages()), moved out of the Journey
+     tab itself and into this popup so the tab only pays a two-line teaser's
+     worth of space for it, not five full rows. -->
+<div class="journal-modal" id="growthStagesModal" aria-hidden="true">
+  <div class="help-popup">
+    <button class="journal-close" id="growthStagesClose" aria-label="Close growth stages">✕</button>
+    <div class="activity" style="padding:20px;margin-bottom:0;max-height:82vh;overflow-y:auto">
+      <p class="dash-title" style="margin-bottom:4px">🌱 Growth Stages</p>
+      <p style="font-size:13px;color:var(--text-soft);margin:0 0 14px">What <span id="growthStagesPetName">InfoPet</span> is actually responsible for at each stage of its growth.</p>
+      <div id="growthStagesBody"></div>
     </div>
   </div>
 </div>
@@ -5005,16 +5021,37 @@ var STAGE_RESPONSIBILITY = {
   thinker: "Judge who to trust. Weighing sources, spotting manipulation tactics, and questioning AI and algorithms instead of taking them at face value.",
   guardian: "Model and help. Creating and sharing responsibly, and helping others navigate misinformation too."
 };
+// Journey's own card is just a teaser (current stage + a "View All Stages"
+// button) — same "teaser card + popup" pattern as Report Card/Badges just
+// below. The full five-row breakdown renders into #growthStagesModal via
+// renderGrowthStagesPopup(), opened/closed alongside reportCardModal etc.
+// (see the wiring near reportCardBtn's own onclick).
 function renderJourneyStages(i){
   var card=document.getElementById("journeyStages"); if(!card) return;
   if(i==null) i=stageIndex();
-  var rows=STAGES.map(function(s,k){
+  var cur=STAGES[i];
+  card.innerHTML="<p class='status-card-label'>🌱 GROWTH STAGES</p>"
+    +"<p style='font-size:16px;font-weight:700;margin:4px 0 2px'>"+stageEmblemHtml(cur,16)+" "+cur.name+"</p>"
+    +"<p style='font-size:12px;color:var(--text-soft);margin:0 0 8px'>"+(STAGE_RESPONSIBILITY[cur.key]||cur.unlock)+"</p>"
+    +"<button class='dash-ach-view' id='journeyStagesBtn'>View All Stages ▸</button>";
+  var btn=document.getElementById("journeyStagesBtn");
+  if(btn) btn.onclick=function(){ hideDeviceStats(); openGrowthStagesModal(i); };
+}
+function renderGrowthStagesPopup(i){
+  if(i==null) i=stageIndex();
+  var nameEl=document.getElementById("growthStagesPetName"); if(nameEl) nameEl.textContent=petName();
+  var body=document.getElementById("growthStagesBody"); if(!body) return;
+  body.innerHTML="<div class='stage-responsibilities'>"+STAGES.map(function(s,k){
     var cls = k===i ? "current" : k<i ? "done" : "";
     return "<div class='stage-resp-row "+cls+"'><span class='stage-resp-ic'>"+stageEmblemHtml(s,15)+"</span>"
       +"<span class='stage-resp-body'><span class='stage-resp-name'>"+s.name+(k===i?"<span class='stage-resp-tag'>Current</span>":"")+"</span>"
       +"<span class='stage-resp-desc'>"+(STAGE_RESPONSIBILITY[s.key]||s.unlock)+"</span></span></div>";
-  }).join('');
-  card.innerHTML="<p class='status-card-label'>🌱 GROWTH STAGES</p><div class='stage-responsibilities'>"+rows+"</div>";
+  }).join('')+"</div>";
+}
+function openGrowthStagesModal(i){
+  renderGrowthStagesPopup(i);
+  var modal=document.getElementById("growthStagesModal");
+  if(modal){ modal.classList.add("show"); modal.setAttribute("aria-hidden","false"); }
 }
 // Maps a STAGES[].key ("hatch") to the STAGE_ABILITIES key ("hatchling")
 // used by Explore/Feed/Rethink's tier functions — same four stages, two
@@ -12285,9 +12322,9 @@ function initGuardianWorld(){
     card.onclick=function(){ npcKey ? initGuardianNPC(npcKey) : setThought("Nothing needs help here today."); };
     grid.appendChild(card);
   });
-  var homeTile=document.createElement("button"); homeTile.className="explore-home-tile"; homeTile.innerHTML="🏠<span>Home</span>";
-  homeTile.onclick=function(){ setBackdrop("home"); showMode("default"); };
-  grid.appendChild(homeTile);
+  var homeBtn=document.createElement("button"); homeBtn.className="explore-back"; homeBtn.textContent="← Back home";
+  homeBtn.onclick=function(){ setBackdrop("home"); showMode("default"); };
+  body.appendChild(homeBtn);
 }
 function initGuardianNPC(key){
   S.explore.loc=key;
@@ -15767,6 +15804,12 @@ var reportCardBtn=document.getElementById("reportCardBtn"), reportCardModal=docu
 if(reportCardBtn) reportCardBtn.onclick=function(){ renderReportCard(); reportCardModal.classList.add("show"); reportCardModal.setAttribute("aria-hidden","false"); };
 if(reportCardClose) reportCardClose.onclick=function(){ reportCardModal.classList.remove("show"); reportCardModal.setAttribute("aria-hidden","true"); };
 if(reportCardModal) reportCardModal.addEventListener("click", function(e){ if(e.target===reportCardModal){ reportCardModal.classList.remove("show"); reportCardModal.setAttribute("aria-hidden","true"); } });
+
+// GROWTH STAGES popup — opened from the Journey tab's teaser card (see
+// renderJourneyStages()/openGrowthStagesModal()), no separate device button.
+var growthStagesModal=document.getElementById("growthStagesModal"), growthStagesClose=document.getElementById("growthStagesClose");
+if(growthStagesClose) growthStagesClose.onclick=function(){ growthStagesModal.classList.remove("show"); growthStagesModal.setAttribute("aria-hidden","true"); };
+if(growthStagesModal) growthStagesModal.addEventListener("click", function(e){ if(e.target===growthStagesModal){ growthStagesModal.classList.remove("show"); growthStagesModal.setAttribute("aria-hidden","true"); } });
 
 // DAILY QUEST — a menu-triggered overlay in phone/portrait mode, but the exact
 // same section moves back inline on the page in web/landscape mode, where
