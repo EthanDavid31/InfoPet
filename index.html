@@ -110,9 +110,19 @@ body {
   box-shadow: 0 0 6px 1px rgba(255,255,255,0.7);
   animation: bgTwinkle 2.6s ease-in-out infinite;
 }
-:root[data-theme="light"] .bg-star { background: #7a68c9; box-shadow: 0 0 6px 1px rgba(122,104,201,0.4); }
+/* Light mode has no dark backdrop to glow against, so the dark-mode star
+   (white on near-black, floor opacity 0.15) all but disappears on the pale
+   pastel gradient here — a darker, more saturated color, a tighter/denser
+   glow ring, and a much higher floor opacity (0.5 instead of 0.15, via its
+   own keyframe below) are what actually keep it visible at every point in
+   the twinkle cycle, not just at its brightest instant. */
+:root[data-theme="light"] .bg-star { background: #5b3fc4; box-shadow: 0 0 5px 1.5px rgba(91,63,196,0.75), 0 0 1.5px 1px rgba(91,63,196,1); animation-name: bgTwinkleLight; }
 @keyframes bgTwinkle {
   0%, 100% { opacity: 0.15; transform: scale(0.7); }
+  50% { opacity: 1; transform: scale(1); }
+}
+@keyframes bgTwinkleLight {
+  0%, 100% { opacity: 0.5; transform: scale(0.75); }
   50% { opacity: 1; transform: scale(1); }
 }
 .bg-shoot {
@@ -122,6 +132,7 @@ body {
   animation: bgShoot 7s linear infinite;
   opacity: 0;
 }
+:root[data-theme="light"] .bg-shoot { background: #5b3fc4; box-shadow: -60px 12px 12px 2px rgba(91,63,196,0.45); }
 @keyframes bgShoot {
   0% { transform: translate(0,0) rotate(-32deg); opacity: 0; }
   4% { opacity: 1; }
@@ -132,7 +143,12 @@ body {
   position: absolute; border-radius: 50%; background: rgba(255,255,255,0.5);
   animation: bgFloat linear infinite;
 }
-:root[data-theme="light"] .bg-particle { background: rgba(122,104,201,0.35); }
+/* Same visibility problem as .bg-star above: the animation's own peak
+   opacity (0.6, shared with dark mode) is the ceiling either way, so the
+   fix here is a richer, more saturated base color instead of a pale tint —
+   0.6 opacity of a solid, dark violet still reads clearly on the light
+   gradient; 0.6 opacity of a faint tint didn't. */
+:root[data-theme="light"] .bg-particle { background: #5b3fc4; }
 @keyframes bgFloat {
   0% { transform: translateY(0); opacity: 0; }
   12% { opacity: 0.6; }
@@ -844,11 +860,11 @@ body.tutorial-active:not(.sheet-open) .screen-readout { position: relative; z-in
    visible sliver for every segment regardless of what renderDietMeter()'s
    JS computes its flex-grow to be. This same meter (see dietMeterHtml()) is
    reused as-is for the web/desktop Quick Actions dashboard shortcut
-   (#dashDietMeter) via a suffixed id set, and Profile's own simpler
-   percentage bar (#profileDietBar / .dash-diet-bar) is the one place that
-   still draws diet differently. */
+   (#dashDietMeter) and the Profile tab (#profileDietMeter) via a suffixed
+   id set — one component, so all three copies always agree. */
 .diet-seg{ flex:1; display:flex; align-items:center; justify-content:center; transition:flex .4s ease; }
 .diet-seg-lbl{ font-size:9px; filter:drop-shadow(0 1px 1px rgba(0,0,0,0.4)); }
+.diet-status{ font-size:12px; font-weight:700; margin-bottom:6px; }
 .diet-cats{ display:flex; flex-wrap:wrap; gap:8px 12px; font-size:10px; color:var(--text-muted); margin-bottom:4px; }
 .diet-cat{ display:flex; align-items:center; gap:4px; }
 .diet-cat-dot{ width:8px; height:8px; border-radius:50%; flex-shrink:0; }
@@ -1589,6 +1605,20 @@ body:not(.web-mode) .journal-book .journal-close {
 .stage-dot.on { filter: none; transform: scale(1.12); }
 .stage-dot-label { font-size: 8.5px; line-height: 1.15; text-align: center; color: var(--text-muted); max-width: 100%; overflow-wrap: break-word; }
 .stage-dot-label.on { color: var(--text-soft); font-weight: 600; }
+/* STAGE RESPONSIBILITIES — the stage-dots row above only ever named each
+   stage, never said what the pet is actually responsible for once it's
+   there. This spells that out for all five stages at once (not just the
+   current one), so the whole growth arc reads at a glance instead of only
+   ever showing the next single step. */
+.stage-responsibilities { display: flex; flex-direction: column; gap: 6px; margin: 2px 0 12px; }
+.stage-resp-row { display: flex; align-items: flex-start; gap: 8px; padding: 7px 10px; border-radius: 10px; background: var(--tint); border: 1px solid var(--card-border); opacity: 0.55; }
+.stage-resp-row.done { opacity: 0.85; }
+.stage-resp-row.current { opacity: 1; border-color: #ffd166; background: rgba(255,209,102,0.1); }
+.stage-resp-ic { font-size: 15px; flex-shrink: 0; margin-top: 1px; line-height: 1.3; }
+.stage-resp-body { flex: 1; min-width: 0; }
+.stage-resp-name { display: flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 700; color: var(--text); }
+.stage-resp-tag { font-family: var(--font-mono); font-size: 8.5px; letter-spacing: 0.04em; text-transform: uppercase; color: #ffd166; }
+.stage-resp-desc { display: block; font-size: 11px; color: var(--text-soft); margin-top: 2px; line-height: 1.4; }
 .cp-label { font-family: var(--font-mono); font-weight: 700; font-size: 11px; color: var(--screen-glow); margin: 0 0 6px; }
 .cp-bar-track { position: relative; height: 8px; background: var(--tint-2); border-radius: 6px; overflow: hidden; margin-bottom: 10px; }
 .cp-bar-fill { height: 100%; width: 3%; background: linear-gradient(90deg, var(--screen-dark), var(--screen-glow)); border-radius: 6px; transition: width 0.5s cubic-bezier(.2,.7,.3,1); }
@@ -1620,12 +1650,38 @@ body:not(.web-mode) .journal-book .journal-close {
 .stat-more-group { display: flex; flex-direction: column; gap: 5px; margin-top: 4px; padding-top: 6px; border-top: 1px dashed var(--tint-2); }
 .stat-more-group-title { font-size: 10.5px; color: var(--text-muted); margin: 6px 0 0; padding-top: 6px; border-top: 1px dashed var(--tint-2); }
 .stat-more-group-title + .stat-more-group { border-top: none; padding-top: 4px; }
+/* Shared circular progress ring — a conic-gradient wedge with a solid
+   punch-out center matching whatever container it sits in (--card here;
+   pass a different --ring-bg where the container differs). Used by the
+   report card's headline score and the badge book's earned tally, so both
+   pages lead with one glanceable number instead of a wall of text. */
+.stat-ring {
+  --ring-bg: var(--card);
+  position: relative; border-radius: 50%; flex-shrink: 0;
+  background: conic-gradient(var(--ring-col, #06d6a0) calc(var(--pct) * 1%), var(--tint-2) 0);
+  transition: background 0.5s ease;
+}
+.stat-ring::before { content: ""; position: absolute; inset: 15%; border-radius: 50%; background: var(--ring-bg); }
+.stat-ring-val {
+  position: relative; z-index: 1; width: 100%; height: 100%;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-mono); font-weight: 800; color: var(--text);
+}
+.report-card-headline { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
+.report-card-headline .stat-ring { width: 62px; height: 62px; }
+.report-card-headline .stat-ring-val { font-size: 14px; }
+.report-card-headline-copy { flex: 1; min-width: 0; }
+.report-card-headline-copy strong { display: block; font-size: 14.5px; color: var(--text); margin-bottom: 2px; }
+.report-card-headline-copy span { font-size: 11.5px; color: var(--text-soft); line-height: 1.4; }
 .report-card-row { padding: 10px 0; border-bottom: 1px solid var(--tint-2); }
 .report-card-row:last-child { border-bottom: none; }
 .report-card-row-top { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
-.report-card-row-label { font-family: var(--font-mono); font-size: 11.5px; letter-spacing: 0.02em; color: var(--text-muted); }
+.report-card-row-label { font-family: var(--font-mono); font-size: 11.5px; letter-spacing: 0.02em; color: var(--text-muted); display: flex; align-items: center; gap: 6px; }
+.report-card-row-ic { font-size: 13px; }
 .report-card-row-val { font-size: 15px; font-weight: 700; color: var(--text); }
 .report-card-row-note { font-size: 12px; color: var(--text-soft); margin: 3px 0 0; line-height: 1.4; }
+.report-card-row-bar { height: 5px; border-radius: 999px; background: var(--tint-2); margin-top: 7px; overflow: hidden; }
+.report-card-row-bar-fill { height: 100%; border-radius: 999px; background: var(--ring-col, #06d6a0); transition: width 0.5s ease; }
 .report-card-summary { background: rgba(6,214,160,0.06); border: 1px solid rgba(6,214,160,0.2); border-radius: 12px; padding: 12px 14px; margin-bottom: 14px; }
 .report-card-summary-line { font-size: 12.5px; color: var(--text-soft); line-height: 1.5; margin: 0 0 6px; }
 .report-card-summary-line:last-child { margin-bottom: 0; }
@@ -1706,24 +1762,6 @@ body:not(.web-mode) .journal-book .journal-close {
 .explore-back { display: block; width: 100%; margin-top: 10px; background: none; border: 1px solid var(--card-border); color: var(--text-muted); border-radius: 999px; padding: 8px; font-family: var(--font-mono); font-size: 10.5px; cursor: pointer; }
 .explore-back:hover { color: var(--text); border-color: var(--text-soft); }
 
-/* ABILITY CHIPS — the same Explore header shows one growing row of these:
-   one earned chip per stage's core ability, plus that stage's own
-   in-progress sub-abilities as the pet's MIL stats climb toward them.
-   Not a separate "abilities" screen — just a strip under the concept line. */
-.ability-chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
-.ability-chip {
-  display: inline-flex; align-items: center; gap: 4px;
-  font-family: var(--font-mono); font-size: 9.5px; font-weight: 700;
-  padding: 4px 8px; border-radius: 999px;
-  background: rgba(77,216,160,0.12); border: 1px solid rgba(77,216,160,0.4); color: var(--text);
-  cursor: default;
-}
-.ability-chip .ic { font-size: 11px; }
-.ability-chip.locked {
-  background: var(--tint); border-color: var(--card-border); color: var(--text-muted);
-  filter: grayscale(0.6);
-}
-
 /* ACHIEVEMENTS (v9) — BADGE BOOK */
 .ach-modal {
   position: fixed; inset: 0; z-index: 999; display: none;
@@ -1762,6 +1800,7 @@ body:not(.web-mode) .journal-book .journal-close {
 .ach-modal-tally {
   font-family: var(--font-mono); font-size: 11px; color: var(--text-soft); text-align: center; margin: 0 0 16px;
 }
+.ach-modal-tally .ach-headline { text-align: left; }
 .ach-page {
   background: rgba(0,0,0,0.18);
   border: 1px solid var(--card-border);
@@ -1771,13 +1810,17 @@ body:not(.web-mode) .journal-book .journal-close {
 .badge-cat-label {
   font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase;
   color: var(--text-muted); margin: 16px 0 8px; padding-top: 12px; border-top: 1px dashed var(--card-border);
+  display: flex; align-items: center; gap: 6px;
 }
+.badge-cat-label::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--badge-cat-col, #ffd166); flex-shrink: 0; }
 .badge-cat-label:first-child { margin-top: 0; padding-top: 0; border-top: none; }
 .badge-cat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); gap: 12px 8px; }
 .badge {
   display: flex; flex-direction: column; align-items: center; text-align: center; gap: 5px;
-  padding: 4px;
+  padding: 4px; border-radius: 10px;
+  transition: transform 0.15s ease;
 }
+.badge.on:hover, .badge.on:active { transform: translateY(-2px); }
 .badge-ic {
   position: relative; width: 50px; height: 50px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center; font-size: 22px;
@@ -1790,7 +1833,7 @@ body:not(.web-mode) .journal-book .journal-close {
 .badge.on .badge-ic {
   background: radial-gradient(circle at 32% 28%, #fff4cf, #ffd166 55%, #c98a1a 100%);
   border: 2px solid rgba(255,209,102,0.6);
-  box-shadow: 0 3px 8px rgba(255,209,102,0.25), inset 0 1px 2px rgba(255,255,255,0.5);
+  box-shadow: 0 3px 8px rgba(255,209,102,0.35), inset 0 1px 2px rgba(255,255,255,0.5);
   color: initial;
 }
 .badge.on .badge-ic::after { content: none; }
@@ -1798,6 +1841,10 @@ body:not(.web-mode) .journal-book .journal-close {
 .badge.on .badge-nm { color: #ffe08a; }
 .badge-ds { font-size: 9.5px; color: var(--text-muted); line-height: 1.3; opacity: 0.7; }
 .badge.on .badge-ds { opacity: 1; }
+.ach-headline { display: flex; align-items: center; gap: 14px; margin-bottom: 4px; }
+.ach-headline .stat-ring { width: 50px; height: 50px; --ring-bg: #2a2d4a; }
+:root[data-theme="light"] .ach-headline .stat-ring { --ring-bg: #ffffff; }
+.ach-headline .stat-ring-val { font-size: 12px; }
 /* EVOLUTION CEREMONY */
 .ceremony {
   position: fixed; inset: 0; z-index: 999; display: none;
@@ -2253,9 +2300,6 @@ body:not(.web-mode) .journal-book .journal-close {
 .idle-tip-icon { font-size: 20px; margin-bottom: 4px; }
 .idle-tip-text { font-size: 12px; color: var(--text-soft); line-height: 1.4; font-weight: 600; }
 .dash-diet{ border-top:1px dashed var(--card-border); padding-top:12px; margin-bottom:12px; }
-.dash-diet-bar{ display:flex; height:12px; border-radius:999px; overflow:hidden; background:var(--tint-2); margin:8px 0 6px; }
-.dash-diet-bar span{ display:block; height:100%; }
-.dash-diet-legend{ display:flex; flex-wrap:wrap; gap:8px; font-size:10px; color:var(--text-muted); font-family:var(--font-mono); }
 .dash-ach{ border-top:1px dashed var(--card-border); padding-top:12px; }
 .dash-ach-head{ display:flex; justify-content:space-between; font-family:var(--font-mono); font-size:11px; color:var(--text-soft); margin-bottom:8px; }
 .dash-ach-icons{ display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px; }
@@ -2558,10 +2602,7 @@ body:not(.web-mode) #orientToggle { top:136px !important; }
                 <div class="swipe-card">
                   <div class="profile-card">
                     <p class="dash-title" style="margin-bottom:8px">🥗 Information Diet — what kind of information you feed</p>
-                    <div class="dash-diet-bar" id="profileDietBar"></div>
-                    <div class="dash-diet-legend">
-                      <span>✅ Reliable</span><span>📚 Learning</span><span>🎨 Creative</span><span>🤝 Community</span><span>🎮 Fun</span>
-                    </div>
+                    <div class="diet-meter-wrap" id="profileDietMeter"></div>
                     <p style="font-size:11px;color:var(--text-muted);margin:6px 0 0">These are purpose, not a trust score — a Community story or a Fun meme can be just as accurate as anything else. Junk (tracked separately, not shown as a slice here) is what actually costs Verification Practice.</p>
                     <div id="profileDietInsight"></div>
                   </div>
@@ -2576,6 +2617,7 @@ body:not(.web-mode) #orientToggle { top:136px !important; }
                  that one bar now (see renderStatBars()) instead of living
                  in two places. -->
             <div class="stats-panel hidden" id="statsPanelJourney">
+              <div class="profile-card" id="journeyStages"></div>
               <div class="profile-card" id="journeyStreak"></div>
               <div class="profile-card" id="journeyReportCard"></div>
               <div class="profile-card" id="journeyJournal"></div>
@@ -2682,7 +2724,6 @@ body:not(.web-mode) #orientToggle { top:136px !important; }
         <div class="activity-titles">
           <p class="activity-name">Explore</p>
           <p class="activity-concept" id="exploreConcept"><strong style="color:#4dd8a0">The world isn't only online.</strong> Take your pet somewhere real — every place teaches something different.</p>
-          <div class="ability-chips" id="exploreAbilities"></div>
         </div>
       </div>
       <div class="activity-body" id="exploreBody"></div>
@@ -3007,7 +3048,7 @@ body:not(.web-mode) #orientToggle { top:136px !important; }
     <button class="ach-close" id="achClose" aria-label="Close achievements">✕</button>
     <div class="ach-ribbon"></div>
     <p class="ach-modal-title">🏅 Badge Book</p>
-    <p class="ach-modal-tally" id="achModalTally">0 / 10 earned</p>
+    <div class="ach-modal-tally" id="achModalTally">0 / 10 earned</div>
     <div class="ach-page">
       <div id="badgeGrid"></div>
     </div>
@@ -3091,10 +3132,11 @@ var RM = window.matchMedia && window.matchMedia("(prefers-reduced-motion:reduce)
 var S = {
   // A freshly hatched pet should read as happy, not "already somewhat
   // unhappy" — 100 (full thrive territory, see petState()) instead of the
-  // old 55/80. Mood now only comes down from real neglect
-  // (applyNeglectDecay()) or genuinely repeated bad choices, never a single
-  // wrong MIL answer — see delta()'s comment and the removed S.mood
-  // penalties throughout.
+  // old 55/80. Mood comes down from real neglect (applyNeglectDecay()),
+  // and now also ticks down a little on a wrong judgment call (see
+  // recordJudgment()'s small, capped delta()) — enough that the State
+  // readout actually varies during normal play instead of sitting on
+  // "Thriving" indefinitely, but never a harsh or growing penalty.
   mood: 100,
   mode: null,
   journal: [],
@@ -4474,6 +4516,15 @@ function deviceBack(){
 }
 
 var tamaLeft=document.getElementById("tamaLeft"), tamaMid=document.getElementById("tamaMid"), tamaRight=document.getElementById("tamaRight");
+// The ☰ menu's tiles open a mode by calling .click() on that mode's original
+// hidden button (see selectMenuItem()) — a real, bubbling click event, not
+// just a function call. That event bubbles from this hidden nav all the way
+// up to document, arriving at the "tap outside to close" listener below in
+// the very same tap that opened the sheet. Without excluding this nav, the
+// listener sees a target outside every allow-listed container and closes
+// the sheet it just opened — on phone layout, Feed/Clean/Explore/etc could
+// never actually stay open when launched from the menu.
+var modeButtonsNav=document.querySelector(".mode-buttons");
 // Pressing the same button twice now closes what it just opened (back to
 // the home screen) instead of just re-rendering the sheet still open —
 // previously the only way to close was the ✕, tapping outside, or ◀.
@@ -4485,6 +4536,14 @@ if(tamaRight) tamaRight.onclick=deviceBack;
 // clicks on the sheet's own content and on the two buttons that open
 // them (otherwise the very click that opens a sheet would immediately
 // bubble up to this listener and close it again in the same tap).
+// Registered on the CAPTURE phase, not bubble — most answer/next taps
+// inside a sheet re-render their own container (body.innerHTML=...),
+// which detaches the clicked element from the document before a
+// bubble-phase listener would ever see it. contains(e.target) then
+// reads a detached node and always comes back false, closing the sheet
+// out from under whatever the tap was actually for. Capture runs before
+// any of those handlers get a chance to mutate the DOM, so e.target is
+// still exactly where the user tapped.
 document.addEventListener("click", function(e){
   if(deviceMenu.open){
     var menuEl=document.getElementById("deviceMenu");
@@ -4508,11 +4567,12 @@ document.addEventListener("click", function(e){
       && !(menuEl2 && menuEl2.contains(e.target))
       && !(tamaLeft && tamaLeft.contains(e.target))
       && !(tamaMid && tamaMid.contains(e.target))
-      && !(tamaRight && tamaRight.contains(e.target))){
+      && !(tamaRight && tamaRight.contains(e.target))
+      && !(modeButtonsNav && modeButtonsNav.contains(e.target))){
       showMode("default");
     }
   }
-});
+}, true);
 
 // ─── EGG RENDERING ────────────────────────────────────────
 // crackLevel (0-4) draws progressively more cracks; shakeMul intensifies the
@@ -4677,7 +4737,7 @@ var STAGE_REQUIRE_LIST = {
   // Thinker-exclusive content like Investigate/Source Trail.
   thinker: [
     {key:"judged",    label:"Correct judgment calls",   need:15, get:function(){ return S.life.judgmentsCorrect||0; },
-      how:"Any correct call counts toward this — Play, Clean, Rethink, Trace, Perspectives, and Explore all feed it."},
+      how:"Any correct call counts toward this — Detective, Clean, Rethink, Trace, Perspectives, and Explore all feed it."},
     {key:"sources",   label:"Different sources explored", need:3, get:function(){ return (S.explore.visited||[]).length; },
       how:"Open Explore and visit different locations in the Explorer-tier world."},
     {key:"belief",    label:"False belief corrected",    need:1, get:function(){ return S.life.beliefsCleared||0; },
@@ -4693,7 +4753,7 @@ var STAGE_REQUIRE_LIST = {
   // the same skill, and the label shouldn't blur that.
   guardian: [
     {key:"judged",    label:"Correct judgment calls",   need:30, get:function(){ return S.life.judgmentsCorrect||0; },
-      how:"Same as above — keeps building from correct calls across Play, Clean, Rethink, Trace, Perspectives, Explore, and the Phone."},
+      how:"Same as above — keeps building from correct calls across Detective, Clean, Rethink, Trace, Perspectives, Explore, and the Phone."},
     {key:"verified",  label:"Claims investigated",  need:3,  get:function(){ return S.life.verifiedClaims||0; },
       how:"Counts real verification — Investigate and Source Trail (both under Explore once you're a Thinker), plus judging a site's reliability in Searcher on the Phone."},
     {key:"trail",     label:"A claim traced to its source", need:1, get:function(){ return S.life.sourceTrailsDone||0; },
@@ -4778,14 +4838,13 @@ function addCorrect(weight){
 function renderCT(){ renderStatBars(); }
 
 // ─── DAILY ACTIVITY LIMITS ────────────────────────────────
-var DAILY_LIMIT = 3;   // attempts per mode per day before practice-only
-// Rethink is the one exception — correcting a belief is meant to be a real,
-// once-a-day judgment call, not something to grind for points by replaying
-// the same round. Every other mode keeps the shared DAILY_LIMIT above; only
-// a mode listed here overrides it. Replaying past this limit still works
+// One real (GP/progress-counting) round per mode per day — the very next
+// round after that is practice-only. Replaying past this limit still works
 // exactly like any other practice attempt (see isPracticeMode) — same
-// content, no permanent progress.
-var MODE_DAILY_LIMIT = { heal: 1 };
+// content, no permanent progress, but it's flagged clearly via
+// practiceBanner() so it's never mistaken for a round that still counts.
+var DAILY_LIMIT = 1;   // attempts per mode per day before practice-only
+var MODE_DAILY_LIMIT = {};
 function dailyLimitFor(modeKey){ return MODE_DAILY_LIMIT[modeKey]!=null ? MODE_DAILY_LIMIT[modeKey] : DAILY_LIMIT; }
 function limitKey(modeKey){ return "lim-"+modeKey+"-"+S.v4.day; }
 function attemptsToday(modeKey){ return (S.limits&&S.limits[limitKey(modeKey)])||0; }
@@ -4841,7 +4900,7 @@ function awardCP(n, isPractice){
   renderGrowth();
   saveV4();
 }
-// Every other mode caps GP at DAILY_LIMIT (3) attempts/day before switching
+// Every other mode caps GP at DAILY_LIMIT (1) attempt/day before switching
 // to practice-only (see enterMode()) — Feed was the one GP faucet with no
 // cap at all, since a tamagotchi-style tray you can tap indefinitely never
 // went through enterMode(). The tray itself stays unlimited (mood/diet still
@@ -4930,6 +4989,32 @@ function renderGrowth(){
   if(dots){ dots.innerHTML=STAGES.map(function(s,k){
     return '<span class="stage-dot-wrap"><span class="stage-dot'+(k<=i?' on':'')+'" title="'+s.name+'">'+stageEmblemHtml(s,13)+'</span><span class="stage-dot-label'+(k<=i?' on':'')+'">'+s.name+'</span></span>';
   }).join(''); }
+  renderJourneyStages(i);
+}
+// What the pet is actually responsible for at each stage of its growth —
+// lives on the Journey tab (progression: how far this pet has come), not
+// Profile (identity: who it is right now). Distinct from STAGES[].unlock
+// (the one-line "what evolution just unlocked" blurb used in the
+// ceremony/next-evolution preview) — written instead as a plain "here's the
+// job at this stage" statement, and shown for all five stages at once so
+// the whole growth arc reads at a glance, not just the next single step.
+var STAGE_RESPONSIBILITY = {
+  egg: "None yet — an egg just needs warmth and care, not lessons.",
+  hatch: "Notice and imitate. Curious about everything, not expected to fact-check anything yet.",
+  explorer: "Check before believing. Learning to verify what it sees before trusting or sharing it.",
+  thinker: "Judge who to trust. Weighing sources, spotting manipulation tactics, and questioning AI and algorithms instead of taking them at face value.",
+  guardian: "Model and help. Creating and sharing responsibly, and helping others navigate misinformation too."
+};
+function renderJourneyStages(i){
+  var card=document.getElementById("journeyStages"); if(!card) return;
+  if(i==null) i=stageIndex();
+  var rows=STAGES.map(function(s,k){
+    var cls = k===i ? "current" : k<i ? "done" : "";
+    return "<div class='stage-resp-row "+cls+"'><span class='stage-resp-ic'>"+stageEmblemHtml(s,15)+"</span>"
+      +"<span class='stage-resp-body'><span class='stage-resp-name'>"+s.name+(k===i?"<span class='stage-resp-tag'>Current</span>":"")+"</span>"
+      +"<span class='stage-resp-desc'>"+(STAGE_RESPONSIBILITY[s.key]||s.unlock)+"</span></span></div>";
+  }).join('');
+  card.innerHTML="<p class='status-card-label'>🌱 GROWTH STAGES</p><div class='stage-responsibilities'>"+rows+"</div>";
 }
 // Maps a STAGES[].key ("hatch") to the STAGE_ABILITIES key ("hatchling")
 // used by Explore/Feed/Rethink's tier functions — same four stages, two
@@ -5352,6 +5437,7 @@ function setBackdrop(name){
 }
 
 // stage-up ceremony overlay
+var lastEvolvedStage=null; // set below for real evolutions (not the initial hatch) so closeCeremony() can echo it as a home-screen thought once the modal's dismissed — see confirmHatchName()'s hatch-only equivalent
 function celebrate(stg){
   var ov=document.getElementById("ceremony"); if(!ov) return;
   document.getElementById("cerEmblem").textContent=stg.emblem;
@@ -5372,6 +5458,7 @@ function celebrate(stg){
     document.getElementById("cerTitle").textContent="InfoPet grew into a "+stg.name+"!";
     document.getElementById("cerBody").textContent=stg.unlock+" It didn't grow because time passed — it grew because you learned together.";
     addLog("✨","Your pet evolved into a "+stg.name+"!");
+    lastEvolvedStage=stg;
     if(namePrompt) namePrompt.style.display="none";
     if(cerBtn) cerBtn.style.display="";
     // Guardian is the last stage — the game's actual goal was never "click
@@ -5569,7 +5656,20 @@ function guardianChallengeFinish(picked){
   opts.innerHTML="<p class='cer-gc-picked'>"+tag+picked.icon+" "+picked.label+" — "+picked.note+"</p>"
     +"<p class='cer-gc-note'>That's the whole loop — <strong>Pause → Verify (query, compare) → Trace → Act (decide, respond)</strong> — and it works exactly the same out there as it does in here, conflicting sources and all. "+petName()+" is ready to help others do it too.</p>";
 }
-function closeCeremony(){ var ov=document.getElementById("ceremony"); if(ov) ov.classList.remove("show"); }
+function closeCeremony(){
+  var ov=document.getElementById("ceremony"); if(ov) ov.classList.remove("show");
+  // Echo the evolution as a home-screen thought bubble too, not just the
+  // one-off modal — the modal explains the new responsibility, but it's
+  // gone the moment it's dismissed, and setThought() gets overwritten by
+  // the idle-thought cycler within seconds. This message is deliberately
+  // left in place: the very next updateReadout()/setThought() call (the
+  // next tick, feed, or mode switch) will naturally replace it, which is
+  // exactly what makes it feel like the pet just mentioned it once.
+  if(lastEvolvedStage){
+    setThought("✨ I evolved into a "+lastEvolvedStage.name+"! "+lastEvolvedStage.unlock);
+    lastEvolvedStage=null;
+  }
+}
 function confirmHatchName(){
   var inp=document.getElementById("cerNameInput");
   var v=((inp&&inp.value)||"").trim().slice(0,14);
@@ -5591,12 +5691,12 @@ function confirmHatchName(){
 // Every badge answers one question: what lifelong MIL habit did the player
 // build? Not "played X times" — categories mirror the mentors' themes.
 var BADGE_CATEGORIES=[
-  {key:"curiosity", icon:"🌱", name:"Curiosity"},
-  {key:"verify",    icon:"🔍", name:"Verification"},
-  {key:"ai",        icon:"🤖", name:"AI Literacy"},
-  {key:"ethics",    icon:"⚖️", name:"Ethics"},
-  {key:"creator",   icon:"✍️", name:"Responsible Creation"},
-  {key:"community", icon:"🛡️", name:"Community & Guardian"}
+  {key:"curiosity", icon:"🌱", name:"Curiosity",              color:"#ffd166"},
+  {key:"verify",    icon:"🔍", name:"Verification",           color:"#06d6a0"},
+  {key:"ai",        icon:"🤖", name:"AI Literacy",             color:"#4dd8f0"},
+  {key:"ethics",    icon:"⚖️", name:"Ethics",                  color:"#c084fc"},
+  {key:"creator",   icon:"✍️", name:"Responsible Creation",    color:"#ff9f43"},
+  {key:"community", icon:"🛡️", name:"Community & Guardian",    color:"#ff6b8b"}
 ];
 // Pruned from 25 to 10, then to 6 — the second cut removed Context Checker,
 // Balanced Judgment, Feed Curator, and MIL Guardian specifically because
@@ -5715,7 +5815,7 @@ function renderBadges(){
   wrap.innerHTML=BADGE_CATEGORIES.map(function(cat){
     var items=BADGES.filter(function(b){ return b.cat===cat.key; });
     if(!items.length) return "";
-    return "<p class='badge-cat-label'>"+cat.icon+" "+cat.name+"</p><div class='badge-cat-grid'>"
+    return "<p class='badge-cat-label' style='--badge-cat-col:"+cat.color+"'>"+cat.icon+" "+cat.name+"</p><div class='badge-cat-grid'>"
       +items.map(function(b){
         var on=have.indexOf(b.key)>=0;
         var showHidden=b.hidden && !on;
@@ -5732,7 +5832,12 @@ function renderBadges(){
   var haveValid=have.filter(function(k){ return BADGES.some(function(b){ return b.key===k; }); });
   var tallyTxt=haveValid.length+"/"+BADGES.length;
   var btnT=document.getElementById("achBtnTally"); if(btnT) btnT.textContent=tallyTxt;
-  var modT=document.getElementById("achModalTally"); if(modT) modT.textContent=haveValid.length+" / "+BADGES.length+" earned";
+  var modT=document.getElementById("achModalTally");
+  if(modT){
+    var pct=Math.round(haveValid.length/BADGES.length*100);
+    modT.innerHTML="<div class='ach-headline'><div class='stat-ring' style='--pct:"+pct+";--ring-col:#ffd166'><span class='stat-ring-val'>"+haveValid.length+"</span></div>"
+      +"<span>"+haveValid.length+" / "+BADGES.length+" earned<br>"+(haveValid.length===BADGES.length?"Every habit in the book — nice work.":"Keep playing to unlock the rest.")+"</span></div>";
+  }
 }
 
 // ─── READOUT UPDATE ───────────────────────────────────────
@@ -5904,8 +6009,8 @@ function addLog(icon,msg,lesson){
   renderJournal();
   saveV4();
 }
-function saveJournalNote(text){
-  var day=S.v4.day;
+function saveJournalNote(text,day){
+  if(day==null) day = journalUI.day!=null ? journalUI.day : S.v4.day;
   if(!S.journalNotes) S.journalNotes={};
   text=(text||"").trim();
   if(text) S.journalNotes[day]={ text:text, updated:new Date().toISOString() };
@@ -5972,14 +6077,8 @@ function renderJournal(){
   var note=(S.journalNotes||{})[day];
   var html="<p class='diary-heading'>"+(isToday?"Today I learned…":"Looking back…")+"</p>";
   html+="<div class='diary-reflect'>";
-  if(isToday){
-    html+="<textarea class='diary-input' id='diaryInput' maxlength='400' placeholder='Dear diary… what happened today?'>"+(note?escapeHtml(note.text):"")+"</textarea>";
-    html+="<button class='diary-save' id='diarySave'>✎ Save to journal</button>";
-  } else if(note){
-    html+="<p class='diary-note-text'>"+escapeHtml(note.text)+"</p>";
-  } else {
-    html+="<p class='diary-note-empty'>No reflection written this day.</p>";
-  }
+  html+="<textarea class='diary-input' id='diaryInput' maxlength='400' placeholder='Dear diary… what happened today?'>"+(note?escapeHtml(note.text):"")+"</textarea>";
+  html+="<button class='diary-save' id='diarySave'>✎ Save to journal</button>";
   html+="</div>";
 
   var entries=(S.journal||[]).filter(function(e){ return e.day===day; });
@@ -5996,7 +6095,13 @@ function renderJournal(){
   }
   wrap.innerHTML=html;
   var saveBtn=document.getElementById("diarySave");
-  if(saveBtn) saveBtn.onclick=function(){ saveJournalNote(document.getElementById("diaryInput").value); };
+  if(saveBtn) saveBtn.onclick=function(){
+    // During the bedtime prompt, saving a journal entry IS the "continue" —
+    // no need to also tap "Continue to sleep →" (see continueToSleep(), which
+    // does its own save + advances the bedtime cutscene to "tuck").
+    if(bedtimeJournalPending){ continueToSleep(); return; }
+    saveJournalNote(document.getElementById("diaryInput").value);
+  };
 }
 
 // ─── MOOD DELTA ───────────────────────────────────────────
@@ -6067,6 +6172,16 @@ function recordJudgment(n){
     if(n>0) S.life.calibHits=(S.life.calibHits||0)+n;
     S.life.calibCount=(S.life.calibCount||0)+1; // raw # of real judgment calls, unweighted — see JUDGMENT_SAMPLE_FLOOR
   }
+  // A wrong judgment call now nudges Mood down a little too — small and
+  // capped, never the harsh, growing penalty a raw n (down to -8 for
+  // falling for a serious planted belief) would give if applied directly.
+  // Previously a wrong answer only ever cost Judgment Quality, on purpose
+  // (see delta()'s comment) — every call site said so. That made Mood
+  // (and the State readout it drives) effectively never move during normal
+  // play, since real neglect is rare. This keeps wrong answers low-stakes
+  // while still giving State some real day-to-day variation instead of
+  // sitting on "Thriving" indefinitely.
+  if(n<0) delta(n<=-4 ? -3 : -1);
   renderTrust();
   saveV4();
 }
@@ -6363,6 +6478,17 @@ function renderReportCard(){
   var strongest=areas.reduce(function(a,b){ return b.ratio>a.ratio?b:a; });
   var weakest=areas.reduce(function(a,b){ return b.ratio<a.ratio?b:a; });
 
+  // One glanceable headline number — the average of the five skill-area
+  // ratios reportCardSkillAreas() already computes for "biggest growth" /
+  // "still practicing" below, just surfaced as a ring instead of only
+  // feeding two sentences of prose.
+  var overallPct=Math.round(areas.reduce(function(sum,a){ return sum+a.ratio; },0)/areas.length*100);
+  var headline = "<div class='report-card-headline'>"
+    +"<div class='stat-ring' style='--pct:"+overallPct+"'><span class='stat-ring-val'>"+overallPct+"%</span></div>"
+    +"<div class='report-card-headline-copy'><strong>"+petName()+" is "+trustLabel+" on Verification Practice</strong>"
+    +"<span>Practicing at the "+ct.icon+" "+ct.name+" level on Critical Thinking. Biggest growth: "+strongest.name+" · Still practicing: "+weakest.name+"</span></div>"
+    +"</div>";
+
   var summary = "<div class='report-card-summary'>"
     +"<p class='report-card-summary-line'><strong>Before InfoPet:</strong> Every pet starts with no judgment history at all — its score begins at a neutral 50% baseline, not a demonstrated ability, and no verification habits yet.</p>"
     +"<p class='report-card-summary-line'><strong>Now:</strong> "+petName()+" is "+trustLabel+" on Verification Practice and practicing at the "+ct.icon+" "+ct.name+" level on Critical Thinking.</p>"
@@ -6370,25 +6496,28 @@ function renderReportCard(){
     +"<p class='report-card-summary-line'><strong>Still practicing:</strong> "+weakest.name+"</p>"
     +"</div>";
 
+  var badgePct=Math.round(badgeCount/BADGES.length*100);
   var rows=[
-    { label:"Verification Practice", value:trustNow+"%",
+    { icon:"🎯", label:"Verification Practice", value:trustNow+"%", pct:trustNow,
       note:"Started at "+trustStart+"% → now "+trustNow+"% ("+(trustDiff>=0?"+":"")+trustDiff+" pts) — "+trustLabel+"." },
-    { label:"Critical Thinking", value:ct.icon+" "+ct.name,
+    { icon:"🧠", label:"Critical Thinking", value:ct.icon+" "+ct.name,
       note:(S.life.correct||0)+" correct calls made across Detective, Clean, Learn, Trace, and Explore so far." },
-    { label:"Manipulated Content Judgments", value:detectiveCorrect,
+    { icon:"🕵️", label:"Manipulated Content Judgments", value:detectiveCorrect, pct:Math.min(100,Math.round(detectiveCorrect/15*100)),
       note: detectiveCorrect>=15 ? "Cleared the Context Checker badge threshold (15+)." : "Working toward the Context Checker badge — "+detectiveCorrect+"/15 so far." },
-    { label:"Healthy AI Habits", value:aiValue, note:aiLabel },
-    { label:"Badges Earned", value:badgeCount+" / "+BADGES.length,
+    { icon:"🤖", label:"Healthy AI Habits", value:aiValue, note:aiLabel },
+    { icon:"🏅", label:"Badges Earned", value:badgeCount+" / "+BADGES.length, pct:badgePct,
       note:"Each badge marks one real, repeatable media-literacy habit — not just time spent playing." },
-    { label:"Stage Reached", value:stage.emblem+" "+stage.name, note:stage.unlock }
+    { icon:stage.emblem, label:"Stage Reached", value:stage.name, note:stage.unlock }
   ];
 
   var rowsHtml = rows.map(function(r){
-    return "<div class='report-card-row'><div class='report-card-row-top'><span class='report-card-row-label'>"+r.label+"</span><span class='report-card-row-val'>"+r.value+"</span></div>"
+    var bar = r.pct!=null ? "<div class='report-card-row-bar'><div class='report-card-row-bar-fill' style='width:"+r.pct+"%'></div></div>" : "";
+    return "<div class='report-card-row'><div class='report-card-row-top'><span class='report-card-row-label'><span class='report-card-row-ic'>"+r.icon+"</span>"+r.label+"</span><span class='report-card-row-val'>"+r.value+"</span></div>"
+      +bar
       +"<p class='report-card-row-note'>"+r.note+"</p></div>";
   }).join('');
 
-  body.innerHTML = summary + renderBehaviorChecklistHtml() + rowsHtml + renderRealWorldCheckHtml(weakest);
+  body.innerHTML = headline + summary + renderBehaviorChecklistHtml() + rowsHtml + renderRealWorldCheckHtml(weakest);
   var rwBtn=document.getElementById("realWorldCheckBtn");
   if(rwBtn) rwBtn.onclick=function(){ commitRealWorldCheck(weakest.practice); };
   var rwYes=document.getElementById("realWorldYesBtn"), rwNo=document.getElementById("realWorldNoBtn");
@@ -6458,13 +6587,20 @@ function switchStatsTab(tab){
   var names={status:"statsPanelStatus",profile:"statsPanelProfile",journey:"statsPanelJourney"};
   document.querySelectorAll(".stats-panel").forEach(function(p){ p.classList.toggle("hidden", p.id!==names[tab]); });
 }
+// Reuses the exact same icon-segment meter Feed and the web/desktop Quick
+// Actions shortcut use (see dietMeterHtml()/renderDietMeter()) instead of a
+// separate simplified percentage bar with its own hand-written legend —
+// those two used to drift out of sync in wording (e.g. "Reliable"/"Creative"
+// here vs. "Building"/"Creativity" there) even when the underlying data was
+// identical, since they were three different renderers drawing the same
+// numbers three different ways. One shared component means the three copies
+// can't visually disagree again.
 function renderProfileDiet(){
-  var bar=document.getElementById("profileDietBar"); if(!bar) return;
+  var wrap=document.getElementById("profileDietMeter"); if(!wrap) return;
+  if(!wrap.dataset.built){ wrap.innerHTML=dietMeterHtml("Profile"); wrap.dataset.built="1"; }
+  renderDietMeter("Profile");
   var d=(S.life&&S.life.diet)||{reliable:0,learning:0,creative:0,community:0,fun:0,junk:0};
-  var segs=[{k:"reliable",c:"#4ade80"},{k:"learning",c:"#60a5fa"},{k:"creative",c:"#c084fc"},{k:"community",c:"#fb923c"},{k:"fun",c:"#f472b6"}];
-  var total=segs.reduce(function(sum,s){ return sum+d[s.k]; },0);
-  if(total<=0){ bar.innerHTML="<span style='width:100%;background:transparent;border:1.5px dashed var(--card-border);box-sizing:border-box;border-radius:999px'></span>"; }
-  else { bar.innerHTML=segs.map(function(s){ var pct=Math.round(d[s.k]/total*100); return pct>0?"<span style='background:"+s.c+";width:"+pct+"%'></span>":""; }).join(""); }
+  var total=d.reliable+d.learning+d.creative+d.community+d.fun;
   renderDietInsight(d, total, "profileDietInsight");
 }
 // What "balance" should actually mean changes with the pet's stage — a
@@ -6583,6 +6719,7 @@ function renderJourneyJournal(){
 }
 function renderStatsExtra(){
   renderProfileDiet();
+  renderJourneyStages();
   renderJourneyStreak();
   renderJourneyReportCard();
   renderJourneyJournal();
@@ -6792,13 +6929,11 @@ function petNeedsCare(){
 // already does mechanically: Hatchling = discover, Explorer = seek,
 // Thinker = investigate, Guardian = participate & help.
 var CARE_POOL=[
-  {key:"feed",  icon:"🍎", label:"Feed Me — feed your pet", target:1},
-  {key:"sleep", icon:"💤", label:"Goodnight — put your pet to sleep", target:1}
+  {key:"feed",  icon:"🍎", label:"Feed Me — feed your pet", target:1}
 ];
 var HATCHLING_CARE_POOL=[
   {key:"feed",  icon:"🍎", label:"Feed Me — feed your pet", target:1},
-  {key:"clean", icon:"🧼", label:"Fresh Start — clean up your pet's mess", target:1},
-  {key:"sleep", icon:"💤", label:"Goodnight — put your pet to sleep", target:1}
+  {key:"clean", icon:"🧼", label:"Fresh Start — clean up your pet's mess", target:1}
 ];
 // Hatchling Discover = safe discovery ("the world contains things I don't
 // know yet") — no right/wrong, no verification, just noticing things.
@@ -7555,7 +7690,16 @@ function showMode(m){
   // Learn/Rethink/Perspectives/Trace all share the same "sit down and think
   // it through" desk backdrop — see BACKDROP_SCENES.study.
   else if(m==="train" || m==="heal" || m==="trace" || m==="perspectives"){ setBackdrop("study"); }
-  else if(S.screenBackdrop==="kitchen" || S.screenBackdrop==="bathroom" || S.screenBackdrop==="cleanphone" || S.screenBackdrop==="study"){ setBackdrop("home"); }
+  // Catch-all reset for every other backdrop a location can leave behind.
+  // This used to only list feed/clean/train's own backdrops (kitchen,
+  // bathroom, cleanphone, study) — Explore's location backdrops (park,
+  // library, school, community, internet, news, creative, bedroom, see
+  // BACKDROP_SCENES) were never in that list, so tapping Explore's own
+  // "← Back" button closed the activity sheet but left the pet standing on
+  // whatever location it last visited instead of the living room. Checking
+  // against "home" directly instead of naming every non-home backdrop means
+  // any backdrop Explore adds later gets reset here for free too.
+  else if(S.screenBackdrop!=="home"){ setBackdrop("home"); }
 }
 // The "choose a care mode" explainer is hidden inline in both phone and web
 // mode now — Quick Actions took its spot instead. Help still opens the
@@ -7908,8 +8052,8 @@ function applySnackEffects(item){
   saveV4();
   // The Feed tab's own diet meter (dietMeterEl(), below) rebuilds itself via
   // renderSnackTray() right after this, but the Quick Actions shortcut's
-  // copy (renderDashCard()'s #dashDietBar) and the Profile tab's copy
-  // (renderProfileDiet()'s #profileDietBar) are separate DOM elements that
+  // copy (renderDashCard()'s #dashDietMeter) and the Profile tab's copy
+  // (renderProfileDiet()'s #profileDietMeter) are separate DOM elements that
   // don't get touched by that — without refreshing them here too, they kept
   // showing whatever the diet looked like the last time either happened to
   // re-render, drifting out of sync with what was actually just fed.
@@ -7936,8 +8080,9 @@ function dietMeterHtml(suffix){
     +"<div class='diet-seg' id='dietSegD"+suffix+"' style='background:linear-gradient(135deg,#fb923c,#f97316)'><span class='diet-seg-lbl'>🤝</span></div>"
     +"<div class='diet-seg' id='dietSegE"+suffix+"' style='background:linear-gradient(135deg,#f472b6,#ec4899)'><span class='diet-seg-lbl'>🎮</span></div>"
     +"</div>"
+    +"<div id='dietStatus"+suffix+"' class='diet-status'>Not fed yet</div>"
     +"<div class='diet-cats'>"
-    +"<div class='diet-cat'><div class='diet-cat-dot' style='background:#4ade80'></div><span id='dietLabel"+suffix+"'>Not fed yet</span></div>"
+    +"<div class='diet-cat'><div class='diet-cat-dot' style='background:#4ade80'></div><span>Reliable</span></div>"
     +"<div class='diet-cat'><div class='diet-cat-dot' style='background:#60a5fa'></div><span>Learning</span></div>"
     +"<div class='diet-cat'><div class='diet-cat-dot' style='background:#c084fc'></div><span>Creativity</span></div>"
     +"<div class='diet-cat'><div class='diet-cat-dot' style='background:#fb923c'></div><span>Community</span></div>"
@@ -7965,16 +8110,14 @@ function renderDietMeter(suffix){
   segs.forEach(function(s){
     var el=document.getElementById(s.id); if(!el) return;
     // No minimum floor here — a category that hasn't been fed today should
-    // collapse to nothing, same as it does in the Quick Actions (#dashDietBar)
-    // and Profile (#profileDietBar) percentage bars below. The floor used to
-    // guarantee every segment a visible sliver even at a real 0 count, which
-    // made this bar's proportions visibly disagree with the other two for
-    // the exact same S.life.diet data — not a sync bug in the data itself,
-    // just three different renderers drawing it three different ways.
+    // actually collapse to nothing. This same function now renders all three
+    // copies (Feed's own, the Quick Actions #dashDietMeter, and the Profile
+    // tab's #profileDietMeter via their own suffix), so there's no longer a
+    // separate renderer that could compute this differently.
     var flex = total>0 ? d[s.key] : 1;
     el.style.flex = flex;
   });
-  var dlEl=document.getElementById("dietLabel"+suffix), dsEl=document.getElementById("dietSublabel"+suffix);
+  var dlEl=document.getElementById("dietStatus"+suffix), dsEl=document.getElementById("dietSublabel"+suffix);
   if(!dlEl||!dsEl) return;
   var junkRatio = (total+d.junk)>0 ? d.junk/(total+d.junk) : 0;
   if(total===0 && d.junk===0){
@@ -8806,7 +8949,7 @@ function resolvePlay(pickedFake, confident, prac){
   // correct guess), wrong+unsure costs the least (right to doubt yourself).
   var trustDelta = correct ? (confident?4:2) : (confident?-5:-2);
   if(correct){ SFX.correct(); S.play.score++; if(!prac){ delta(8); registerBooster("play", r.hard?2:1); questBump('mode'); recordJudgment(trustDelta); S.life.detectiveCorrect=(S.life.detectiveCorrect||0)+1; S.life.judgmentsCorrect=(S.life.judgmentsCorrect||0)+1; } }
-  else { SFX.wrong(); if(!prac){ recordJudgment(trustDelta); } } // wrong guess costs Judgment Quality, not Mood — see delta()'s comment
+  else { SFX.wrong(); if(!prac){ recordJudgment(trustDelta); } } // wrong guess costs Judgment Quality, plus a small Mood dip — see recordJudgment()
   var wrongMsg = r.type==="caption" ? "❌ That caption was the accurate one." : "❌ That one was the real photo.";
   var calibNote = correct
     ? (confident ? "Right, and you were sure — that's good calibration." : "Right, but you hedged — trust yourself a bit more when the evidence is this clear.")
@@ -8897,9 +9040,19 @@ var SOCRATIC_QUESTIONS=[
 // a derived version: "verify" and "evidence" both surface the real
 // explanation captured at the time, "source" gets an honest, generic
 // reflection instead of a fabricated specific origin no one recorded.
+// Beliefs the pet actually caught from something the player fed it (see
+// S.beliefs.push in catchBelief()) don't carry curated per-belief socratic
+// text the way HEAL_BELIEFS does — there's no way to know in advance what a
+// player will feed it. Without a distinct fallback per key, "Can we verify
+// it?" and "What evidence exists?" both used to fall through to the exact
+// same b.fix line, making two of the three questions read as identical.
+// Each fallback now teaches its own angle instead: source = where the
+// confidence came from, verify = how you'd actually go check (a process,
+// not the answer), evidence = the actual resolution.
 function socraticAnswer(b, key){
   if(b.socratic && b.socratic[key]) return b.socratic[key];
   if(key==="source") return "It came from something that looked convincing enough in the moment to take at face value — worth questioning where, exactly, that confidence came from.";
+  if(key==="verify") return "Look for a credible, named source that actually backs this up — something you could check yourself, not just something that sounded right. Real claims usually leave a trail; ones that don't are worth doubting until they do.";
   return b.fix;
 }
 function renderHealQ(prac){
@@ -9502,7 +9655,7 @@ function resolveScenario(key, action){
     if(correct){
       st.correctCount++;
       if(!st.prac){ delta(4); registerBooster(key); recordJudgment(2); bumpStat(g.statKey,1); }
-    } else if(!st.prac){ recordJudgment(-1); } // wrong pick costs Judgment Quality, not Mood — see delta()'s comment
+    } else if(!st.prac){ recordJudgment(-1); } // wrong pick costs Judgment Quality, plus a small Mood dip — see recordJudgment()
     if(fb) fb.innerHTML="<div class='verdict "+(correct?"good":"bad")+"'>"+(correct?"✅ Good call":"🤔 Not quite")+"</div><p class='explain'>"+item.why+"</p>";
   } else {
     var opt=item.options[parseInt(action,10)];
@@ -10602,78 +10755,27 @@ function exploreTier(){
 }
 // Each stage learns ONE new core way of interacting with the information
 // world — not a pile of unlockable buttons. The core ability is what the
-// stage IS ("Explorer" verifies); the sub-abilities are that same idea
-// arriving gradually, gated on the same MIL stats that already drive
-// evolution (STAGE_REQUIRE_LIST) — so a sub-ability unlocking mid-stage is
-// always just "on track for the next evolution", never a second currency.
-function milStatValue(stat){
-  if(stat==="curiosity") return (S.life.stats&&S.life.stats.curiosity)||0;
-  if(stat==="criticalThinking") return ctScore();
-  if(stat==="empathy") return (S.life.stats&&S.life.stats.empathy)||0;
-  if(stat==="trust") return calibrationPct();
-  // Demonstrated boundaries, not the live dependency snapshot — a light
-  // ThinkSync user who's never actually questioned it shouldn't unlock
-  // "Question AI" any faster than someone who leans on it but checks its
-  // answers. Same formula as the "ai" entry in STAT_META.
-  if(stat==="aiHealth") return Math.min(100,(S.life.aiBoundariesKept||0)*25);
-  return 0;
-}
+// stage IS ("Explorer" verifies).
 // verb/verbLine: Explore's one-word identity at this stage — the answer to
 // "what is Explore actually for?" (encountering the world beyond your
-// current information bubble, differently at each stage). icon/name/line/sub
-// below are the older, more granular per-ability breakdown; verb is the
-// single word that ties them all together in the header (setExploreHeader()).
+// current information bubble, differently at each stage). icon/name/line
+// below still feed the "next evolution" preview card (renderEvoChecklist())
+// and this header text (setExploreHeader()) — the per-stage sub-ability
+// breakdown (Observe/Ask/Connect, Verify/Compare, Trace/Evaluate/
+// Perspective/Question AI, Protect/Report/Create Responsibly) used to also
+// render as a growing row of chips under the Explore header, but that chip
+// strip has been removed.
 var STAGE_ABILITIES={
-  hatchling:{ icon:"👀", name:"Observe", line:"Notice before judging.", verb:"Discover", verbLine:"that the world contains things it hasn't seen yet.",
-    sub:[
-      {icon:"👀", name:"Observe", desc:"Notice something new and ask what it is."},
-      {icon:"💬", name:"Ask",     desc:"Ask a real question about what it noticed.", stat:"curiosity", need:10},
-      {icon:"🧩", name:"Connect", desc:"Connect something new to what it already knows.", stat:"curiosity", need:20}
-    ] },
-  explorer:{ icon:"🔍", name:"Verify", line:"Check before believing.", verb:"Seek", verbLine:"out what's beyond what already showed up on its own.",
-    sub:[
-      {icon:"🔍", name:"Verify",  desc:"Check a claim before trusting it."},
-      {icon:"📚", name:"Compare", desc:"Weigh more than one source side by side.", stat:"criticalThinking", need:20}
-    ] },
-  thinker:{ icon:"🧭", name:"Trace", line:"Find where information came from.", verb:"Investigate", verbLine:"where a claim actually came from, and who else agrees.",
-    sub:[
-      {icon:"🧭", name:"Trace",       desc:"Follow a claim back toward where it actually started."},
-      {icon:"⚖️", name:"Evaluate",    desc:"Weigh how strong a piece of evidence really is.", stat:"criticalThinking", need:60},
-      {icon:"👥", name:"Perspective", desc:"Consider a story from more than one side.", stat:"empathy", need:40},
-      {icon:"🤖", name:"Question AI", desc:"Treat a confident AI answer as a claim, not a fact.", stat:"aiHealth", need:40}
-    ] },
-  guardian:{ icon:"🤝", name:"Protect", line:"Use literacy to help others.", verb:"Participate & Help", verbLine:"the community, not just protect itself.",
-    sub:[
-      {icon:"🤝", name:"Protect",           desc:"Step in for someone else, not just for itself."},
-      {icon:"🚩", name:"Report",            desc:"Flag real harm instead of scrolling past it.", stat:"empathy", need:70},
-      {icon:"✍️", name:"Create Responsibly", desc:"Make and share things it'd be proud to put its name on.", stat:"criticalThinking", need:50, stat2:"empathy", need2:40}
-    ] }
+  hatchling:{ icon:"👀", name:"Observe", line:"Notice before judging.", verb:"Discover", verbLine:"that the world contains things it hasn't seen yet." },
+  explorer:{ icon:"🔍", name:"Verify", line:"Check before believing.", verb:"Seek", verbLine:"out what's beyond what already showed up on its own." },
+  thinker:{ icon:"🧭", name:"Trace", line:"Find where information came from.", verb:"Investigate", verbLine:"where a claim actually came from, and who else agrees." },
+  guardian:{ icon:"🤝", name:"Protect", line:"Use literacy to help others.", verb:"Participate & Help", verbLine:"the community, not just protect itself." }
 };
-var STAGE_ABILITY_ORDER=["hatchling","explorer","thinker","guardian"];
 function setExploreHeader(){
   var tier=exploreTier();
   var a=STAGE_ABILITIES[tier];
   var c=document.getElementById("exploreConcept");
   if(c) c.innerHTML="<strong style='color:#4dd8a0'>🌎 Explore = "+a.verb+".</strong> "+petName()+" wants to "+a.verb.toLowerCase()+" "+a.verbLine+" <strong style='color:#4dd8a0'>"+a.icon+" "+a.name+"</strong> — “"+a.line+"”";
-  renderAbilityChips(tier);
-}
-// One growing row of chips: every sub-ability from every stage reached so
-// far, each showing locked/unlocked against its own MIL-stat threshold —
-// the same Explore header gets richer as the pet grows, instead of a
-// separate "Abilities" screen.
-function renderAbilityChips(tier){
-  var wrap=document.getElementById("exploreAbilities"); if(!wrap) return;
-  var upTo=STAGE_ABILITY_ORDER.indexOf(tier);
-  if(upTo<0){ wrap.innerHTML=""; return; }
-  var html="";
-  for(var i=0;i<=upTo;i++){
-    STAGE_ABILITIES[STAGE_ABILITY_ORDER[i]].sub.forEach(function(a){
-      var unlocked = (!a.stat || milStatValue(a.stat)>=a.need) && (!a.stat2 || milStatValue(a.stat2)>=a.need2);
-      html+="<span class='ability-chip"+(unlocked?"":" locked")+"' title=\""+a.desc.replace(/"/g,"&quot;")+"\">"
-        +"<span class='ic'>"+(unlocked?a.icon:"🔒")+"</span>"+a.name+"</span>";
-    });
-  }
-  wrap.innerHTML=html;
 }
 function initExplore(){
   setExploreHeader();
@@ -11333,7 +11435,7 @@ function resolveExploreRound(healthy, r){
     SFX.correct(); S.explore.score++;
     if(!S.explore.prac){ delta(6); registerBooster("explore"); bumpStat(loc.statKey,1); }
   } else {
-    SFX.wrong(); // the "Learned something the hard way" log line below is the consequence — no Mood hit
+    SFX.wrong(); delta(-1); // a small Mood dip alongside the "Learned something the hard way" log line — see recordJudgment()'s comment for why wrong answers nudge Mood a little now
   }
   addLog(loc.icon, (healthy?"Handled a situation well at the ":"Learned something the hard way at the ")+loc.name+".", r.explain);
   questBump('explore');
@@ -11614,6 +11716,7 @@ var INVESTIGATE_CLAIMS=[
 ];
 function initThinkerWorld(){
   var body=document.getElementById("exploreBody"); if(!body) return;
+  setBackdrop("study"); // show the desk the instant Explore opens at Thinker tier — not just once Investigate/Source Trail is actually picked, see initInvestigate()/initSourceTrail()
   body.innerHTML="<p class='explain'>"+petName()+" is old enough now to check the same story from more than one place.</p>"
     +"<div class='btn-row' style='flex-direction:column;gap:8px;margin-top:8px'>"
     +"<button class='opt-btn' id='btnInvestigate' style='text-align:left'>🔎 Investigate a claim</button>"
@@ -11627,7 +11730,7 @@ function initInvestigate(){
   var c=INVESTIGATE_CLAIMS[Math.floor(Math.random()*INVESTIGATE_CLAIMS.length)];
   S.explore.investigate={claimId:c.id, checked:[]};
   S.explore.investigatePrac=enterMode("investigate"); // daily-limited — see DAILY_LIMIT
-  setBackdrop("internet");
+  setBackdrop("study"); // same "sit down and think it through" desk as Learn/Rethink/Trace/Perspectives — see BACKDROP_SCENES.study
   renderInvestigate();
 }
 function renderInvestigate(){
@@ -11831,7 +11934,7 @@ function initSourceTrail(){
   var t=SOURCE_TRAILS[Math.floor(Math.random()*SOURCE_TRAILS.length)];
   S.explore.trail={id:t.id, step:0, missteps:0};
   S.explore.trailPrac=enterMode("trail"); // daily-limited — see DAILY_LIMIT
-  setBackdrop("internet");
+  setBackdrop("study"); // same "sit down and think it through" desk as Learn/Rethink/Trace/Perspectives — see BACKDROP_SCENES.study
   renderSourceTrail();
 }
 function renderSourceTrail(){
@@ -12212,7 +12315,7 @@ function resolveGuardianNPC(key, a){
   if(t.tier==="excellent"){ if(!prac){ delta(8); registerBooster("explore",a.dims?2:1); recordJudgment(4); bumpStat("empathy",1); awardCP(6); questBump("guardian"); markCompletedToday("npc:"+key); } } // a genuinely multi-dimensional judgment call weighs more than a single good/bad tap (2x, the only multi-step weight in the game — see CT weighting note)
   else if(t.tier==="good"){ if(!prac){ delta(5); registerBooster("explore"); recordJudgment(2); bumpStat("empathy",1); awardCP(3); questBump("guardian"); markCompletedToday("npc:"+key); } } // solid, but not the strongest available move
   else if(t.tier==="mixed"){ if(!prac){ delta(1); recordJudgment(1); } } // did something, but it only partly addressed the situation
-  else { recordJudgment(-2); } // costs Judgment Quality, not Mood — see delta()'s comment
+  else { recordJudgment(-2); } // costs Judgment Quality, plus a small Mood dip — see recordJudgment()
   if(key==="ownPost" && a.good){ S.life.responsiblePosts=(S.life.responsiblePosts||0)+1; earnBadge("creator"); }
   addLog(a.icon, npc.name+": "+a.out, npc.lesson);
   if(!S.explore.visited) S.explore.visited=[];
@@ -14814,7 +14917,12 @@ function renderPhone(){
       if(it.intent) html+='<div class="ph-tactic">🎯 What they\'re likely after: <strong>'+it.intent+'</strong></div>';
       if(it.realVideo) html+='<a class="ph-btn" style="display:block;text-align:center;text-decoration:none;background:#ff5c7a;color:#2a0812;margin-top:8px" href="https://www.youtube.com/watch?v='+it.realVideo.id+'" target="_blank" rel="noopener">▶ Watch the real video on YouTube ('+it.realVideo.channel+')</a>';
       if(it.searchCaseId) html+='<button class="ph-btn" style="background:#3a6ea5;color:#eef0fb;margin-top:8px" data-bridge="searcher:'+it.searchCaseId+'">🔎 Search this claim</button>';
-      if(phone.app==="video" && it.category==="persuasion") html+='<button class="ph-btn" style="background:#3a6ea5;color:#eef0fb;margin-top:8px" data-bridge="perspectives">👥 How might different people see this?</button>';
+      // Worded as its own practice round, not a continuation of this video —
+      // Perspectives draws an unrelated scenario from its own pool (see
+      // PERSPECTIVES_DATA), so a label implying it stays on-topic ("how
+      // might different people see THIS") read as a broken redirect once
+      // a completely different scenario showed up.
+      if(phone.app==="video" && it.category==="persuasion") html+='<button class="ph-btn" style="background:#3a6ea5;color:#eef0fb;margin-top:8px" data-bridge="perspectives">👥 Practice: weighing different people\'s perspectives</button>';
       if(phone.app==="video" && it.tactic && !it.searchCaseId && it.category!=="persuasion") html+='<button class="ph-btn" style="background:#3a6ea5;color:#eef0fb;margin-top:8px" data-bridge="trail">🧵 Trace a claim like this</button>';
       html+='<button class="ph-btn back-btn" data-nav="app">‹ Back to '+a2.name+'</button>';
     }
@@ -15511,7 +15619,8 @@ function decideItem(choice){
       if(it.tactic) S.life.tacticsIdentified=(S.life.tacticsIdentified||0)+1; } // see STAGE_REQUIRE_LIST.guardian
     addLog("📱", (it.verdict==="flag"?"Doubted a misleading post":"Trusted a solid source")+" in "+a.name+".", it.verdict==="flag" ? "Strong emotions and manufactured urgency in a post are red flags, not proof." : "An official, verifiable source is worth trusting.");
   } else {
-    // recordJudgment(-3) above already covers it — no Mood hit, see delta()'s comment.
+    // recordJudgment(-3) above already covers Judgment Quality and now also
+    // gives a small Mood dip on its own — see recordJudgment()'s comment.
     SFX.wrong();
     addLog("📱","Reviewed a post in "+a.name+" — let's look again next time.", "Slowing down before trusting or sharing goes a long way.");
   }
@@ -15530,8 +15639,8 @@ function replyMessage(i){
     recordJudgment(5); clearBelief(beliefKey); bumpStat("empathy",2);
     addLog("💬","Handled a tricky message in the "+scn.group+" — kindly, with a source.", "Correcting misinformation kindly protects the people who trust you.");
   } else {
-    // Judgment Quality (recordJudgment below) carries the consequence — no
-    // Mood hit, see delta()'s comment.
+    // Judgment Quality (recordJudgment below) carries the consequence, and
+    // now a small Mood dip alongside it — see recordJudgment()'s comment.
     SFX.wrong();
     if(i===0){ catchBelief(scn.thread[0].text, scn.explain, beliefKey); recordJudgment(-8); }
     else { recordJudgment(-3); }
