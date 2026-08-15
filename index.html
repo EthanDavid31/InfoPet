@@ -12296,14 +12296,16 @@ function chatterboxImage(it){
   if(!/^s\d+$/.test(it.id)) return sceneImage(it.scene); // CHATTERBOX_COMPOSE items etc. — not part of the local photo set
   var url = "ChatterBoxPics/"+it.id+".jpg";
   var fallback = sceneImage(it.scene);
-  // s4's photo needs to show in full — the default object-fit:cover every
-  // other post uses (see .sc-real-img) crops to fill the box, which was
-  // cutting into this specific photo's edges. object-fit:contain scales it
-  // down to fit inside the box instead, with no cropping; any leftover
-  // space just shows the wrapper's own dark background (.sc-img-wrap)
-  // rather than stretching or cutting anything off. Scoped to s4 alone via
-  // an inline style override — every other post's cropping is untouched.
-  var imgStyle = (it.id === "s4") ? " style='object-fit:contain'" : "";
+  // s4 and s22 need to show in full, centered — the default object-fit:cover
+  // every other post uses (see .sc-real-img) crops to fill the box, which
+  // was cutting into these two photos' edges. object-fit:contain scales
+  // each down to fit inside the box instead, with no cropping — the browser
+  // centers it in both directions by default, so any leftover space is an
+  // even letterbox on the sides (or top/bottom) showing the wrapper's own
+  // dark background, rather than stretching or cutting anything off.
+  // Scoped to just these two ids via an inline style override — every
+  // other post's cropping is untouched.
+  var imgStyle = (it.id === "s4" || it.id === "s22") ? " style='object-fit:contain'" : "";
   return "<span class='sc-img-wrap'>"
     +"<img class='sc-real-img' src='"+url+"' alt=''"+imgStyle+" loading='lazy' "
     +"onerror=\"this.style.display='none';this.nextElementSibling.style.display='block';\">"
@@ -12653,7 +12655,7 @@ var APPS = {
       verdict:"flag",
       clues:["A claim this large would be covered by every major outlet \u2014 none are reporting it.","No named agency, no linked order, no official statement anywhere \u2014 just the claim itself, spreading on shares alone."],
       explain:"Share count isn't evidence. A claim this big with zero named source or outlet coverage doesn't hold up." },
-    { id:"s10", scene:"face", source:"@wilbroslive", handle:"organizer \u00b7 verified",
+    { id:"s10", scene:"face", source:"@officialband_ph", handle:"artist \u00b7 verified",
       title:"Rex Orange County in Manila, Asia Exclusive! \u2014 tickets up Friday!",
       body:"Posted by the organizer's own verified account, matching the venue's own announcement.",
       verdict:"trust",
