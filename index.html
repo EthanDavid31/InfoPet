@@ -6005,20 +6005,17 @@ function renderStatBars(){
   // boundary is misleading. Hide it here for now rather than showing a 0%
   // that reads like a failing grade.
   var metas = isHatchling() ? STAT_META.filter(function(m){ return m.key!=="ai"; }) : STAT_META;
-  var primary = metas.filter(function(m){ return STAT_PRIMARY_KEYS.indexOf(m.key)>=0; });
-  var secondary = metas.filter(function(m){ return STAT_PRIMARY_KEYS.indexOf(m.key)<0; });
-  var html = primary.map(statRowHtml).join('');
-  if(secondary.length){
-    // Used to be tucked behind a "Show Habits" toggle — always shown now,
-    // the toggle added a click for no real payoff (both groups fit fine).
-    // Labeled "Habits," not "Other Stats" — Curiosity/Empathy/Healthy AI
-    // Habits are behaviors being practiced, not ability scores or a
-    // personality readout, and the heading should say so rather than
-    // implying these five bars are all measuring the same kind of thing.
-    html += "<p class='stat-more-group-title'>Habits — behaviors "+petName()+" is practicing, not personality traits</p>"
-      +"<div class='stat-more-group'>"+secondary.map(statRowHtml).join('')+"</div>";
-  }
-  wrap.innerHTML=html;
+  // Verification Practice already has its own big score card right above
+  // this section (#trustPct/#trustFill) — repeating it as a plain stat row
+  // here was pure duplication, so it's dropped from this list rather than
+  // just visually deduped.
+  metas = metas.filter(function(m){ return m.key!=="trust"; });
+  // Used to split into a "Development" primary group and a separate
+  // "Habits" group below a divider. With Verification Practice (one of the
+  // two primary stats) now removed as a duplicate, that split left a
+  // single stray row above the divider — folded back into one flat list
+  // under the existing "Development" heading instead.
+  wrap.innerHTML = metas.map(statRowHtml).join('');
 }
 // Digital Resilience isn't a visible stat anymore — showing it as its own
 // bar just gave the player an 7th number to parse when Critical Thinking,
@@ -12285,6 +12282,26 @@ function realVideoImage(it){
     +"</span>";
 }
 function cliptokImage(it){ return it.realVideo ? realVideoImage(it) : sceneImage(it.scene); }
+// ChatterBox posts (APPS.social.items, ids "s1".."s28") can use real local
+// photos instead of the picsum+pixel-art stand-in — drop a ChatterBoxPics/
+// folder next to index.html with files named to match each post's id
+// (s1.jpg, s2.jpg, ... s28.jpg). Reuses the exact same .sc-img-wrap /
+// .sc-real-img / .sc-fallback structure sceneImage() already uses, so
+// sizing, cropping (object-fit:cover), and lazy-loading all behave
+// identically — the only change is which URL gets requested first. If
+// ChatterBoxPics/ isn't present, or a specific sN.jpg is missing, the
+// same onerror handler quietly falls back to sceneImage()'s own picsum
+// photo (and pixel art beneath that) — never a broken image icon.
+function chatterboxImage(it){
+  if(!/^s\d+$/.test(it.id)) return sceneImage(it.scene); // CHATTERBOX_COMPOSE items etc. — not part of the local photo set
+  var url = "ChatterBoxPics/"+it.id+".jpg";
+  var fallback = sceneImage(it.scene);
+  return "<span class='sc-img-wrap'>"
+    +"<img class='sc-real-img' src='"+url+"' alt='' loading='lazy' "
+    +"onerror=\"this.style.display='none';this.nextElementSibling.style.display='block';\">"
+    +"<span class='sc-fallback' style='display:none'>"+fallback+"</span>"
+    +"</span>";
+}
 
 // ── CONTENT: THE APPS ─────────────────────────────────────
 // verdict: 'trust' = it's genuine, 'flag' = it's misleading/false
@@ -13705,7 +13722,7 @@ function renderPhone(){
           +'<div class="fb-post-head"><span class="fb-post-ava" style="background:'+contactAvatarColor(it.source)+'">'+initial+'</span>'
           +'<span><span class="fb-post-name">'+it.source+'</span><span class="fb-post-meta">'+it.handle+' · 🌐</span></span></div>'
           +'<div class="fb-post-text">'+it.title+'</div>'
-          +'<div class="fb-post-img">'+sceneImage(it.scene)+'</div>'
+          +'<div class="fb-post-img">'+chatterboxImage(it)+'</div>'
           +'<div class="fb-post-stats"><span>👍❤️ '+fakeEngagement(it.id)+'</span><span>'+(seen?'✓ reviewed':'tap to open ›')+'</span></div>'
           +'<div class="fb-post-actions"><span class="fb-like">👍 Like</span><span>💬 Comment</span><span>↗ Share</span></div>'
           +'</button>';
@@ -13762,7 +13779,7 @@ function renderPhone(){
         +'<div class="fb-post-head"><span class="fb-post-ava" style="background:'+contactAvatarColor(it.source)+'">'+initial+'</span>'
         +'<span><span class="fb-post-name">'+it.source+'</span><span class="fb-post-meta">'+it.handle+' · 🌐</span></span></div>'
         +'<div class="fb-post-text">'+it.title+'</div>'
-        +'<div class="fb-post-img">'+sceneImage(it.scene)+'</div></div>';
+        +'<div class="fb-post-img">'+chatterboxImage(it)+'</div></div>';
     } else if(phone.app==="video"){
       html+='<div class="tt-card" style="height:260px;border-radius:0;cursor:default">'
         +'<div class="tt-card-bg">'+cliptokImage(it)+'</div><div class="tt-card-shade"></div>'
@@ -14887,7 +14904,7 @@ var TUTORIAL_STEPS = [
     target: null, confetti: true
   },
   { // Step 2 — the pet itself
-    text: [{text:"This is your InfoPet. Feed it good, reliable information and care for it well, and it will grow into a thoughtful, careful being.", brand:false}],
+    text: [{text:"This is your InfoPet. Feed it good, reliable information and care for it well, and it will grow into a thoughtful, careful companion.", brand:false}],
     target: function(){ return document.querySelector(".screen-bezel"); }
   },
   { // Step 3 — first point at the physical button, then open it and explain the Status tab
@@ -14899,7 +14916,7 @@ var TUTORIAL_STEPS = [
       },
       {
         before: function(){ showDeviceStats(); switchStatsTab("status"); },
-        text: [{text:"This is your Status tab — it shows how your pet is developing: Curiosity, Critical Thinking, Verification Practice, Empathy, and Healthy AI Habits.", brand:false}],
+        text: [{text:"This is your Status tab. Above is your Verification Practice score — how well you judge what deserves trust. Below are your Development stats, which track the habits and skills that shape how your pet thinks.", brand:false}],
         target: null,
         boxPosition: "top"
       }
@@ -14908,7 +14925,7 @@ var TUTORIAL_STEPS = [
   { // Step 4 — Profile tab (panel already open from Step 3)
     text: [{text:"The Profile tab is your pet's identity — its current stage, the mix of content it's been fed, and its beliefs. Swipe through the cards to see it all.", brand:false}],
     before: function(){ showDeviceStats(); switchStatsTab("profile"); },
-    target: null,
+    target: function(){ return document.getElementById("deviceStats"); },
     boxPosition: "top"
   },
   { // Step 5 — Journey tab, emphasis on the daily quest (plain green text, no highlight)
@@ -14918,7 +14935,7 @@ var TUTORIAL_STEPS = [
       {text:": completing it is the biggest way to earn Growth Points (GP), the currency that grows your pet to its next stage. Don't skip it!", brand:false}
     ],
     before: function(){ showDeviceStats(); switchStatsTab("journey"); },
-    target: null,
+    target: function(){ return document.getElementById("deviceStats"); },
     boxPosition: "top"
   },
   { // Step 6 — exit the Status panel, back to the main page, then the menu button
@@ -14927,17 +14944,19 @@ var TUTORIAL_STEPS = [
     target: function(){ return document.getElementById("tamaLeft"); }
   },
   { // Step 7 — closing
-    text: [{text:"That's everything you need to get started. Your egg will hatch any minute now — go explore the app while you wait, and raise a thoughtful companion!", brand:false}],
+    text: [{text:"That's everything you need to get started. Your egg is waiting for a little warmth — go tap it to give it some attention, and raise a thoughtful companion!", brand:false}],
     before: function(){ hideDeviceStats(); hideDeviceMenu(); },
     target: null, confetti: true
   }
 ];
 var lastGlowEl = null;
+var currentSpotlightTarget = null;
 function positionSpotlight(el){
   var spot = document.getElementById("tutorialSpotlight");
   var overlay = document.getElementById("introOverlay");
   if(!spot || !overlay) return;
   if(lastGlowEl && lastGlowEl !== el) lastGlowEl.classList.remove("tutorial-target-glow");
+  currentSpotlightTarget = el;
   if(!el){
     spot.classList.remove("show");
     overlay.classList.remove("spotlight-mode");
@@ -14955,6 +14974,27 @@ function positionSpotlight(el){
   el.classList.add("tutorial-target-glow");
   lastGlowEl = el;
 }
+// Re-measure the current spotlight target whenever the viewport changes
+// shape — window resize, orientation flip, or (on mobile) the on-screen
+// keyboard opening/closing all shift where a fixed-position panel like
+// .device-stats actually sits, and since positionSpotlight() only ran once
+// at step-start, the spotlight would otherwise stay pinned to its old
+// coordinates and drift out of alignment with the real panel underneath.
+(function(){
+  var raf = null;
+  function resync(){
+    if(raf) return;
+    raf = requestAnimationFrame(function(){
+      raf = null;
+      if(currentSpotlightTarget && document.body.classList.contains("tutorial-active")){
+        positionSpotlight(currentSpotlightTarget);
+      }
+    });
+  }
+  window.addEventListener("resize", resync);
+  window.addEventListener("orientationchange", resync);
+  if(window.visualViewport) window.visualViewport.addEventListener("resize", resync);
+})();
 function runTutorialStep(i){
   var step = TUTORIAL_STEPS[i];
   var overlay = document.getElementById("introOverlay");
@@ -14967,6 +15007,7 @@ function runTutorialStep(i){
     var spot = document.getElementById("tutorialSpotlight");
     if(spot) spot.classList.remove("show");
     if(lastGlowEl){ lastGlowEl.classList.remove("tutorial-target-glow"); lastGlowEl = null; }
+    currentSpotlightTarget = null;
     initEggStage(); // egg's idle "waiting" flavor only starts once the tutorial is out of the way
     return;
   }
@@ -14978,6 +15019,17 @@ function runTutorialStep(i){
   var phases = step.phases || [{ text: step.text, target: step.target, before: step.before }];
   function runPhase(pIdx){
     var phase = phases[pIdx];
+    // Guard listener: attached immediately (synchronously, before before()/
+    // measurement even start), so there is no gap where a tap can fall
+    // through the transparent/spotlight overlay to the app's own "tap
+    // outside an open sheet closes it" listener (see the document click
+    // handler around showDeviceStats/hideDeviceStats). Without this, a tap
+    // landing in the ~1s window while we're still measuring the newly-
+    // opened Status/Profile/Journey panel's slide-in position would bubble
+    // through and immediately close the very panel the tutorial just
+    // opened. Swapped out for the real onTap once typing actually starts.
+    function guardTap(e){ if(e) e.stopPropagation(); }
+    overlay.addEventListener("click", guardTap);
     // brief delay lets any panel-open animation finish before we measure
     // the target's position, so the spotlight lands in the right spot.
     // before() runs right here (not earlier) so there's no gap between
@@ -14988,15 +15040,28 @@ function runTutorialStep(i){
       }
       measureAndType();
     }, 80);
-    function measureAndType(retry){
+    function measureAndType(attempt, lastRect, stableCount){
+      attempt = attempt || 0;
+      lastRect = lastRect || null;
+      stableCount = stableCount || 0;
       var target = phase.target ? phase.target() : null;
       if(target){
         var r = target.getBoundingClientRect();
-        if(r.width < 2 && r.height < 2 && !retry){
-          // target exists but hasn't actually rendered/opened yet — give it
-          // one more moment (e.g. a sheet whose "show" class only just got
-          // added) rather than spotlighting a degenerate 0x0 box.
-          setTimeout(function(){ measureAndType(true); }, 150);
+        var empty = r.width < 2 && r.height < 2;
+        // A CSS-transitioned target (e.g. the bottom sheet sliding up from
+        // translateY(120%)) reports a real, on-screen-ish rect on every
+        // single animation frame, so a one-shot "is it empty?" check can
+        // catch it mid-slide and spotlight the wrong spot — the dark
+        // backdrop's hole then never lines up with the visible panel and
+        // the whole thing reads as dimmed. Instead, keep re-measuring until
+        // the rect stops moving between samples (a few in a row), which
+        // works regardless of the transition's actual duration/easing.
+        var moved = !lastRect ||
+          Math.abs(r.top - lastRect.top) > 0.5 || Math.abs(r.left - lastRect.left) > 0.5 ||
+          Math.abs(r.width - lastRect.width) > 0.5 || Math.abs(r.height - lastRect.height) > 0.5;
+        stableCount = moved ? 0 : stableCount + 1;
+        if((empty || stableCount < 3) && attempt < 40){
+          setTimeout(function(){ measureAndType(attempt + 1, r, stableCount); }, 30);
           return;
         }
       }
@@ -15004,6 +15069,7 @@ function runTutorialStep(i){
       overlay.classList.toggle("box-top", phase.boxPosition === "top");
       var isLastPhase = (pIdx === phases.length - 1);
       var typingDone = false;
+      overlay.removeEventListener("click", guardTap); // hand off to the real onTap below
       var typer = typewriterInto(textEl, phase.text, 32, function(){
         typingDone = true;
         if(!isLastPhase && !phase.waitForTap){
