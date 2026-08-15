@@ -12296,8 +12296,16 @@ function chatterboxImage(it){
   if(!/^s\d+$/.test(it.id)) return sceneImage(it.scene); // CHATTERBOX_COMPOSE items etc. — not part of the local photo set
   var url = "ChatterBoxPics/"+it.id+".jpg";
   var fallback = sceneImage(it.scene);
+  // s4's photo needs to show in full — the default object-fit:cover every
+  // other post uses (see .sc-real-img) crops to fill the box, which was
+  // cutting into this specific photo's edges. object-fit:contain scales it
+  // down to fit inside the box instead, with no cropping; any leftover
+  // space just shows the wrapper's own dark background (.sc-img-wrap)
+  // rather than stretching or cutting anything off. Scoped to s4 alone via
+  // an inline style override — every other post's cropping is untouched.
+  var imgStyle = (it.id === "s4") ? " style='object-fit:contain'" : "";
   return "<span class='sc-img-wrap'>"
-    +"<img class='sc-real-img' src='"+url+"' alt='' loading='lazy' "
+    +"<img class='sc-real-img' src='"+url+"' alt=''"+imgStyle+" loading='lazy' "
     +"onerror=\"this.style.display='none';this.nextElementSibling.style.display='block';\">"
     +"<span class='sc-fallback' style='display:none'>"+fallback+"</span>"
     +"</span>";
@@ -12676,7 +12684,7 @@ var APPS = {
       clues:["The airline's own verified account, about its own flights.","Links its own official status tool instead of asking you to just take its word for it."],
       explain:"For a question about your own flight, the airline's own account with a direct status link is exactly the source to check." },
     { id:"s15", scene:"alert", source:"@shocking_updates24", handle:"screenshot repost",
-      title:"Toni Fowler has passed away, sources say \ud83d\ude22\ud83d\udc94",
+      title:"[Celebrity] has passed away, sources say \ud83d\ude22\ud83d\udc94",
       body:"A screenshot of a text message claiming the news, no link to any actual outlet.",
       verdict:"flag",
       clues:["\u201cSources say\u201d with no named source or linked outlet isn't a source at all.","A screenshot of a text message is trivially easy to fake and impossible to verify on its own."],
