@@ -13950,72 +13950,32 @@ function renderMessages(){
 }
 
 // ── 7-DAY ROTATING FEED (ChatterBox) ──────────────────────
-// Each day surfaces a fresh set of posts. verdict: 'trust' | 'flag'
-var SOCIAL_BY_DAY = [
-  [ // Day 1
-    { id:"d1a", scene:"face_ai", source:"@viral_news_ph", handle:"98k followers", title:"😱 SECRET senator clip — SHARE before it's deleted!!", body:"Forwarded image, no link, 12k shares.", verdict:"flag",
-      clues:["The face has warped edges and glitchy bands — it's AI-generated.","‘Share before it's deleted’ manufactures panic so you react before thinking."], explain:"AI image + urgency + no source = a manipulation combo. Well doubted." },
-    { id:"d1b", scene:"landscape", source:"@dost_pagasa", handle:"official · verified", title:"Habagat update: heavy rains this weekend. Prepare kits.", body:"Official weather bureau, with a link to the full advisory.", verdict:"trust",
-      clues:["Official verified government account, linking to its own advisory.","Matches independent weather trackers."], explain:"An official verified source linking its own advisory is trustworthy." },
-    // The badge next to a handle verifies the ACCOUNT, not the freshness of
-    // whatever it happens to be saying today — "official · verified" showing
-    // up as an auto-trust pattern (see d1b, d2b, d4b, d6b, d7b) risked
-    // teaching the badge itself as a shortcut. This one wears the same badge
-    // and still needs a second look, on purpose.
-    { id:"d1c", scene:"landscape", source:"@lgu_official", handle:"official · verified", title:"Water is safe to drink across the city — no issues found in testing.", body:"The exact same advisory as three weeks ago, re-shared with no new date and no new numbers attached.", verdict:"flag",
-      clues:["The badge confirms the account is real — it doesn't confirm today's post is current.","No new date, no new test numbers, just the same advisory recirculating."], explain:"Official and verified means the account is who it says it is, not that everything it's ever posted is still true right now. An outdated official post is still worth double-checking, not just trusting on sight of the checkmark." }
-  ],
-  [ // Day 2
-    { id:"d2a", scene:"pill", source:"@homeremedy_tips", handle:"blog", title:"Boil this leaf to CURE diabetes in 3 days! Doctors hide it 🤫", body:"No study, no doctor, sells a 'herbal pack'.", verdict:"flag",
-      clues:["No study named; promises a 3-day 'cure'.","Selling a product in the same breath — classic health scam."], explain:"Real health advice cites research and never promises miracle cures." },
-    { id:"d2b", scene:"chart", source:"@psa_gov", handle:"official · verified", title:"Inflation eased slightly last month, says statistics authority.", body:"Chart with labelled axes, dates, and a source link.", verdict:"trust",
-      clues:["Official statistics authority with a labelled, dated chart.","Links to the underlying data you can check."], explain:"Labelled data + a checkable source from an official body = trustworthy." }
-  ],
-  [ // Day 3
-    { id:"d3a", scene:"face", source:"@showbiz_tsismis", handle:"gossip page", title:"CONFIRMED?? Love team breaks up! (a little birdie told us)", body:"No named source, lots of 👀 emojis.", verdict:"flag",
-      clues:["‘A little birdie’ = no real source.","Gossip pages profit from clicks, not accuracy."], explain:"Unconfirmed rumour with no source — wait for a real outlet before believing." },
-    { id:"d3b", scene:"chart", source:"@edu_data_daily", handle:"opinion", title:"Reading scores 'COLLAPSING' 400%!! (scary chart, no numbers)", body:"Chart has no axis, no dates, no source.", verdict:"flag",
-      clues:["No axis labels, no timeframe, no data source.","A cropped scale can make any change look like a collapse."], explain:"A chart isn't proof unless you can see its numbers, dates, and source." }
-  ],
-  [ // Day 4
-    { id:"d4a", scene:"scam", source:"@gcash_rewardz", handle:"NOT verified", title:"🎁 You WON ₱10,000! Click and enter your PIN to claim!", body:"Link to a look-alike site. Asks for your PIN/OTP.", verdict:"flag",
-      clues:["Real companies never ask for your PIN or OTP via a random post.","The handle imitates a brand but isn't verified."], explain:"Prize + 'enter your PIN' = phishing. Never share codes." },
-    { id:"d4b", scene:"podium", source:"@lgu_official", handle:"official · verified", title:"Free vaccination drive Saturday, 8AM, covered court.", body:"Posted by the city's verified page with venue and time.", verdict:"trust",
-      clues:["Verified local-government page with concrete details.","Matches the announcement on the city's website."], explain:"Specific, verifiable details from an official page — safe to trust." }
-  ],
-  [ // Day 5
-    { id:"d5a", scene:"face_ai", source:"@truth_leaks24", handle:"anon", title:"LEAKED 'confession' video of official — you decide!", body:"Audio is off, face flickers, no context or date.", verdict:"flag",
-      clues:["Flickering face and mismatched audio suggest a deepfake.","No original source, date, or context — just an emotional clip."], explain:"Deepfakes exploit outrage. No source + odd artifacts = don't trust it." },
-    { id:"d5b", scene:"handshake", source:"@manila_herald", handle:"news · verified", title:"Nations sign trade deal at summit (with photo credit).", body:"Bylined correspondent, credited photographer, dateline.", verdict:"trust",
-      clues:["Named outlet, bylined reporter, credited photo.","Two other outlets report the same event."], explain:"Sourcing you can trace + corroboration = solid reporting." }
-  ],
-  [ // Day 6
-    { id:"d6a", scene:"alert", source:"@forward_this_now", handle:"chain post", title:"⚠️ Send to 10 people or your account gets deleted TODAY!", body:"A classic chain message. No official source.", verdict:"flag",
-      clues:["No platform deletes accounts for not forwarding a post.","‘Send to 10 people’ is a hallmark of chain-message hoaxes."], explain:"Chain messages weaponise fear. Breaking the chain is the right move." },
-    { id:"d6b", scene:"pill", source:"@who", handle:"official · verified", title:"WHO: wash hands and stay hydrated during heat waves.", body:"Plain, sourced public-health guidance.", verdict:"trust",
-      clues:["Recognised health body giving modest, evidence-based advice.","No miracle claims, no selling."], explain:"Boring, modest, sourced advice from a real authority = trustworthy." }
-  ],
-  [ // Day 7
-    { id:"d7a", scene:"chart", source:"@invest_guru_ph", handle:"promoted", title:"Turn ₱500 into ₱50,000 this week — GUARANTEED returns!", body:"‘Message me the secret’. Screenshots of 'earnings'.", verdict:"flag",
-      clues:["‘Guaranteed’ high returns fast = investment scam.","Fake earnings screenshots are trivial to make."], explain:"No real investment guarantees fast riches. This is a classic scam." },
-    { id:"d7b", scene:"landscape", source:"@denr_gov", handle:"official · verified", title:"Coastal clean-up results published, with data and photos.", body:"Official environment dept report, dated, sourced.", verdict:"trust",
-      clues:["Official department, dated report with data.","Photos credited and consistent with the writeup."], explain:"A dated, sourced official report is a reliable source." }
-  ]
-];
-// Bug fix: this used to hand back ONLY the 7-day rotation (14 items) and
-// silently ignore APPS.social.items entirely — so every ChatterBox post
-// added there (s4-s28) was dead data that could never actually appear on
-// screen. Now both pools feed the same daily draw. Seeded by day so the
-// same handful shows across re-renders within a day, but a new day deals a
-// new hand — same "fresh feed" feel as before, now drawing from the whole
-// pool instead of a fixed 14-item cycle.
+// Rotates straight through APPS.social.items (s1..s28) — 4 posts shown per
+// day, 28 ÷ 4 = a clean 7-day cycle before it repeats from s1. Day 1 =
+// s1-s4, Day 2 = s5-s8, ... Day 7 = s25-s28, then back to Day 1. Every post
+// in the cycle now has a matching real photo in ChatterBoxPics/ (s1.jpg ..
+// s28.jpg — see chatterboxImage()), so unlike the old random-shuffle draw,
+// no day can land on a post without a real photo behind it.
+//
+// Previously this pulled from a second, separate 14-post hand-written set
+// (SOCIAL_BY_DAY, ids d1a-d7b) merged with s1-s28 into one 42-item pool and
+// randomly shuffled by day — meaning any given day could serve up to 4
+// d-posts instead of s-posts, and those never had real photos. Removed in
+// favor of a plain, predictable rotation of the real-photo set.
 var SOCIAL_FEED_SIZE = 4;
 function socialItems(){
-  var pool = APPS.social.items.concat(SOCIAL_BY_DAY.reduce(function(a,b){ return a.concat(b); },[]));
-  var seed = S.v4.day;
-  function rand(){ seed=(seed*9301+49297)%233280; return seed/233280; }
-  for(var i=pool.length-1;i>0;i--){ var j=Math.floor(rand()*(i+1)); var t=pool[i]; pool[i]=pool[j]; pool[j]=t; }
-  return pool.slice(0, Math.min(SOCIAL_FEED_SIZE, pool.length));
+  var pool = APPS.social.items; // s1..s28
+  if(!pool.length) return [];
+  var chunks = Math.max(1, Math.ceil(pool.length / SOCIAL_FEED_SIZE));
+  var day = ((S.v4.day||1) - 1) % chunks;
+  var start = day * SOCIAL_FEED_SIZE;
+  var slice = pool.slice(start, start + SOCIAL_FEED_SIZE);
+  // If the pool's length isn't an exact multiple of SOCIAL_FEED_SIZE (e.g.
+  // posts get added/removed later), the last chunk in the cycle would come
+  // up short — top it back up from the front instead of showing fewer
+  // posts than every other day.
+  if(slice.length < SOCIAL_FEED_SIZE) slice = slice.concat(pool.slice(0, SOCIAL_FEED_SIZE - slice.length));
+  return slice;
 }
 // "video" (ClipTok) used to always show its entire 95-item pool, every day,
 // forever — the category chips gave it variety within a day, but the actual
