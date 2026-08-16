@@ -295,95 +295,6 @@ body {
   background: var(--card); border: 1px solid var(--card-border); border-radius: 999px;
   padding: 6px 12px; display: inline-flex; align-items: center; gap: 5px;
 }
-/* Developer stage button */
-#devStageBtn {
-  position: fixed;
-  top: 12px;
-  left: 12px;
-  background: rgba(255, 77, 109, 0.15);
-  border: 2px solid rgba(255, 77, 109, 0.4);
-  border-radius: 12px;
-  padding: 8px 12px;
-  font-family: var(--font-mono);
-  font-size: 11px;
-  color: #ff4d6d;
-  cursor: pointer;
-  z-index: 9999;
-  transition: all 0.2s ease;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-#devStageBtn:hover {
-  background: rgba(255, 77, 109, 0.25);
-  border-color: rgba(255, 77, 109, 0.6);
-  transform: scale(1.05);
-}
-#devStageBtn:active {
-  transform: scale(0.98);
-}
-/* Developer dropdown menu */
-.dev-dropdown {
-  position: fixed;
-  top: 50px;
-  left: 12px;
-  background: rgba(20, 20, 30, 0.95);
-  border: 2px solid rgba(255, 77, 109, 0.5);
-  border-radius: 12px;
-  padding: 8px 0;
-  font-family: var(--font-mono);
-  font-size: 11px;
-  z-index: 10000;
-  min-width: 180px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
-  display: none;
-  flex-direction: column;
-  backdrop-filter: blur(8px);
-}
-.dev-dropdown.open {
-  display: flex;
-}
-.dev-dropdown-item {
-  padding: 10px 14px;
-  cursor: pointer;
-  color: var(--text-soft);
-  transition: all 0.15s ease;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  border-left: 3px solid transparent;
-}
-.dev-dropdown-item:hover {
-  background: rgba(255, 77, 109, 0.15);
-  color: #ff4d6d;
-  border-left-color: #ff4d6d;
-  padding-left: 12px;
-}
-.dev-dropdown-item.active {
-  background: rgba(255, 77, 109, 0.25);
-  color: #ff4d6d;
-  border-left-color: #ff4d6d;
-  font-weight: 700;
-}
-.dev-dropdown-label {
-  display: block;
-  font-size: 9px;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--text-muted);
-  padding: 6px 14px 2px;
-  font-weight: 700;
-  margin-top: 4px;
-  margin-bottom: 2px;
-}
-.dev-dropdown-item:first-child {
-  margin-top: 0;
-}
-.dev-dropdown-divider {
-  height: 1px;
-  background: rgba(255, 77, 109, 0.2);
-  margin: 6px 0;
-}
 @media (prefers-reduced-motion: reduce) {
   .header-sparkle, .header-title { animation: none !important; }
 }
@@ -2486,6 +2397,7 @@ body:not(.web-mode) #themeToggle { top:94px !important; display:block !important
    position gets hidden along with sound/theme), leaving no way back to web
    mode — now it joins the Quest/Help/Theme icon stack in the corner instead. */
 body:not(.web-mode) #orientToggle { top:136px !important; }
+body:not(.web-mode) #modBtn { width:34px !important; height:34px !important; font-size:15px !important; top:10px !important; left:10px !important; }
 
 .page.landscape{
   max-width:1180px;
@@ -2563,16 +2475,36 @@ body:not(.web-mode) #orientToggle { top:136px !important; }
     </div>
   </div>
 </div>
+<!-- Moderator panel: lists every STAGES entry as a button (populated in JS
+     off the same STAGES array the real evolution system uses, so a stage
+     added/renamed there automatically shows up here too — nothing to keep
+     in sync by hand). -->
+<div class="confirm-overlay" id="modOverlay" aria-hidden="true">
+  <div class="confirm-box" style="max-width:320px;">
+    <p class="confirm-text" style="margin-bottom:2px;">🛠️ Moderator Mode</p>
+    <p style="font-size:11.5px;color:var(--text-muted);margin:0 0 14px;font-family:var(--font-mono);">Jump straight to any stage for testing/demo — sets Growth Points and backfills the stage's requirements directly, bypassing normal play.</p>
+    <div id="modStageList" style="display:flex;flex-direction:column;gap:8px;"></div>
+    <div class="confirm-actions" style="margin-top:14px;">
+      <button class="confirm-btn confirm-cancel" id="modCloseBtn">Close</button>
+    </div>
+  </div>
+</div>
 <button id="topQuestBtn" class="orient-toggle phone-top-btn" style="right:228px" aria-label="Daily quest" title="Daily quest">⭐</button>
 <button id="topHelpBtn" class="orient-toggle phone-top-btn help-btn" style="right:174px" aria-label="Help" title="Help">?</button>
 <button id="themeToggle" class="orient-toggle" style="right:120px" aria-label="Toggle light / dark mode" title="Light / dark mode">🌙</button>
 <button id="soundToggle" class="orient-toggle" style="right:66px" aria-label="Toggle sound" title="Sound on / off">🔊</button>
 <button id="orientToggle" class="orient-toggle" aria-label="Toggle portrait / landscape layout" title="Switch layout">📱</button>
+<!-- Moderator/debug tool — jumps straight to any evolution stage for
+     testing or a demo, bypassing normal Growth Point + requirement gates.
+     Deliberately kept at the opposite (left) corner from the Quest/Help/
+     Theme/Sound/Layout stack above: it reuses their .orient-toggle look for
+     visual consistency, but living at a separate anchor sidesteps that
+     stack's whole responsive right-offset/phone-vs-web positioning system
+     entirely, rather than trying to insert a sixth slot into it. -->
+<button id="modBtn" class="orient-toggle" style="left:12px" aria-label="Moderator mode" title="Moderator mode">🛠️</button>
 <div class="page">
 
   <header class="header">
-    <button id="devStageBtn" onclick="toggleDevDropdown()" title="Developer: Click to change evolution stage">🔧 🥚</button>
-    <div id="devDropdown" class="dev-dropdown"></div>
     <span class="header-sparkle s1">✨</span>
     <span class="header-sparkle s2">⭐</span>
     <span class="header-sparkle s3">💫</span>
@@ -7897,166 +7829,6 @@ document.getElementById("btn-custom").onclick=function(){ if(sleepGuard()) retur
 document.getElementById("btn-trace").onclick=function(){ if(sleepGuard()) return; showMode("trace"); initScenario("trace"); };
 document.getElementById("btn-perspectives").onclick=function(){ if(sleepGuard()) return; showMode("perspectives"); initScenario("perspectives"); };
 
-// ========== DEVELOPER TOOLS - STAGE SELECTOR ==========
-var devDropdownOpen = false;
-
-function toggleDevDropdown(){
-  console.log("toggleDevDropdown called, current state:", devDropdownOpen);
-  devDropdownOpen = !devDropdownOpen;
-  var dropdown = document.getElementById("devDropdown");
-  console.log("dropdown element:", dropdown);
-  if(!dropdown) {
-    console.warn("devDropdown element not found!");
-    return;
-  }
-  
-  if(devDropdownOpen) {
-    console.log("Opening dropdown, calling buildDevDropdown");
-    dropdown.classList.add("open");
-    try {
-      buildDevDropdown();
-    } catch(err) {
-      console.error("Error in buildDevDropdown:", err);
-    }
-  } else {
-    console.log("Closing dropdown");
-    dropdown.classList.remove("open");
-  }
-}
-
-function closeDevDropdown(){
-  devDropdownOpen = false;
-  var dropdown = document.getElementById("devDropdown");
-  if(dropdown) dropdown.classList.remove("open");
-}
-
-// Close dropdown when clicking outside
-document.addEventListener("click", function(e){
-  if(devDropdownOpen && !e.target.closest("#devStageBtn") && !e.target.closest("#devDropdown")){
-    closeDevDropdown();
-  }
-}, true);
-
-function fillRequirementsForStage(stageName){
-  // Initialize/ensure arrays exist
-  if(!S.explore.visited) S.explore.visited = [];
-  
-  // Always fill these for non-egg stages
-  if(stageName !== "egg"){
-    // Ensure basic stats
-    if(!S.life.stats) S.life.stats = {curiosity: 0, empathy: 0};
-  }
-  
-  if(stageName === "explorer"){
-    // Requirements: curiosity:40, places:3
-    S.life.stats.curiosity = 40;
-    S.explore.visited = ["home", "park", "library"];
-  }
-  else if(stageName === "thinker"){
-    // Requirements: judged:15, sources:3, belief:1
-    S.life.stats.curiosity = 50;
-    S.life.judgmentsCorrect = 15;
-    S.life.beliefsCleared = 1;
-    S.explore.visited = ["home", "park", "library"];
-  }
-  else if(stageName === "guardian"){
-    // Requirements: judged:30, verified:3, trail:1, tactic:1, ai:1
-    S.life.stats.curiosity = 60;
-    S.life.stats.empathy = 50;
-    S.life.judgmentsCorrect = 30;
-    S.life.verifiedClaims = 3;
-    S.life.sourceTrailsDone = 1;
-    S.life.tacticsIdentified = 1;
-    S.life.aiBoundariesKept = 1;
-    S.explore.visited = ["home", "park", "library"];
-  }
-}
-
-function setDevStage(stageName){
-  S.life.stage = stageName;
-  fillRequirementsForStage(stageName);
-  
-  var stageData = STAGES.find(function(s){ return s.key === stageName; }) || STAGES[0];
-  
-  // Force UI update
-  renderHeader();
-  renderPhone();
-  if(S.mode) renderMode();
-  
-  // Visual feedback
-  setThought("⚙️ Stage: " + stageData.name);
-  
-  // Close dropdown
-  closeDevDropdown();
-}
-
-function updateDevButton(){
-  var stageData = STAGES.find(function(s){ return s.key === S.life.stage; }) || STAGES[0];
-  var btnText = "🔧 " + stageData.emblem;
-  var btn = document.getElementById("devStageBtn");
-  if(btn) btn.textContent = btnText;
-}
-
-function buildDevDropdown(){
-  console.log("buildDevDropdown called");
-  var dropdown = document.getElementById("devDropdown");
-  if(!dropdown) {
-    console.warn("dropdown not found");
-    return;
-  }
-  
-  if(!STAGES) {
-    console.warn("STAGES not defined");
-    dropdown.innerHTML = '<div style="padding: 10px; color: red;">STAGES not loaded</div>';
-    return;
-  }
-  
-  if(!S || !S.life) {
-    console.warn("S or S.life not initialized");
-    dropdown.innerHTML = '<div style="padding: 10px; color: red;">Game state not ready</div>';
-    return;
-  }
-  
-  var currentStage = S.life.stage || "egg";
-  console.log("Current stage:", currentStage, "STAGES count:", STAGES.length);
-  var html = "";
-  
-  html += '<div class="dev-dropdown-label">📊 Evolution Stage</div>';
-  
-  STAGES.forEach(function(s){
-    var isActive = s.key === currentStage;
-    html += '<div class="dev-dropdown-item' + (isActive ? ' active' : '') + '" onclick="setDevStage(\'' + s.key + '\')">';
-    html += s.emblem + ' ' + s.name;
-    html += '</div>';
-  });
-  
-  html += '<div class="dev-dropdown-divider"></div>';
-  html += '<div class="dev-dropdown-label">⚡ Options</div>';
-  html += '<div class="dev-dropdown-item" onclick="devResetAll()" style="color: #ff9f43;">Reset All Stats</div>';
-  
-  console.log("Setting dropdown innerHTML with", STAGES.length, "stages");
-  dropdown.innerHTML = html;
-}
-
-function devResetAll(){
-  S.life = { stage: "egg", cp: 0, scale: 1, badges: [], correct: 0, stats: {curiosity:0, empathy:0}, diet:{reliable:0,learning:0,creative:0,community:0,fun:0,junk:0},
-    learnDays: [], searcherCorrect: 0, pausedShares: 0, detectiveCorrect: 0, rethinkCorrect: 0, bedtimes: 0, 
-    cleanCorrect: 0, proportionateCorrect: 0, reliableFeeds: 0, messagesUsed: 0, reportsGiven: 0, wasCorrupt: false,
-    judgmentsCorrect: 0, beliefsCleared: 0, verifiedClaims: 0, sourceTrailsDone: 0, tacticsIdentified: 0, aiBoundariesKept: 0,
-    nestDirty: false, trustScore: 50, feedBias: 0, mood: 100 };
-  S.explore.visited = [];
-  
-  renderHeader();
-  renderPhone();
-  if(S.mode) renderMode();
-  setThought("⚙️ All stats reset!");
-  
-  closeDevDropdown();
-  updateDevButton();
-}
-
-// ========== END DEVELOPER TOOLS ==========
-
 // ──────────────────────────────────────────────────────────
 // MODE: FEED — Tamagotchi-style snack tray (no quiz, just feed & react)
 // ──────────────────────────────────────────────────────────
@@ -12832,6 +12604,101 @@ if(resetOkBtnEl) resetOkBtnEl.onclick = function(){
   doInfoPetReset();
 };
 
+// ── MODERATOR MODE ────────────────────────────────────────
+// Debug/demo tool: jump straight to any STAGES entry without actually
+// playing through it. renderGrowth()/drawPet() both derive the displayed
+// stage from stageIndex() (Growth Points + each stage's own behavioral
+// gate — see STAGE_REQUIRE_LIST), not from S.life.stage directly, so just
+// setting S.life.stage on its own would get silently overridden back down
+// to whatever stage the *real* underlying stats justify. Jumping to a
+// stage therefore backfills the requirement stats too, not just cp/stage —
+// otherwise the growth panel and the pet's own sprite would each compute a
+// different (and lower) stage than the one just selected.
+function modBackfillRequirements(targetIdx){
+  if(!S.life) return;
+  S.life.stats = S.life.stats || {};
+  S.explore = S.explore || {};
+  for(var i=0;i<=targetIdx;i++){
+    var reqs = STAGE_REQUIRE_LIST[STAGES[i].key];
+    if(!reqs) continue;
+    reqs.forEach(function(r){
+      // Switches on each requirement's own key rather than calling r.get()
+      // (a read-only getter) — this is the one place that needs to *write*
+      // the value a requirement reads, so it has to know which underlying
+      // S.* field backs each one. Math.max keeps this idempotent: jumping
+      // to Explorer then later to Guardian only ever raises these, never
+      // lowers real progress a player already earned by actually playing.
+      switch(r.key){
+        case "curiosity": S.life.stats.curiosity = Math.max(S.life.stats.curiosity||0, r.need); break;
+        case "places": case "sources": { // both just check S.explore.visited's length — any 3 real location keys satisfy either
+          var v = S.explore.visited || [];
+          ["home","park","library"].forEach(function(k){ if(v.indexOf(k)<0) v.push(k); });
+          S.explore.visited = v;
+          break;
+        }
+        case "judged":   S.life.judgmentsCorrect  = Math.max(S.life.judgmentsCorrect||0, r.need);  break;
+        case "belief":   S.life.beliefsCleared    = Math.max(S.life.beliefsCleared||0, r.need);    break;
+        case "verified": S.life.verifiedClaims    = Math.max(S.life.verifiedClaims||0, r.need);    break;
+        case "trail":    S.life.sourceTrailsDone  = Math.max(S.life.sourceTrailsDone||0, r.need);  break;
+        case "tactic":   S.life.tacticsIdentified = Math.max(S.life.tacticsIdentified||0, r.need); break;
+        case "ai":       S.life.aiBoundariesKept  = Math.max(S.life.aiBoundariesKept||0, r.need);  break;
+      }
+    });
+  }
+}
+function modJumpToStage(key){
+  if(!S.life) return;
+  var idx=-1;
+  for(var i=0;i<STAGES.length;i++){ if(STAGES[i].key===key){ idx=i; break; } }
+  if(idx<0) return;
+  if(key==="egg"){
+    // Back to a fresh, unhatched egg — cp resets (egg has no requirement
+    // gate to satisfy either way), but deliberately does NOT wipe
+    // S.life.stats / S.explore.visited / etc., so bouncing back to preview
+    // the egg and then jumping forward again doesn't lose anything.
+    S.life.stage="egg"; S.life.cp=0; S.life.scale=STAGES[0].scale;
+  } else {
+    modBackfillRequirements(idx);
+    S.life.cp=Math.max(S.life.cp||0, STAGES[idx].cp);
+    S.life.stage=STAGES[idx].key;
+    S.life.scale=STAGES[idx].scale;
+  }
+  saveV4();
+  drawPetOrEgg();
+  renderGrowth();
+  if(typeof renderTrust==="function") renderTrust();
+  if(typeof renderCT==="function") renderCT();
+  if(typeof renderStatsExtra==="function") renderStatsExtra();
+  showRewardPopup("🛠️ Jumped to "+STAGES[idx].name);
+}
+function openModPanel(){
+  var ov=document.getElementById("modOverlay"); if(!ov) return;
+  var list=document.getElementById("modStageList");
+  if(list){
+    list.innerHTML="";
+    STAGES.forEach(function(stg){
+      var btn=document.createElement("button");
+      btn.className="opt-btn"; btn.style.textAlign="left";
+      var isCurrent = S.life && S.life.stage===stg.key;
+      btn.textContent=stg.emblem+" "+stg.name+(isCurrent?" (current)":"");
+      btn.onclick=function(){ modJumpToStage(stg.key); closeModPanel(); };
+      list.appendChild(btn);
+    });
+  }
+  ov.classList.add("show"); ov.setAttribute("aria-hidden","false");
+}
+function closeModPanel(){
+  var ov=document.getElementById("modOverlay"); if(!ov) return;
+  ov.classList.remove("show"); ov.setAttribute("aria-hidden","true");
+}
+var modBtnEl=document.getElementById("modBtn");
+if(modBtnEl) modBtnEl.onclick=function(){
+  if(bedtime.active || (typeof phone!=="undefined" && phone.open)) return; // same guard showDeviceStats() uses — don't open on top of another full-screen mode
+  openModPanel();
+};
+var modCloseBtnEl=document.getElementById("modCloseBtn");
+if(modCloseBtnEl) modCloseBtnEl.onclick=closeModPanel;
+
 // ══════════════════════════════════════════════════════════
 // v6 — THE INTERNET (phone)
 // ══════════════════════════════════════════════════════════
@@ -13503,7 +13370,7 @@ function realVideoImage(it){
     +"</span>";
 }
 function cliptokImage(it){ 
-  if(it.videoPath) return "<video style='width:100%;height:100%;object-fit:cover' src=\""+it.videoPath+"\" muted playsinline></video>";
+  if(it.videoPath) return "<video style='width:100%;height:100%;object-fit:cover' src=\""+it.videoPath+"\" autoplay loop muted playsinline></video>";
   return it.realVideo ? realVideoImage(it) : sceneImage(it.scene); 
 }
 // ChatterBox posts (APPS.social.items, ids "s1".."s28") can use real local
@@ -13723,6 +13590,44 @@ var APPS = {
     // category chip bar in renderPhone()'s video branch — this is the
     // "controlled lab, not an infinite scroll feed" structure from the
     // ClipTok redesign: every clip has a specific lesson, not just a fake/real coin flip.
+    // ── LOCAL VIDEO CLIPS (autoplay, top priority) ──
+    { id:"ct1", videoPath:"ClipTokVids/ct1.mp4", source:"@aibizarrely", handle:"41k followers", category:"ai",
+      title:"Poor dog on New York railway track 🚉😮",
+      body:"AI-generated video that looks real at first glance, but contains subtle tells of synthetic media.",
+      verdict:"flag", tactic:"AI-Generated Deepfake",
+      clues:["AI videos are getting scary good at mimicking reality — this footage appears authentic but was entirely generated.","Most people miss it the first time they watch, which is why it's spreading so fast."],
+      explain:"As AI video generation improves, the line between real and synthetic gets harder to spot. This is exactly why checking the source and creator becomes more important than ever." },
+    { id:"ct2", videoPath:"ClipTokVids/ct2.mp4", source:"@nutritalks_1", handle:"edu · verified", category:"viral",
+      title:"What if vegetables could talk? 🥦🥕 Hidden health superpowers",
+      body:"AI-generated video showing animated vegetables revealing their health benefits with a fun, educational tone.",
+      verdict:"trust", 
+      clues:["Created with AI for educational purposes, not to mislead — the source is transparent about the method.","The health facts presented (stronger muscles, better eyesight, glowing skin) match actual nutritional science."],
+      explain:"AI-generated doesn't always mean deceptive — when creators are transparent about using AI for education and the information checks out, it's fine to trust and share." },
+    { id:"ct3", videoPath:"ClipTokVids/ct3.mp4", source:"@alreenbueno3", handle:"fashion creator", category:"context",
+      title:"Women's outfit ideas ✨ Styling tips and inspiration",
+      body:"A short fashion showcase and styling tips for women's clothing combinations.",
+      verdict:"trust",
+      clues:["A genuine fashion content creator sharing outfit ideas — straightforward, no misleading framing.","This type of content is about inspiration and style, not spreading false information."],
+      explain:"Not all videos need to be fact-checked — fashion inspiration and creative content is fine to enjoy and share as-is." },
+    { id:"ct4", videoPath:"ClipTokVids/ct4.mp4", source:"@rourke.heath", handle:"tech · creator", category:"ai",
+      title:"Google Omni with no restrictions: Reality-bending scene editing 🔥",
+      body:"Demo of advanced AI video editing tool that lets creators change almost anything in a scene on the fly — from objects to people to environments.",
+      verdict:"trust",
+      clues:["This is a genuine demo of actual AI video-editing capabilities from Higgsfield AI + Google Omni.","The creator is transparent about what tool was used and how powerful this technology is."],
+      explain:"Knowing what AI tools exist and what they can do is exactly the literacy you need. When creators are honest about using AI, that's actually trustworthy — it's the hidden manipulations that are the problem." },
+    { id:"ct5", videoPath:"ClipTokVids/ct5.mp4", source:"@avadiscovery", handle:"explainer · 📍Philippines", category:"context",
+      title:"Pax Silica in 80 seconds: What is it? Why the debate?",
+      body:"Quick explainer video breaking down a real current-events topic without the noise or bias.",
+      verdict:"trust",
+      clues:["A named creator providing context on a real news story, not just amplifying outrage.","Asks you to form your own opinion (\"Would you support this?\") instead of telling you what to think."],
+      explain:"A good explainer gives you the facts and context so you can decide for yourself. This one does that — trust and share if you want others to actually understand the topic." },
+    { id:"ct6", videoPath:"ClipTokVids/ct6.mp4", source:"@shortsfaceless.com", handle:"tool · creator", category:"viral",
+      title:"Fun Facts about Onions — created with Shortsfaceless AI",
+      body:"Educational short-form content created with a faceless content automation tool, fully transparent about the method.",
+      verdict:"trust",
+      clues:["Transparently discloses the tool used to create the content (Shortsfaceless platform).","The educational content itself is accurate — fun facts about onions with no misleading claims."],
+      explain:"Using an automation tool doesn't make content bad — it just makes creation faster and easier. What matters is whether the information is true and whether the creator is honest about how it was made." },
+    // ── SCENE-BASED LESSONS ──
     { id:"v1", scene:"face_ai", source:"@leakzone24", handle:"41k followers", category:"ai",
       title:"LEAKED: exec privately admits the product is unsafe (0:14)",
       body:"A short clip, slightly mismatched mouth movement, audio that sounds subtly off-pitch throughout.",
@@ -13822,43 +13727,7 @@ var APPS = {
       body:"A real research-group explainer on the exact habit ClipTok keeps asking for: check the source before the content.",
       verdict:"trust", realVideo:{ id:"SHNprb2hgzU", channel:"Stanford History Education Group" },
       clues:["A real video from Stanford's Civic Online Reasoning project — the actual academic group that studies how professional fact-checkers verify claims.","Its core technique, \"lateral reading,\" is exactly what every ClipTok round has been asking you to do: leave the page/clip and open other tabs to check it, instead of only studying the content itself."],
-      explain:"Professional fact-checkers don't stare harder at a suspicious page — they leave it and open new tabs to check who's behind it, a technique researchers call \"lateral reading.\" It's the actual, teachable method behind almost every ClipTok round so far." },
-    { id:"ct1", videoPath:"ClipTokVids/ct1.mp4", source:"@aibizarrely", handle:"41k followers", category:"ai",
-      title:"Poor dog on New York railway track 🚉😮",
-      body:"AI-generated video that looks real at first glance, but contains subtle tells of synthetic media.",
-      verdict:"flag", tactic:"AI-Generated Deepfake",
-      clues:["AI videos are getting scary good at mimicking reality — this footage appears authentic but was entirely generated.","Most people miss it the first time they watch, which is why it's spreading so fast."],
-      explain:"As AI video generation improves, the line between real and synthetic gets harder to spot. This is exactly why checking the source and creator becomes more important than ever." },
-    { id:"ct2", videoPath:"ClipTokVids/ct2.mp4", source:"@nutritalks_1", handle:"edu · verified", category:"viral",
-      title:"What if vegetables could talk? 🥦🥕 Hidden health superpowers",
-      body:"AI-generated video showing animated vegetables revealing their health benefits with a fun, educational tone.",
-      verdict:"trust", 
-      clues:["Created with AI for educational purposes, not to mislead — the source is transparent about the method.","The health facts presented (stronger muscles, better eyesight, glowing skin) match actual nutritional science."],
-      explain:"AI-generated doesn't always mean deceptive — when creators are transparent about using AI for education and the information checks out, it's fine to trust and share." },
-    { id:"ct3", videoPath:"ClipTokVids/ct3.mp4", source:"@alreenbueno3", handle:"fashion creator", category:"context",
-      title:"Women's outfit ideas ✨ Styling tips and inspiration",
-      body:"A short fashion showcase and styling tips for women's clothing combinations.",
-      verdict:"trust",
-      clues:["A genuine fashion content creator sharing outfit ideas — straightforward, no misleading framing.","This type of content is about inspiration and style, not spreading false information."],
-      explain:"Not all videos need to be fact-checked — fashion inspiration and creative content is fine to enjoy and share as-is." },
-    { id:"ct4", videoPath:"ClipTokVids/ct4.mp4", source:"@rourke.heath", handle:"tech · creator", category:"ai",
-      title:"Google Omni with no restrictions: Reality-bending scene editing 🔥",
-      body:"Demo of advanced AI video editing tool that lets creators change almost anything in a scene on the fly — from objects to people to environments.",
-      verdict:"trust",
-      clues:["This is a genuine demo of actual AI video-editing capabilities from Higgsfield AI + Google Omni.","The creator is transparent about what tool was used and how powerful this technology is."],
-      explain:"Knowing what AI tools exist and what they can do is exactly the literacy you need. When creators are honest about using AI, that's actually trustworthy — it's the hidden manipulations that are the problem." },
-    { id:"ct5", videoPath:"ClipTokVids/ct5.mp4", source:"@avadiscovery", handle:"explainer · 📍Philippines", category:"context",
-      title:"Pax Silica in 80 seconds: What is it? Why the debate?",
-      body:"Quick explainer video breaking down a real current-events topic without the noise or bias.",
-      verdict:"trust",
-      clues:["A named creator providing context on a real news story, not just amplifying outrage.","Asks you to form your own opinion (\"Would you support this?\") instead of telling you what to think."],
-      explain:"A good explainer gives you the facts and context so you can decide for yourself. This one does that — trust and share if you want others to actually understand the topic." },
-    { id:"ct6", videoPath:"ClipTokVids/ct6.mp4", source:"@shortsfaceless.com", handle:"tool · creator", category:"viral",
-      title:"Fun Facts about Onions — created with Shortsfaceless AI",
-      body:"Educational short-form content created with a faceless content automation tool, fully transparent about the method.",
-      verdict:"trust",
-      clues:["Transparently discloses the tool used to create the content (Shortsfaceless platform).","The educational content itself is accurate — fun facts about onions with no misleading claims."],
-      explain:"Using an automation tool doesn't make content bad — it just makes creation faster and easier. What matters is whether the information is true and whether the creator is honest about how it was made." }
+      explain:"Professional fact-checkers don't stare harder at a suspicious page — they leave it and open new tabs to check who's behind it, a technique researchers call \"lateral reading.\" It's the actual, teachable method behind almost every ClipTok round so far." }
   ]},
   social: { name:"ChatterBox", icon:"📱", tint:"#7c5cc4", items:[
     { id:"s1", scene:"face_ai", source:"@viral_news_ph", handle:"98k followers",
@@ -15142,26 +15011,8 @@ function renderPhone(){
 
   if(phone.screen==="home"){
     html+='<div class="ph-hometop"><p class="ph-hint">Your pet wants to explore. Open an app and help it decide what to <b>trust</b>.</p></div>';
-    // ThinkSync gets its own featured card instead of sitting in the app grid
-    // as one icon among four — an AI companion your pet can grow an
-    // unhealthy dependency on (and has to learn to set a boundary with) is
-    // the most distinctive thing this phone does, so it leads.
-    var scDone=S.companion.done;
-    html+='<button class="ph-feature-app" data-app="soulsync" style="--tint:'+APPS.soulsync.tint+'">'
-      +'<span class="ph-feature-ic">'+APPS.soulsync.icon+'</span>'+(scDone?'':'<span class="ph-dot">1</span>')
-      +'<span class="ph-feature-tx"><span class="ph-feature-nm">ThinkSync</span>'
-      +'<span class="ph-feature-sub">Your pet\'s AI thinking partner — learn to use AI well, not just avoid over-relying on it.</span></span></button>';
-    // "🚨 Breaking" — a deliberate "start here" moment stitching together
-    // content that already exists and is already bridged (ThinkSync's take,
-    // the ai-schoolban Searcher case, the matching Messages follow-up) into
-    // one continuous rehearsal of Pause/Verify/Trace/Act, instead of only
-    // being something a player stumbles into mid-session. See renderCrisis().
-    html+='<button class="ph-feature-app" data-crisis="start" style="--tint:#e53e3e">'
-      +'<span class="ph-feature-ic">🚨</span>'
-      +'<span class="ph-feature-tx"><span class="ph-feature-nm">Breaking</span>'
-      +'<span class="ph-feature-sub">A friend just sent you something urgent — practice the whole loop, start to finish.</span></span></button>';
     html+='<div class="ph-apps">';
-    Object.keys(APPS).filter(function(k){ return k!=="soulsync"; }).forEach(function(k){
+    Object.keys(APPS).forEach(function(k){
       var a=APPS[k];
       // Searcher's "unseen" count runs into the dozens (every browse result +
       // every case counts separately) — a big number there reads like an
@@ -15169,10 +15020,13 @@ function renderPhone(){
       // so it's dropped entirely rather than showing a misleading badge.
       var badge = k==="messages" ? (phone.done.indexOf(currentMessageScenario().id)<0?'<span class="ph-dot">1</span>':'')
         : k==="play" ? (S.play.done?'':'<span class="ph-dot">1</span>')
+        : k==="soulsync" ? (S.companion.done?'':'<span class="ph-dot">1</span>')
         : k==="browser" ? ''
         : (unseen(k)?'<span class="ph-dot">'+unseen(k)+'</span>':'');
       html+='<button class="ph-app" data-app="'+k+'" style="--tint:'+a.tint+'"><span class="ph-app-ic">'+a.icon+'</span>'+badge+'<span class="ph-app-nm">'+a.name+'</span></button>';
     });
+    // Breaking crisis mode
+    html+='<button class="ph-app" data-crisis="start" style="--tint:#e53e3e"><span class="ph-app-ic">🚨</span><span class="ph-app-nm">Breaking</span></button>';
     html+='</div>';
     html+='<button class="ph-home-btn" data-close="1">✕ Put the phone down</button>';
   }
@@ -15236,8 +15090,9 @@ function renderPhone(){
       html+='<div class="ph-feed">';
       ITEMS.forEach(function(it){
         var seen=phone.done.indexOf(it.id)>=0;
+        var cardImg = phone.app==="video" ? cliptokImage(it) : sceneImage(it.scene);
         html+='<button class="ph-card'+(seen?' seen':'')+'" data-item="'+it.id+'">'
-          +'<div class="ph-card-img">'+sceneImage(it.scene)+'</div>'
+          +'<div class="ph-card-img">'+cardImg+'</div>'
           +'<div class="ph-card-tx"><div class="ph-src">'+it.source+' <span>· '+it.handle+'</span></div>'
           +'<div class="ph-ttl">'+it.title+'</div>'
           +(seen?'<div class="ph-seen">✓ reviewed</div>':'<div class="ph-tap">tap to open ›</div>')+'</div></button>';
