@@ -2313,12 +2313,19 @@ body:not(.web-mode) .journal-book .journal-close {
 .dash-ach-view{ width:100%; font-family:var(--font-body); font-weight:700; font-size:11.5px; color:#04140d; background:var(--clean-col); border:none; border-radius:999px; padding:8px 14px; cursor:pointer; transition:transform .15s, filter .15s; }
 .dash-ach-view:hover{ filter:brightness(1.08); transform:translateY(-2px); }
 
-/* ── DETECTIVE side-by-side ── */
-.detect-row{ display:flex; gap:12px; margin:6px 0 4px; }
-.detect-tile{ flex:1; background:rgba(124,92,196,0.06); border:2.5px solid rgba(124,92,196,0.3); border-radius:16px; padding:8px; cursor:pointer; box-shadow:0 3px 0 rgba(0,0,0,0.25); transition:transform .1s, box-shadow .1s, border-color .15s; }
+/* ── DETECTIVE stacked (A on top, B below) ──
+   Used to be side-by-side (flex-direction: row), which meant each photo
+   only got ~48% of the row's width. Stacking vertically instead gives each
+   tile the FULL width, and swapping the forced 1:1 square crop for a wider
+   4:3 one (closer to how a real photo is actually framed) means the photos
+   render noticeably larger and show more of their actual detail — both
+   changes needed together, since a wider crop at the old half-width would
+   have made the images shorter, not bigger. */
+.detect-row{ display:flex; flex-direction:column; gap:14px; margin:6px 0 4px; }
+.detect-tile{ background:rgba(124,92,196,0.06); border:2.5px solid rgba(124,92,196,0.3); border-radius:16px; padding:8px; cursor:pointer; box-shadow:0 3px 0 rgba(0,0,0,0.25); transition:transform .1s, box-shadow .1s, border-color .15s; }
 .detect-tile:hover{ border-color:var(--play-col); }
 .detect-tile:active{ transform:translateY(3px); box-shadow:0 1px 0 rgba(0,0,0,0.25); }
-.detect-img{ width:100%; aspect-ratio:1; border-radius:11px; overflow:hidden; border:2px solid rgba(0,0,0,0.35); }
+.detect-img{ width:100%; aspect-ratio:4/3; border-radius:11px; overflow:hidden; border:2px solid rgba(0,0,0,0.35); }
 /* Real photo (+ CSS "AI" stand-in) images from sceneImage() — sized to fill
    whichever fixed-size/aspect-ratio container they land in (.detect-img,
    .ph-card-img, .ph-detail-img, .ph-msg-img, .ph-friend-ava, .ph-msg-ava),
