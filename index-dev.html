@@ -295,6 +295,95 @@ body {
   background: var(--card); border: 1px solid var(--card-border); border-radius: 999px;
   padding: 6px 12px; display: inline-flex; align-items: center; gap: 5px;
 }
+/* Developer stage button */
+#devStageBtn {
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  background: rgba(255, 77, 109, 0.15);
+  border: 2px solid rgba(255, 77, 109, 0.4);
+  border-radius: 12px;
+  padding: 8px 12px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: #ff4d6d;
+  cursor: pointer;
+  z-index: 9999;
+  transition: all 0.2s ease;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+#devStageBtn:hover {
+  background: rgba(255, 77, 109, 0.25);
+  border-color: rgba(255, 77, 109, 0.6);
+  transform: scale(1.05);
+}
+#devStageBtn:active {
+  transform: scale(0.98);
+}
+/* Developer dropdown menu */
+.dev-dropdown {
+  position: fixed;
+  top: 50px;
+  left: 12px;
+  background: rgba(20, 20, 30, 0.95);
+  border: 2px solid rgba(255, 77, 109, 0.5);
+  border-radius: 12px;
+  padding: 8px 0;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  z-index: 10000;
+  min-width: 180px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  display: none;
+  flex-direction: column;
+  backdrop-filter: blur(8px);
+}
+.dev-dropdown.open {
+  display: flex;
+}
+.dev-dropdown-item {
+  padding: 10px 14px;
+  cursor: pointer;
+  color: var(--text-soft);
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-left: 3px solid transparent;
+}
+.dev-dropdown-item:hover {
+  background: rgba(255, 77, 109, 0.15);
+  color: #ff4d6d;
+  border-left-color: #ff4d6d;
+  padding-left: 12px;
+}
+.dev-dropdown-item.active {
+  background: rgba(255, 77, 109, 0.25);
+  color: #ff4d6d;
+  border-left-color: #ff4d6d;
+  font-weight: 700;
+}
+.dev-dropdown-label {
+  display: block;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  padding: 6px 14px 2px;
+  font-weight: 700;
+  margin-top: 4px;
+  margin-bottom: 2px;
+}
+.dev-dropdown-item:first-child {
+  margin-top: 0;
+}
+.dev-dropdown-divider {
+  height: 1px;
+  background: rgba(255, 77, 109, 0.2);
+  margin: 6px 0;
+}
 @media (prefers-reduced-motion: reduce) {
   .header-sparkle, .header-title { animation: none !important; }
 }
@@ -2482,6 +2571,8 @@ body:not(.web-mode) #orientToggle { top:136px !important; }
 <div class="page">
 
   <header class="header">
+    <button id="devStageBtn" onclick="toggleDevDropdown()" title="Developer: Click to change evolution stage">🔧 🥚</button>
+    <div id="devDropdown" class="dev-dropdown"></div>
     <span class="header-sparkle s1">✨</span>
     <span class="header-sparkle s2">⭐</span>
     <span class="header-sparkle s3">💫</span>
@@ -7805,6 +7896,166 @@ document.getElementById("btn-explore").onclick=function(){ if(sleepGuard()) retu
 document.getElementById("btn-custom").onclick=function(){ if(sleepGuard()) return; showMode("custom"); initCustom(); };
 document.getElementById("btn-trace").onclick=function(){ if(sleepGuard()) return; showMode("trace"); initScenario("trace"); };
 document.getElementById("btn-perspectives").onclick=function(){ if(sleepGuard()) return; showMode("perspectives"); initScenario("perspectives"); };
+
+// ========== DEVELOPER TOOLS - STAGE SELECTOR ==========
+var devDropdownOpen = false;
+
+function toggleDevDropdown(){
+  console.log("toggleDevDropdown called, current state:", devDropdownOpen);
+  devDropdownOpen = !devDropdownOpen;
+  var dropdown = document.getElementById("devDropdown");
+  console.log("dropdown element:", dropdown);
+  if(!dropdown) {
+    console.warn("devDropdown element not found!");
+    return;
+  }
+  
+  if(devDropdownOpen) {
+    console.log("Opening dropdown, calling buildDevDropdown");
+    dropdown.classList.add("open");
+    try {
+      buildDevDropdown();
+    } catch(err) {
+      console.error("Error in buildDevDropdown:", err);
+    }
+  } else {
+    console.log("Closing dropdown");
+    dropdown.classList.remove("open");
+  }
+}
+
+function closeDevDropdown(){
+  devDropdownOpen = false;
+  var dropdown = document.getElementById("devDropdown");
+  if(dropdown) dropdown.classList.remove("open");
+}
+
+// Close dropdown when clicking outside
+document.addEventListener("click", function(e){
+  if(devDropdownOpen && !e.target.closest("#devStageBtn") && !e.target.closest("#devDropdown")){
+    closeDevDropdown();
+  }
+}, true);
+
+function fillRequirementsForStage(stageName){
+  // Initialize/ensure arrays exist
+  if(!S.explore.visited) S.explore.visited = [];
+  
+  // Always fill these for non-egg stages
+  if(stageName !== "egg"){
+    // Ensure basic stats
+    if(!S.life.stats) S.life.stats = {curiosity: 0, empathy: 0};
+  }
+  
+  if(stageName === "explorer"){
+    // Requirements: curiosity:40, places:3
+    S.life.stats.curiosity = 40;
+    S.explore.visited = ["home", "park", "library"];
+  }
+  else if(stageName === "thinker"){
+    // Requirements: judged:15, sources:3, belief:1
+    S.life.stats.curiosity = 50;
+    S.life.judgmentsCorrect = 15;
+    S.life.beliefsCleared = 1;
+    S.explore.visited = ["home", "park", "library"];
+  }
+  else if(stageName === "guardian"){
+    // Requirements: judged:30, verified:3, trail:1, tactic:1, ai:1
+    S.life.stats.curiosity = 60;
+    S.life.stats.empathy = 50;
+    S.life.judgmentsCorrect = 30;
+    S.life.verifiedClaims = 3;
+    S.life.sourceTrailsDone = 1;
+    S.life.tacticsIdentified = 1;
+    S.life.aiBoundariesKept = 1;
+    S.explore.visited = ["home", "park", "library"];
+  }
+}
+
+function setDevStage(stageName){
+  S.life.stage = stageName;
+  fillRequirementsForStage(stageName);
+  
+  var stageData = STAGES.find(function(s){ return s.key === stageName; }) || STAGES[0];
+  
+  // Force UI update
+  renderHeader();
+  renderPhone();
+  if(S.mode) renderMode();
+  
+  // Visual feedback
+  setThought("⚙️ Stage: " + stageData.name);
+  
+  // Close dropdown
+  closeDevDropdown();
+}
+
+function updateDevButton(){
+  var stageData = STAGES.find(function(s){ return s.key === S.life.stage; }) || STAGES[0];
+  var btnText = "🔧 " + stageData.emblem;
+  var btn = document.getElementById("devStageBtn");
+  if(btn) btn.textContent = btnText;
+}
+
+function buildDevDropdown(){
+  console.log("buildDevDropdown called");
+  var dropdown = document.getElementById("devDropdown");
+  if(!dropdown) {
+    console.warn("dropdown not found");
+    return;
+  }
+  
+  if(!STAGES) {
+    console.warn("STAGES not defined");
+    dropdown.innerHTML = '<div style="padding: 10px; color: red;">STAGES not loaded</div>';
+    return;
+  }
+  
+  if(!S || !S.life) {
+    console.warn("S or S.life not initialized");
+    dropdown.innerHTML = '<div style="padding: 10px; color: red;">Game state not ready</div>';
+    return;
+  }
+  
+  var currentStage = S.life.stage || "egg";
+  console.log("Current stage:", currentStage, "STAGES count:", STAGES.length);
+  var html = "";
+  
+  html += '<div class="dev-dropdown-label">📊 Evolution Stage</div>';
+  
+  STAGES.forEach(function(s){
+    var isActive = s.key === currentStage;
+    html += '<div class="dev-dropdown-item' + (isActive ? ' active' : '') + '" onclick="setDevStage(\'' + s.key + '\')">';
+    html += s.emblem + ' ' + s.name;
+    html += '</div>';
+  });
+  
+  html += '<div class="dev-dropdown-divider"></div>';
+  html += '<div class="dev-dropdown-label">⚡ Options</div>';
+  html += '<div class="dev-dropdown-item" onclick="devResetAll()" style="color: #ff9f43;">Reset All Stats</div>';
+  
+  console.log("Setting dropdown innerHTML with", STAGES.length, "stages");
+  dropdown.innerHTML = html;
+}
+
+function devResetAll(){
+  S.life = { stage: "egg", cp: 0, scale: 1, badges: [], correct: 0, stats: {curiosity:0, empathy:0}, diet:{reliable:0,learning:0,creative:0,community:0,fun:0,junk:0},
+    learnDays: [], searcherCorrect: 0, pausedShares: 0, detectiveCorrect: 0, rethinkCorrect: 0, bedtimes: 0, 
+    cleanCorrect: 0, proportionateCorrect: 0, reliableFeeds: 0, messagesUsed: 0, reportsGiven: 0, wasCorrupt: false,
+    judgmentsCorrect: 0, beliefsCleared: 0, verifiedClaims: 0, sourceTrailsDone: 0, tacticsIdentified: 0, aiBoundariesKept: 0,
+    nestDirty: false, trustScore: 50, feedBias: 0, mood: 100 };
+  S.explore.visited = [];
+  
+  renderHeader();
+  renderPhone();
+  if(S.mode) renderMode();
+  setThought("⚙️ All stats reset!");
+  
+  closeDevDropdown();
+  updateDevButton();
+}
+
+// ========== END DEVELOPER TOOLS ==========
 
 // ──────────────────────────────────────────────────────────
 // MODE: FEED — Tamagotchi-style snack tray (no quiz, just feed & react)
