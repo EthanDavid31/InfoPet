@@ -8787,25 +8787,77 @@ function renderResidueDone(){
 // MODE: PLAY
 // ──────────────────────────────────────────────────────────
 var playTimer=null;
+// ── DETECTIVE_CASES: "one of these is AI-generated, tap the fake" ──
+// 6 cases total = 12 local photos, TWO per case:
+//   DetectivePics/de1.jpg    de2.jpg   ... de6.jpg    — the real photos
+//   DetectivePics/de1ai.jpg  de2ai.jpg ... de6ai.jpg  — the AI-generated
+//                                                        photo of the same
+//                                                        subject
+// Drop a DetectivePics/ folder with those 12 files next to index.html (in
+// the repo root, same level as index.html) and every case picks them up
+// automatically — detectiveImage() below builds each <img> src purely from
+// the case's own id (e.g. "de3" → DetectivePics/de3.jpg and
+// DetectivePics/de3ai.jpg), so there's no manifest or file list to edit;
+// the filenames alone are what wire a photo to its case.
+//
+// No visual effect is applied to either side: the whole point is that the
+// AI photo's own real artifacts are the tell, per each case's `tell` text.
+// Applying a filter/scanline overlay here (like sceneImage()'s .sc-ai-fx,
+// used when there's only ONE underlying photo to fake two sides from)
+// would just tell players which tile to tap without looking at either
+// photo at all — the opposite of the lesson.
+//
+// Daily draw (see initPlay()): with exactly 6 cases and 6 shown per
+// session, every day is the same 6, just reshuffled — see initPlay()'s
+// comment for why that's fine now that there's only one set.
+var DETECTIVE_CASES=[
+  { id:"de1", label:"Portrait photo",
+    tell:"Look for mismatched eyes, warped ears, or skin that looks unnaturally smooth — like it's been airbrushed." },
+  { id:"de2", label:"Handshake photo",
+    tell:"Check where the hands meet — AI images often add stray or fused fingers right at the point of contact." },
+  { id:"de3", label:"Flood photo",
+    tell:"Water reflections don't actually match what's above them, and the edges of submerged objects warp." },
+  { id:"de4", label:"Press conference photo",
+    tell:"Zoom into the microphone or podium signage — the text or logo usually smears into nonsense up close." },
+  { id:"de5", label:"ID card photo",
+    tell:"The photo and printed text don't line up the way a real card's layout would, and small print is illegible." },
+  { id:"de6", label:"Cash photo",
+    tell:"Serial numbers and fine print on the bill are blurry or turn into nonsense patterns." }
+];
+// Two-photo pairing for a Detective case — unlike chatterboxImage()/
+// sceneImage() (one photo, CSS filter stands in for "AI"), each case here
+// has two genuinely separate files: DetectivePics/<id>.jpg (real) and
+// DetectivePics/<id>ai.jpg (AI-generated) — e.g. de5.jpg / de5ai.jpg.
+// Missing photo → detectivePlaceholder() instead of a broken image icon,
+// so the mode is fully playable (if not very mysterious) before the real
+// photos are dropped in.
+function detectiveImage(caseObj, isAi){
+  var url = "DetectivePics/"+caseObj.id+(isAi?"ai":"")+".jpg";
+  var placeholder = detectivePlaceholder(caseObj, isAi);
+  return "<span class='sc-img-wrap'>"
+    +"<img class='sc-real-img' src='"+url+"' alt='' loading='lazy' "
+    +"onerror=\"this.style.display='none';this.nextElementSibling.style.display='block';\">"
+    +"<span class='sc-fallback' style='display:none'>"+placeholder+"</span>"
+    +"</span>";
+}
+function detectivePlaceholder(caseObj, isAi){
+  var fname = caseObj.id+(isAi?"ai":"")+".jpg";
+  return "<div style='width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;background:#141a24;border:1px dashed #445;border-radius:8px;padding:6px;text-align:center;box-sizing:border-box;'>"
+    +"<span style='font-size:22px'>📷</span>"
+    +"<span style='font-size:9.5px;color:#8a93a8;font-family:var(--font-mono,monospace);line-height:1.3;word-break:break-all;'>DetectivePics/"+fname+"</span>"
+    +"</div>";
+}
 var DETECTIVE_ROUNDS=[
-  { type:"ai", real:"face", ai:"face_ai", label:"Portrait photo",
-    tell:"The AI face has mismatched eyes, warped edges, and glitchy colour bands. Real photos don't do that." },
-  { type:"ai", real:"handshake", ai:"handshake_ai", label:"News photo",
-    tell:"Look at the hands: AI images often add stray extra fingers and blur where hands meet." },
   { type:"caption", scene:"landscape", label:"Same photo, two captions",
     captionA:"Flood devastation TODAY — climate apocalypse is HERE 😱 (viral, no location given)",
     captionB:"File photo from a 2019 flood, used here without a date or location.",
     misleadingIndex:0,
     tell:"Same stock photo, recycled with a scary, undated caption to look like breaking news. Reverse-image searching a photo reveals when and where it's actually from." },
-  { type:"ai", real:"landscape", ai:"landscape_ai", label:"Scenery photo",
-    tell:"The AI scene has two 'suns', floating specks, and impossible lighting — tiny details that don't add up." },
   { type:"caption", scene:"podium", label:"Same photo, two captions",
     captionA:"Official press briefing, city hall, Tuesday — full statement linked below.",
     captionB:"BREAKING: Official 'ADMITS' secret plan in leaked photo!! (no quote, no source)",
     misleadingIndex:1,
     tell:"A perfectly normal press photo gets a dramatic, quote-free caption bolted on to imply a scandal that isn't in the photo at all." },
-  { type:"ai", real:"podium", ai:"podium_ai", label:"Press photo",
-    tell:"The AI version has off-placed eyes and colour artifacts. Zoom into faces — AI still struggles with them." },
   // These three are deliberately NOT about spotting visual AI artifacts —
   // that lesson ages badly as AI images keep improving. The photo in each
   // one is completely real and unaltered; the manipulation is entirely in
@@ -8945,12 +8997,15 @@ function initPlay(){
   if(S.play.done){ renderPlayDone(); return; }
   var prac=enterMode("play");
   S.play.q=0; S.play.score=0; S.play.done=false;
-  // Used to always be the same 9 cases in the same fixed order, forever —
-  // this pool never rotated the way Feed/ChatterBox/Messages already do.
-  // Now drawn from the shuffle bag (see drawFromBag) so, on top of "same
-  // set all day," a case can't come back around until the other 29 have
-  // all had a turn across days.
-  if(!S.play.queue || S.play.queueDay!==S.v4.day){ S.play.queue=drawFromBag("play", DETECTIVE_ROUNDS, 6); S.play.queueDay=S.v4.day; }
+  // Detective now always runs all 6 real-vs-AI cases (see DETECTIVE_CASES
+  // above) rather than drawing from the old mixed picsum/caption pool.
+  // Drawn via drawFromBag anyway (not just a plain shuffle) so the ORDER
+  // still varies day to day — with exactly 6 cases and 6 shown, every day
+  // is the same 6, just reshuffled.
+  if(!S.play.queue || S.play.queueDay!==S.v4.day){
+    S.play.queue = drawFromBag("play", DETECTIVE_CASES, 6);
+    S.play.queueDay = S.v4.day;
+  }
   renderPlayQ(prac);
 }
 function renderPlayQ(prac){
@@ -8978,15 +9033,13 @@ function renderPlayQ(prac){
     return;
   }
   var aiLeft = Math.random()<0.5;
-  var leftScene = aiLeft ? r.ai : r.real;
-  var rightScene = aiLeft ? r.real : r.ai;
   body.innerHTML=
     (prac?practiceBanner("play"):"")
     +"<p class='score-display'>Case "+(S.play.q+1)+" / "+S.play.queue.length+" · "+r.label+"</p>"
     +"<p style='text-align:center;font-size:13px;color:var(--text-soft);margin:0 0 12px'>🕵️ One of these is <b style='color:var(--play-col)'>AI-generated</b>. Tap the fake.</p>"
     +"<div class='detect-row'>"
-    +"<button class='detect-tile' data-ai='"+aiLeft+"'><div class='detect-img'>"+sceneImage(leftScene)+"</div><span>A</span></button>"
-    +"<button class='detect-tile' data-ai='"+(!aiLeft)+"'><div class='detect-img'>"+sceneImage(rightScene)+"</div><span>B</span></button>"
+    +"<button class='detect-tile' data-ai='"+aiLeft+"'><div class='detect-img'>"+detectiveImage(r, aiLeft)+"</div><span>A</span></button>"
+    +"<button class='detect-tile' data-ai='"+(!aiLeft)+"'><div class='detect-img'>"+detectiveImage(r, !aiLeft)+"</div><span>B</span></button>"
     +"</div>";
   body.querySelectorAll(".detect-tile").forEach(function(btn){
     btn.onclick=function(){ renderConfidenceStep(btn.dataset.ai==="true", !!prac); };
