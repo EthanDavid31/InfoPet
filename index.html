@@ -4726,7 +4726,7 @@ function initEggStage(){
 var STAGES=[
   {key:"egg",      emblem:"🥚", name:"Info Egg",          cp:0,   scale:1,    question:"Am I safe?",                          line:"Every great thinker starts with warmth and care.", unlock:"Hatching any moment now…"},
   {key:"hatch",    emblem:"🐣", name:"Curious Hatchling", cp:15,  scale:0.78, question:"What is this?",                       line:"Everything is so new — I just want to see and hear it all!", unlock:"Curious and imitating — not fact-checking yet."},
-  {key:"explorer", emblem:"🧭", name:"Explorer",          cp:50,  scale:0.92, question:"Is this true?",                       line:"I found something interesting — help me check if it's real?", unlock:"Now learning to verify what it sees."},
+  {key:"explorer", emblem:"🧭", name:"Explorer",          cp:25,  scale:0.92, question:"Is this true?",                       line:"I found something interesting — help me check if it's real?", unlock:"Now learning to verify what it sees."},
   {key:"thinker",  emblem:"🔎", name:"Thinker",           cp:150, scale:1.05, question:"Who should I trust?",                 line:"So many voices want my attention — who's actually worth listening to?", unlock:"Now navigating AI, algorithms, and social media."},
   {key:"guardian", emblem:"🛡️", name:"Guardian",          cp:300, scale:1.16, question:"What kind of digital citizen will I be?", line:"Before I share this, let's think it through together.", unlock:"Now creating and sharing responsibly — and helping others do the same."}
 ];
@@ -4751,16 +4751,16 @@ var STAGE_REQUIRE_LIST = {
   // shouldn't block real curiosity/exploration progress from counting, so
   // the gate is built only from actual engagement now.
   explorer: [
-    {key:"curiosity", label:"Curiosity",              need:40, get:function(){ return (S.life.stats&&S.life.stats.curiosity)||0; },
+    {key:"curiosity", label:"Curiosity",              need:20, get:function(){ return (S.life.stats&&S.life.stats.curiosity)||0; },
       how:"Grows from curious moments as a Hatchling — asking questions, noticing new things, trying a mode for the first time."},
     // Uses the lifetime S.explore.visited list (never resets day to day),
-    // not S.explore.hatchLocs (that one's the *daily* 2-visit cap — capped
-    // below 3, so it could never satisfy a "visit all 3" gate). A Hatchling
-    // only needs one location a day for its daily mission (see
-    // HATCHLING_DISCOVER_POOL); evolving into Explorer is the one place
-    // that asks for all three (Home, Park, Library) before moving on.
-    {key:"places",    label:"Hatchling-world places visited", need:3, get:function(){ return (S.explore.visited||[]).length; },
-      how:"Open Explore, then visit every spot in the Hatchling world — Home, Park, and Library — at least once."}
+    // not S.explore.hatchLocs (that one's the *daily* 2-visit cap). A
+    // Hatchling only needs one location a day for its daily mission (see
+    // HATCHLING_DISCOVER_POOL); the walk into Explorer asks for any two of
+    // the three (Home, Park, Library) — deliberately the shortest gate in
+    // the game, since it's the very first evolution a player ever meets.
+    {key:"places",    label:"Hatchling-world places visited", need:2, get:function(){ return (S.explore.visited||[]).length; },
+      how:"Open Explore, then visit any two spots in the Hatchling world — Home, Park, or Library."}
   ],
   // Reached from Explorer — built from Explorer-tier content (Detective,
   // Rethink, Trace, Perspectives, the Explorer world, Searcher), not
@@ -12581,6 +12581,12 @@ if(resetOkBtnEl) resetOkBtnEl.onclick = function(){
   doInfoPetReset();
 };
 
+// ── MODERATOR MODE (removed) ──────────────────────────────
+// The 🛠️ stage-jump panel is a dev-only tool and lives in index-dev.html
+// only. This is the production build — players reach every stage by
+// actually earning it through STAGE_REQUIRE_LIST.
+
+
 // ══════════════════════════════════════════════════════════
 // v6 — THE INTERNET (phone)
 // ══════════════════════════════════════════════════════════
@@ -13252,7 +13258,7 @@ function realVideoImage(it){
     +"</span>";
 }
 function cliptokImage(it){ 
-  if(it.videoPath) return "<video style='width:100%;height:100%;object-fit:cover' src=\""+it.videoPath+"\" muted playsinline></video>";
+  if(it.videoPath) return "<video style='width:100%;height:100%;object-fit:cover' src=\""+it.videoPath+"\" autoplay loop muted playsinline></video>";
   return it.realVideo ? realVideoImage(it) : sceneImage(it.scene); 
 }
 // ChatterBox posts (APPS.social.items, ids "s1".."s28") can use real local
@@ -13472,6 +13478,44 @@ var APPS = {
     // category chip bar in renderPhone()'s video branch — this is the
     // "controlled lab, not an infinite scroll feed" structure from the
     // ClipTok redesign: every clip has a specific lesson, not just a fake/real coin flip.
+    // ── LOCAL VIDEO CLIPS (autoplay, top priority) ──
+    { id:"ct1", videoPath:"ClipTokVids/ct1.mp4", source:"@aibizarrely", handle:"41k followers", category:"ai",
+      title:"Poor dog on New York railway track 🚉😮",
+      body:"AI-generated video that looks real at first glance, but contains subtle tells of synthetic media.",
+      verdict:"flag", tactic:"AI-Generated Deepfake",
+      clues:["AI videos are getting scary good at mimicking reality — this footage appears authentic but was entirely generated.","Most people miss it the first time they watch, which is why it's spreading so fast."],
+      explain:"As AI video generation improves, the line between real and synthetic gets harder to spot. This is exactly why checking the source and creator becomes more important than ever." },
+    { id:"ct2", videoPath:"ClipTokVids/ct2.mp4", source:"@nutritalks_1", handle:"edu · verified", category:"viral",
+      title:"What if vegetables could talk? 🥦🥕 Hidden health superpowers",
+      body:"AI-generated video showing animated vegetables revealing their health benefits with a fun, educational tone.",
+      verdict:"trust", 
+      clues:["Created with AI for educational purposes, not to mislead — the source is transparent about the method.","The health facts presented (stronger muscles, better eyesight, glowing skin) match actual nutritional science."],
+      explain:"AI-generated doesn't always mean deceptive — when creators are transparent about using AI for education and the information checks out, it's fine to trust and share." },
+    { id:"ct3", videoPath:"ClipTokVids/ct3.mp4", source:"@alreenbueno3", handle:"fashion creator", category:"context",
+      title:"Women's outfit ideas ✨ Styling tips and inspiration",
+      body:"A short fashion showcase and styling tips for women's clothing combinations.",
+      verdict:"trust",
+      clues:["A genuine fashion content creator sharing outfit ideas — straightforward, no misleading framing.","This type of content is about inspiration and style, not spreading false information."],
+      explain:"Not all videos need to be fact-checked — fashion inspiration and creative content is fine to enjoy and share as-is." },
+    { id:"ct4", videoPath:"ClipTokVids/ct4.mp4", source:"@rourke.heath", handle:"tech · creator", category:"ai",
+      title:"Google Omni with no restrictions: Reality-bending scene editing 🔥",
+      body:"Demo of advanced AI video editing tool that lets creators change almost anything in a scene on the fly — from objects to people to environments.",
+      verdict:"trust",
+      clues:["This is a genuine demo of actual AI video-editing capabilities from Higgsfield AI + Google Omni.","The creator is transparent about what tool was used and how powerful this technology is."],
+      explain:"Knowing what AI tools exist and what they can do is exactly the literacy you need. When creators are honest about using AI, that's actually trustworthy — it's the hidden manipulations that are the problem." },
+    { id:"ct5", videoPath:"ClipTokVids/ct5.mp4", source:"@avadiscovery", handle:"explainer · 📍Philippines", category:"context",
+      title:"Pax Silica in 80 seconds: What is it? Why the debate?",
+      body:"Quick explainer video breaking down a real current-events topic without the noise or bias.",
+      verdict:"trust",
+      clues:["A named creator providing context on a real news story, not just amplifying outrage.","Asks you to form your own opinion (\"Would you support this?\") instead of telling you what to think."],
+      explain:"A good explainer gives you the facts and context so you can decide for yourself. This one does that — trust and share if you want others to actually understand the topic." },
+    { id:"ct6", videoPath:"ClipTokVids/ct6.mp4", source:"@shortsfaceless.com", handle:"tool · creator", category:"viral",
+      title:"Fun Facts about Onions — created with Shortsfaceless AI",
+      body:"Educational short-form content created with a faceless content automation tool, fully transparent about the method.",
+      verdict:"trust",
+      clues:["Transparently discloses the tool used to create the content (Shortsfaceless platform).","The educational content itself is accurate — fun facts about onions with no misleading claims."],
+      explain:"Using an automation tool doesn't make content bad — it just makes creation faster and easier. What matters is whether the information is true and whether the creator is honest about how it was made." },
+    // ── SCENE-BASED LESSONS ──
     { id:"v1", scene:"face_ai", source:"@leakzone24", handle:"41k followers", category:"ai",
       title:"LEAKED: exec privately admits the product is unsafe (0:14)",
       body:"A short clip, slightly mismatched mouth movement, audio that sounds subtly off-pitch throughout.",
@@ -13571,43 +13615,7 @@ var APPS = {
       body:"A real research-group explainer on the exact habit ClipTok keeps asking for: check the source before the content.",
       verdict:"trust", realVideo:{ id:"SHNprb2hgzU", channel:"Stanford History Education Group" },
       clues:["A real video from Stanford's Civic Online Reasoning project — the actual academic group that studies how professional fact-checkers verify claims.","Its core technique, \"lateral reading,\" is exactly what every ClipTok round has been asking you to do: leave the page/clip and open other tabs to check it, instead of only studying the content itself."],
-      explain:"Professional fact-checkers don't stare harder at a suspicious page — they leave it and open new tabs to check who's behind it, a technique researchers call \"lateral reading.\" It's the actual, teachable method behind almost every ClipTok round so far." },
-    { id:"ct1", videoPath:"ClipTokVids/ct1.mp4", source:"@aibizarrely", handle:"41k followers", category:"ai",
-      title:"Poor dog on New York railway track 🚉😮",
-      body:"AI-generated video that looks real at first glance, but contains subtle tells of synthetic media.",
-      verdict:"flag", tactic:"AI-Generated Deepfake",
-      clues:["AI videos are getting scary good at mimicking reality — this footage appears authentic but was entirely generated.","Most people miss it the first time they watch, which is why it's spreading so fast."],
-      explain:"As AI video generation improves, the line between real and synthetic gets harder to spot. This is exactly why checking the source and creator becomes more important than ever." },
-    { id:"ct2", videoPath:"ClipTokVids/ct2.mp4", source:"@nutritalks_1", handle:"edu · verified", category:"viral",
-      title:"What if vegetables could talk? 🥦🥕 Hidden health superpowers",
-      body:"AI-generated video showing animated vegetables revealing their health benefits with a fun, educational tone.",
-      verdict:"trust", 
-      clues:["Created with AI for educational purposes, not to mislead — the source is transparent about the method.","The health facts presented (stronger muscles, better eyesight, glowing skin) match actual nutritional science."],
-      explain:"AI-generated doesn't always mean deceptive — when creators are transparent about using AI for education and the information checks out, it's fine to trust and share." },
-    { id:"ct3", videoPath:"ClipTokVids/ct3.mp4", source:"@alreenbueno3", handle:"fashion creator", category:"context",
-      title:"Women's outfit ideas ✨ Styling tips and inspiration",
-      body:"A short fashion showcase and styling tips for women's clothing combinations.",
-      verdict:"trust",
-      clues:["A genuine fashion content creator sharing outfit ideas — straightforward, no misleading framing.","This type of content is about inspiration and style, not spreading false information."],
-      explain:"Not all videos need to be fact-checked — fashion inspiration and creative content is fine to enjoy and share as-is." },
-    { id:"ct4", videoPath:"ClipTokVids/ct4.mp4", source:"@rourke.heath", handle:"tech · creator", category:"ai",
-      title:"Google Omni with no restrictions: Reality-bending scene editing 🔥",
-      body:"Demo of advanced AI video editing tool that lets creators change almost anything in a scene on the fly — from objects to people to environments.",
-      verdict:"trust",
-      clues:["This is a genuine demo of actual AI video-editing capabilities from Higgsfield AI + Google Omni.","The creator is transparent about what tool was used and how powerful this technology is."],
-      explain:"Knowing what AI tools exist and what they can do is exactly the literacy you need. When creators are honest about using AI, that's actually trustworthy — it's the hidden manipulations that are the problem." },
-    { id:"ct5", videoPath:"ClipTokVids/ct5.mp4", source:"@avadiscovery", handle:"explainer · 📍Philippines", category:"context",
-      title:"Pax Silica in 80 seconds: What is it? Why the debate?",
-      body:"Quick explainer video breaking down a real current-events topic without the noise or bias.",
-      verdict:"trust",
-      clues:["A named creator providing context on a real news story, not just amplifying outrage.","Asks you to form your own opinion (\"Would you support this?\") instead of telling you what to think."],
-      explain:"A good explainer gives you the facts and context so you can decide for yourself. This one does that — trust and share if you want others to actually understand the topic." },
-    { id:"ct6", videoPath:"ClipTokVids/ct6.mp4", source:"@shortsfaceless.com", handle:"tool · creator", category:"viral",
-      title:"Fun Facts about Onions — created with Shortsfaceless AI",
-      body:"Educational short-form content created with a faceless content automation tool, fully transparent about the method.",
-      verdict:"trust",
-      clues:["Transparently discloses the tool used to create the content (Shortsfaceless platform).","The educational content itself is accurate — fun facts about onions with no misleading claims."],
-      explain:"Using an automation tool doesn't make content bad — it just makes creation faster and easier. What matters is whether the information is true and whether the creator is honest about how it was made." }
+      explain:"Professional fact-checkers don't stare harder at a suspicious page — they leave it and open new tabs to check who's behind it, a technique researchers call \"lateral reading.\" It's the actual, teachable method behind almost every ClipTok round so far." }
   ]},
   social: { name:"ChatterBox", icon:"📱", tint:"#7c5cc4", items:[
     { id:"s1", scene:"face_ai", source:"@viral_news_ph", handle:"98k followers",
@@ -14286,8 +14294,7 @@ var MESSAGE_SCENARIOS=[
     ],
     explain:"Nothing here was false, so it isn't a misinformation problem -- it's a harm problem. This is what MIL calls malinformation: genuine, unaltered info shared in a way that's meant to embarrass or harm someone (see 🧩 Malinformation in the glossary). Not every message needs fact-checking; some just need someone to say 'let's not spread this further.'" },
   // Mirrors SEARCH_CASES['ai-schoolban'] -- reached via phoneBridge('messages:m-aiban')
-  // from the Breaking-news crisis flow once the player has already seen (or
-  // skipped) the real Searcher case for the same claim, so the "a friend
+  // from the Searcher verdict screen for that same case, so the "a friend
   // forwards you the exact thing you just checked" beat has somewhere to land.
   { id:"m-aiban", who:"Josh", group:"batch group chat",
     thread:[
@@ -14868,7 +14875,7 @@ function openPhone(){
   if(!phoneUnlocked()) return;
   phone.open=true; phone.screen="home"; S.mode="feed"; document.getElementById("phone").classList.add("show"); renderPhone();
 }
-function closePhone(){ phone.open=false; phone.crisisActive=false; document.getElementById("phone").classList.remove("show"); showMode("default"); }
+function closePhone(){ phone.open=false; document.getElementById("phone").classList.remove("show"); showMode("default"); }
 
 // Used to be hardcoded to Apple's classic demo-screenshot time (9:41) —
 // shows the player's own actual current time now. Date's getHours()/
@@ -14891,26 +14898,8 @@ function renderPhone(){
 
   if(phone.screen==="home"){
     html+='<div class="ph-hometop"><p class="ph-hint">Your pet wants to explore. Open an app and help it decide what to <b>trust</b>.</p></div>';
-    // ThinkSync gets its own featured card instead of sitting in the app grid
-    // as one icon among four — an AI companion your pet can grow an
-    // unhealthy dependency on (and has to learn to set a boundary with) is
-    // the most distinctive thing this phone does, so it leads.
-    var scDone=S.companion.done;
-    html+='<button class="ph-feature-app" data-app="soulsync" style="--tint:'+APPS.soulsync.tint+'">'
-      +'<span class="ph-feature-ic">'+APPS.soulsync.icon+'</span>'+(scDone?'':'<span class="ph-dot">1</span>')
-      +'<span class="ph-feature-tx"><span class="ph-feature-nm">ThinkSync</span>'
-      +'<span class="ph-feature-sub">Your pet\'s AI thinking partner — learn to use AI well, not just avoid over-relying on it.</span></span></button>';
-    // "🚨 Breaking" — a deliberate "start here" moment stitching together
-    // content that already exists and is already bridged (ThinkSync's take,
-    // the ai-schoolban Searcher case, the matching Messages follow-up) into
-    // one continuous rehearsal of Pause/Verify/Trace/Act, instead of only
-    // being something a player stumbles into mid-session. See renderCrisis().
-    html+='<button class="ph-feature-app" data-crisis="start" style="--tint:#e53e3e">'
-      +'<span class="ph-feature-ic">🚨</span>'
-      +'<span class="ph-feature-tx"><span class="ph-feature-nm">Breaking</span>'
-      +'<span class="ph-feature-sub">A friend just sent you something urgent — practice the whole loop, start to finish.</span></span></button>';
     html+='<div class="ph-apps">';
-    Object.keys(APPS).filter(function(k){ return k!=="soulsync"; }).forEach(function(k){
+    Object.keys(APPS).forEach(function(k){
       var a=APPS[k];
       // Searcher's "unseen" count runs into the dozens (every browse result +
       // every case counts separately) — a big number there reads like an
@@ -14918,6 +14907,7 @@ function renderPhone(){
       // so it's dropped entirely rather than showing a misleading badge.
       var badge = k==="messages" ? (phone.done.indexOf(currentMessageScenario().id)<0?'<span class="ph-dot">1</span>':'')
         : k==="play" ? (S.play.done?'':'<span class="ph-dot">1</span>')
+        : k==="soulsync" ? (S.companion.done?'':'<span class="ph-dot">1</span>')
         : k==="browser" ? ''
         : (unseen(k)?'<span class="ph-dot">'+unseen(k)+'</span>':'');
       html+='<button class="ph-app" data-app="'+k+'" style="--tint:'+a.tint+'"><span class="ph-app-ic">'+a.icon+'</span>'+badge+'<span class="ph-app-nm">'+a.name+'</span></button>';
@@ -14985,8 +14975,9 @@ function renderPhone(){
       html+='<div class="ph-feed">';
       ITEMS.forEach(function(it){
         var seen=phone.done.indexOf(it.id)>=0;
+        var cardImg = phone.app==="video" ? cliptokImage(it) : sceneImage(it.scene);
         html+='<button class="ph-card'+(seen?' seen':'')+'" data-item="'+it.id+'">'
-          +'<div class="ph-card-img">'+sceneImage(it.scene)+'</div>'
+          +'<div class="ph-card-img">'+cardImg+'</div>'
           +'<div class="ph-card-tx"><div class="ph-src">'+it.source+' <span>· '+it.handle+'</span></div>'
           +'<div class="ph-ttl">'+it.title+'</div>'
           +(seen?'<div class="ph-seen">✓ reviewed</div>':'<div class="ph-tap">tap to open ›</div>')+'</div></button>';
@@ -15088,9 +15079,6 @@ function renderPhone(){
   else if(phone.screen==="debate"){
     html+=renderChatterboxDebate();
   }
-  else if(phone.screen==="crisis"){
-    html+=renderCrisis();
-  }
   scr.innerHTML=html;
   // #playBody was just inserted fresh above — populate it the same way
   // tapping the old Detective device button used to (initPlay() shows the
@@ -15179,13 +15167,6 @@ function renderMessages(){
   } else {
     h+='<div class="ph-outcome '+(phone._msgGood?'good':'bad')+'" style="margin:12px 12px 0">'+(phone._msgReply||"")+'</div>';
     h+='<div class="ph-outcome good" style="margin:8px 12px 12px">'+scn.explain+'</div>';
-    if(phone.crisisActive && scn.id==="m-aiban"){
-      h+='<div class="msg-trace-panel" style="margin:8px 12px 12px">'
-        +'<div style="font-family:var(--font-mono);font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:6px">🚨 Breaking, resolved</div>'
-        +'<p class="explain">You didn\'t stop every fake claim out there tonight — just this one. Same loop every time: <strong>Pause → Verify → Trace → Act</strong>.</p>'
-        +'<button class="ph-btn trust" data-crisis="finish" style="margin-top:8px">Nice ▸</button>'
-        +'</div>';
-    }
   }
   return h;
 }
@@ -15369,7 +15350,7 @@ function renderBrowser(){
       h+='<p class="explain" style="margin-top:4px;color:var(--text-muted)">'+calibNote+'</p>';
       h+='<p class="explain" style="margin-top:6px">'+kase5.primary.body+'</p>';
       h+=searchSkillsSummary(kase5.queries[b.queryPicked]&&kase5.queries[b.queryPicked].best, b.resultsOpened.length>=2, correct);
-      if(phone.crisisActive && b.caseId==="ai-schoolban"){
+      if(b.caseId==="ai-schoolban"){
         h+='<button class="ph-btn trust" data-bridge="messages:m-aiban" style="margin-top:8px">💬 Josh just sent you the same thing — reply ›</button>';
       }
       h+='<button class="ph-btn back-btn" data-nav="app">‹ Back to Searcher</button>';
@@ -15533,7 +15514,7 @@ function pickSearchVerdict(key, confident){
 function bindPhone(){
   var scr=document.getElementById("phoneScreen");
   scr.addEventListener("click", function(e){
-    var t=e.target.closest("[data-app],[data-nav],[data-item],[data-verify],[data-decide],[data-close],[data-reply],[data-bback],[data-drop],[data-topic],[data-result],[data-judge],[data-friend],[data-friendnext],[data-friendagain],[data-friendstart],[data-friendpredict],[data-friendshowsources],[data-friendsourcepick],[data-soulsyncmode],[data-compose],[data-caption],[data-msgtrace],[data-debate],[data-debatereply],[data-cliptok-cat],[data-whyseen],[data-whyseenpick],[data-bridge],[data-searchmode],[data-caseid],[data-query],[data-searchresult],[data-verdict],[data-confidence],[data-toprimary],[data-toresults],[data-toverdict],[data-soulsyncask],[data-soulsyncchoice],[data-crisis],[data-realsearch],[data-rspick]");
+    var t=e.target.closest("[data-app],[data-nav],[data-item],[data-verify],[data-decide],[data-close],[data-reply],[data-bback],[data-drop],[data-topic],[data-result],[data-judge],[data-friend],[data-friendnext],[data-friendagain],[data-friendstart],[data-friendpredict],[data-friendshowsources],[data-friendsourcepick],[data-soulsyncmode],[data-compose],[data-caption],[data-msgtrace],[data-debate],[data-debatereply],[data-cliptok-cat],[data-whyseen],[data-whyseenpick],[data-bridge],[data-searchmode],[data-caseid],[data-query],[data-searchresult],[data-verdict],[data-confidence],[data-toprimary],[data-toresults],[data-toverdict],[data-soulsyncask],[data-soulsyncchoice],[data-realsearch],[data-rspick]");
     if(!t) return;
     if(t.dataset.close){ closePhone(); return; }
     if(t.dataset.app){ phone.app=t.dataset.app; phone.screen="app";
@@ -15555,7 +15536,6 @@ function bindPhone(){
     if(t.dataset.soulsyncask){ phone.soulsyncAsk=!phone.soulsyncAsk; renderPhone(); return; }
     if(t.dataset.soulsyncchoice){ pickSoulsyncStance(t.dataset.soulsyncchoice); return; }
     if(t.dataset.bridge){ phoneBridge(t.dataset.bridge); return; }
-    if(t.dataset.crisis){ handleCrisisAction(t.dataset.crisis); return; }
     if(t.dataset.friend){ answerFriend(parseInt(t.dataset.friend,10)); return; }
     if(t.dataset.friendnext){ friendNext(); return; }
     if(t.dataset.friendagain){ friendAgain(); return; }
@@ -15597,42 +15577,6 @@ function browserBack(){
   else if(b.view==="results"){ b.view="start"; b.topic=null; b.dropOpen=true; }
   else { phone.screen="home"; phone.app=null; }
   renderPhone();
-}
-// "🚨 Breaking" — not new content, a thin orchestration layer over content
-// that already exists and was already bridged together: SEARCH_CASES's
-// ai-schoolban case (which already carries a soulsyncTake), the real
-// Searcher flow, and the matching m-aiban Messages scenario. What was
-// missing wasn't another mini-game, it was one deliberate "start here"
-// moment that frames the existing chain as a single story with a beginning
-// and an end, instead of only being hops a player finds mid-session — see
-// phoneBridge() just below for the actual hand-offs.
-function renderCrisis(){
-  var kase=SEARCH_CASES.filter(function(x){return x.id==="ai-schoolban";})[0];
-  var h='<div class="ph-appbar"><button class="ph-back" data-nav="home">‹</button><span class="ph-appttl">🚨 Breaking</span></div>';
-  h+='<div class="ph-detail">';
-  if(phone.crisisStage==="shared"){
-    h+='<div class="ph-outcome bad">You hit share before checking anything.</div>'
-      +'<p class="explain" style="margin-top:6px">By morning, half the batch group is repeating a ban that was never real — and the whole thing traced back to a post with no named source at all. Nothing here is permanent, but this is exactly how it actually spreads.</p>'
-      +'<button class="ph-btn trust" data-crisis="retry" style="margin-top:10px">Try that again ▸</button>';
-  } else {
-    h+='<div class="ph-outcome bad" style="margin-bottom:8px">🚨 Josh just sent you this</div>'
-      +'<p class="ph-prompt">'+kase.claim+' It already has thousands of shares. No named source, no link, no date.</p>'
-      +'<div class="msg-trace-panel" style="margin:10px 0">'
-      +  '<div style="font-family:var(--font-mono);font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:6px">🤖 What ThinkSync said when you asked</div>'
-      +  '<p class="explain">'+kase.soulsyncTake+'</p>'
-      +'</div>'
-      +'<button class="ph-btn flag" data-crisis="share">🔥 Share it now — everyone needs to see this</button>'
-      +'<button class="ph-btn trust" data-crisis="investigate" style="margin-top:8px">🔍 Investigate first</button>';
-  }
-  h+='</div>';
-  return h;
-}
-function handleCrisisAction(action){
-  if(action==="start"){ phone.screen="crisis"; phone.crisisStage="intro"; renderPhone(); return; }
-  if(action==="share"){ phone.crisisStage="shared"; renderPhone(); return; }
-  if(action==="retry"){ phone.crisisStage="intro"; renderPhone(); return; }
-  if(action==="investigate"){ phone.crisisActive=true; phoneBridge("searcher:ai-schoolban"); return; }
-  if(action==="finish"){ phone.crisisActive=false; phone.msgForceId=null; phone.screen="home"; phone.app=null; renderPhone(); return; }
 }
 // Cross-feature bridges — ClipTok/Messages content is deliberately not
 // self-contained. A flagged claim in ClipTok can hand straight to a matching
